@@ -22,6 +22,26 @@
 
 namespace
 {
+class ScopedCoutToStderr
+{
+public:
+    ScopedCoutToStderr()
+        : previous_(std::cout.rdbuf(std::cerr.rdbuf()))
+    {
+    }
+
+    ~ScopedCoutToStderr()
+    {
+        std::cout.rdbuf(previous_);
+    }
+
+    ScopedCoutToStderr(const ScopedCoutToStderr&) = delete;
+    ScopedCoutToStderr& operator=(const ScopedCoutToStderr&) = delete;
+
+private:
+    std::streambuf* previous_;
+};
+
 double parse_number(const std::string& text, const std::string& name)
 {
     std::size_t consumed = 0;
@@ -213,7 +233,10 @@ int main(int argc, char* argv[])
 
         for (long step = 1; step <= total_steps; ++step)
         {
-            microenvironment.simulate_diffusion_decay(dt);
+            {
+                ScopedCoutToStderr redirect_solver_output;
+                microenvironment.simulate_diffusion_decay(dt);
+            }
             if (step % sample_steps == 0 || step == total_steps)
             {
                 print_sample(microenvironment, static_cast<double>(step) * dt);
