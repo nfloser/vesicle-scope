@@ -337,6 +337,40 @@ sample\t10\t1.995\t1.75\t2\t2500
         self.assertEqual(result.samples[-1].internalized_field_quantity, 2500.0)
         self.assertEqual(result.internalized_quantity_unit, "particle_equivalent")
 
+    def test_rejects_internalized_quantity_without_uptake_or_at_uptake_start(self) -> None:
+        unexpected_without_sink = """VESICLESCOPE_BIOFVM_RESULT\t2
+engine\tBioFVM
+physicell_release\t1.14.2
+physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
+biofvm_version\t1.1.7
+sample\t0\t2\t2\t2\t0
+sample\t2\t2\t2\t2\t1
+sample\t4\t2\t2\t2\t1
+sample\t6\t2\t2\t2\t1
+sample\t8\t2\t2\t2\t1
+sample\t10\t2\t2\t2\t1
+"""
+        with self.assertRaises(ValueError):
+            parse_result(experiment(), unexpected_without_sink)
+
+        nonzero_uptake_start = """VESICLESCOPE_BIOFVM_RESULT\t2
+engine\tBioFVM
+physicell_release\t1.14.2
+physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
+biofvm_version\t1.1.7
+sample\t0\t2\t2\t2\t1
+sample\t2\t1.999\t1.95\t2\t500
+sample\t4\t1.998\t1.90\t2\t1000
+sample\t6\t1.997\t1.85\t2\t1500
+sample\t8\t1.996\t1.80\t2\t2000
+sample\t10\t1.995\t1.75\t2\t2500
+"""
+        with self.assertRaises(ValueError):
+            parse_result(
+                experiment(uptake_sinks=(point_sink(),)),
+                nonzero_uptake_start,
+            )
+
     def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
         output = """VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
