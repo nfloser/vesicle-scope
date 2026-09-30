@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issues: #8, #11, #13, #15, #17, #19
+Issues: #8, #11, #13, #15, #17, #19, #21
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -50,9 +50,9 @@ The adapter currently accepts only the existing v0.1 contract:
 - explicit initial-concentration unit;
 - duration and output interval in minutes;
 - zero or one localized synthetic release source in `particle_equivalent/min`;
-- zero or one localized synthetic uptake sink with explicit effective volume in `micron^3` and uptake coefficient in `1/min`.
+- zero or more localized synthetic uptake sinks with explicit effective volume in `micron^3` and uptake coefficient in `1/min`.
 
-The current adapter supports at most one localized release source and at most one uptake sink, either independently or together in the first synthetic donor-recipient benchmark.
+The current adapter supports at most one localized release source and any number of point uptake sinks that map to distinct numerical x/y voxels. Recipient sinks may run independently or together with the source.
 
 There is no implicit unit conversion. Localized release additionally requires concentration unit `particle_equivalent/micron^3` so amount and concentration semantics stay explicit.
 
@@ -78,8 +78,8 @@ The runner:
 5. uses the pinned BioFVM 2D constant-coefficient LOD solver;
 6. samples the field at every requested output time and at the final time;
 7. optionally applies one BioFVM net-export source agent;
-8. optionally applies one explicit-volume BioFVM uptake agent and tracks its internalized substrate;
-9. returns mean/min/max concentration summaries, integrated extracellular/internalized quantities, one complete sampled 2D concentration field per requested output time, and exact engine metadata.
+8. optionally applies indexed explicit-volume BioFVM uptake agents and tracks each agent's internalized substrate separately;
+9. returns mean/min/max concentration summaries, aggregate and per-recipient internalized quantities, one complete sampled 2D concentration field per requested output time, and exact engine metadata.
 
 The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
@@ -92,7 +92,8 @@ The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Age
 - exact engine metadata;
 - one validated `BioFVMGrid2D` descriptor;
 - ordered `TransportSample` records;
-- one ordered `SpatialFieldSnapshot2D` for every summary sample.
+- one ordered `SpatialFieldSnapshot2D` for every summary sample;
+- one identifier-stable `RecipientUptakeSeries` for every configured uptake sink.
 
 Each sample contains:
 
@@ -122,7 +123,11 @@ The parser rejects:
 - returned grid spacing that differs from the requested numerical configuration;
 - field-derived mean/min/max/integrated quantity that disagrees with the summary.
 
-The full protocol, ordering and current stdout-size limitation are documented in [spatial field result contract](spatial-field-results.md).
+The aggregate internalized value on every summary sample is cross-checked against the sum of all recipient-specific uptake series. Recipient metadata echoed by the native runner is also checked against the configured engine-neutral sink geometry, effective volume and uptake coefficient.
+
+Two point recipients that map to the same numerical voxel are rejected before native execution because sequential same-voxel sinks would make per-recipient attribution order-dependent. The runner independently enforces the same constraint.
+
+The full field protocol, ordering and current stdout-size limitation are documented in [spatial field result contract](spatial-field-results.md). Population-specific semantics are documented in [recipient population model baseline](research/recipient-population-model.md).
 
 ## Uniform-decay verification
 
@@ -207,15 +212,32 @@ These checks establish numerical coupling and distance sensitivity only. They ar
 
 Scientific motivation, published distance observations and limitations are documented in [donor-recipient distance model baseline](research/donor-recipient-distance-model.md).
 
+## Recipient-population verification
+
+Issue #21 extends the already verified explicit-volume point sink from one recipient to multiple independently identified recipients without changing BioFVM uptake kinetics.
+
+CI uses two identical sinks in mirror-symmetric voxels around one donor. It verifies:
+
+```text
+uptake_left(t) ~= uptake_right(t)
+```
+
+at every requested sample while aggregate internalized quantity equals the recipient sum and global extracellular + internalized accounting remains closed.
+
+Recipient identifiers stay in the engine-neutral experiment. The native protocol uses deterministic indices and Python restores the configured identifiers after validating index-specific geometry and uptake parameters.
+
+See [recipient population model baseline](research/recipient-population-model.md).
+
 ## Result protocol
 
 The result stream is versioned instead of being silently extended:
 
 - v1 introduced transport summary samples;
 - v2 added cumulative internalized quantity;
-- v3 adds explicit 2D grid metadata and one complete extracellular field snapshot per sample.
+- v3 adds explicit 2D grid metadata and one complete extracellular field snapshot per sample;
+- v4 adds indexed recipient metadata and one cumulative uptake value per recipient and sample.
 
-The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t3`.
+The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t4`.
 
 ## What this validates
 
