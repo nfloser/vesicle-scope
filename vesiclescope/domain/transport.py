@@ -173,6 +173,59 @@ class PointUptakeSink:
 
 
 @dataclass(frozen=True, slots=True)
+class CircularUptakeSink:
+    """A finite circular uptake footprint with independent effective volume."""
+
+    identifier: str
+    x_micron: float
+    y_micron: float
+    footprint_radius_micron: float
+    effective_volume_micron3: float
+    uptake_rate: ScientificParameter
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "identifier",
+            _required_text(self.identifier, "identifier"),
+        )
+        object.__setattr__(
+            self,
+            "x_micron",
+            _non_negative_finite(self.x_micron, "x_micron"),
+        )
+        object.__setattr__(
+            self,
+            "y_micron",
+            _non_negative_finite(self.y_micron, "y_micron"),
+        )
+        object.__setattr__(
+            self,
+            "footprint_radius_micron",
+            _positive_finite(
+                self.footprint_radius_micron,
+                "footprint_radius_micron",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "effective_volume_micron3",
+            _positive_finite(
+                self.effective_volume_micron3,
+                "effective_volume_micron3",
+            ),
+        )
+
+        uptake_rate = _require_parameter(self.uptake_rate, "uptake_rate")
+        _require_unit(uptake_rate, RATE_UNIT, "uptake_rate")
+        if uptake_rate.value < 0.0:
+            raise ValueError("uptake_rate must be non-negative")
+
+
+UptakeSink = PointUptakeSink | CircularUptakeSink
+
+
+@dataclass(frozen=True, slots=True)
 class TransportExperiment:
     """Synthetic transport inputs shared by validation code and engine adapters.
 
@@ -189,7 +242,7 @@ class TransportExperiment:
     decay: ScientificParameter
     initial_concentration: ScientificParameter
     release_sources: tuple[PointReleaseSource, ...] = ()
-    uptake_sinks: tuple[PointUptakeSink, ...] = ()
+    uptake_sinks: tuple[UptakeSink, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -251,12 +304,14 @@ class TransportExperiment:
                 )
 
         if not isinstance(self.uptake_sinks, tuple):
-            raise TypeError("uptake_sinks must be a tuple of PointUptakeSink objects")
+            raise TypeError("uptake_sinks must be a tuple of supported uptake sinks")
 
         seen_sink_ids: set[str] = set()
         for sink in self.uptake_sinks:
-            if not isinstance(sink, PointUptakeSink):
-                raise TypeError("uptake_sinks must contain only PointUptakeSink objects")
+            if not isinstance(sink, (PointUptakeSink, CircularUptakeSink)):
+                raise TypeError(
+                    "uptake_sinks must contain only supported uptake sink objects"
+                )
             if sink.identifier in seen_sink_ids:
                 raise ValueError(f"duplicate uptake sink identifier: {sink.identifier!r}")
             seen_sink_ids.add(sink.identifier)
@@ -268,3 +323,15 @@ class TransportExperiment:
                 raise ValueError(
                     f"uptake sink {sink.identifier!r} lies outside domain height"
                 )
+            if isinstance(sink, CircularUptakeSink):
+                radius = sink.footprint_radius_micron
+                if (
+                    sink.x_micron - radius < 0.0
+                    or sink.x_micron + radius > self.domain.width_micron
+                    or sink.y_micron - radius < 0.0
+                    or sink.y_micron + radius > self.domain.height_micron
+                ):
+                    raise ValueError(
+                        f"circular uptake sink {sink.identifier!r} must lie fully "
+                        "inside the rectangular domain"
+                    )
