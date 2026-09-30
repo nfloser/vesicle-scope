@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; transport, localized release, explicit-volume uptake, synthetic donor-recipient distance, and sampled 2D spatial-field verification implemented.**
+**Research baseline established; transport, localized release, explicit-volume uptake, donor-recipient distance, sampled 2D fields, and multi-recipient uptake verification implemented.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -25,6 +25,7 @@ See:
 - [BioFVM diffusion verification](docs/research/biofvm-diffusion-benchmark.md)
 - [localized release model baseline](docs/research/localized-release-model.md)
 - [recipient uptake model baseline](docs/research/recipient-uptake-model.md)
+- [recipient population model baseline](docs/research/recipient-population-model.md)
 - [donor-recipient distance model baseline](docs/research/donor-recipient-distance-model.md)
 - [spatial field result contract](docs/spatial-field-results.md)
 - [third-party software record](THIRD_PARTY.md)
