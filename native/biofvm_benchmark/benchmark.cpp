@@ -106,7 +106,6 @@ int main()
 
     std::cout
         << std::setprecision(12)
-        << "BioFVM_version=" << BioFVM::BioFVM_Version << '\n'
         << "voxels=" << microenvironment.number_of_voxels() << '\n'
         << "simulated_time_min=" << simulated_time << '\n'
         << "relative_l2_error=" << relative_l2 << '\n'
