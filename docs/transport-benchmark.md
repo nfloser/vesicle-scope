@@ -85,7 +85,7 @@ The source is mapped to BioFVM net export rather than the saturation-based secre
 M(t) = q * t
 ```
 
-where `M` is integrated extracellular particle-equivalent amount and `q` is the declared synthetic release rate.
+where `M` is the integrated field quantity. In this benchmark the concentration unit is `particle_equivalent/micron^3`, so `∫c dV` has unit `particle_equivalent`.
 
 The benchmark is run across x/y mesh refinement at fixed physical slice thickness. This checks that a numerical resolution change redistributes concentration without changing the physical amount released.
 
