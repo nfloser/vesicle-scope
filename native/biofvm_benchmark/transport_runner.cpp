@@ -1,5 +1,6 @@
 #include "BioFVM.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -80,7 +81,7 @@ void require_non_negative(double value, const std::string& name)
     }
 }
 
-void print_sample(const BioFVM::Microenvironment& microenvironment, double time_min)
+void print_sample(BioFVM::Microenvironment& microenvironment, double time_min)
 {
     double sum = 0.0;
     double minimum = std::numeric_limits<double>::infinity();
@@ -89,8 +90,7 @@ void print_sample(const BioFVM::Microenvironment& microenvironment, double time_
     for (unsigned int index = 0; index < microenvironment.number_of_voxels(); ++index)
     {
         const double value =
-            const_cast<BioFVM::Microenvironment&>(microenvironment)
-                .density_vector(static_cast<int>(index))[0];
+            microenvironment.density_vector(static_cast<int>(index))[0];
         sum += value;
         minimum = std::min(minimum, value);
         maximum = std::max(maximum, value);
@@ -152,9 +152,13 @@ int main(int argc, char* argv[])
         {
             throw std::invalid_argument("only no_flux boundary is supported");
         }
-        if (concentration_unit.empty())
+        if (concentration_unit.find_first_not_of(" \t\r\n") == std::string::npos)
         {
             throw std::invalid_argument("concentration unit must not be blank");
+        }
+        if (sample_every > duration)
+        {
+            throw std::invalid_argument("sample interval cannot exceed duration");
         }
         if (!integer_multiple(width, grid) || !integer_multiple(height, grid))
         {
