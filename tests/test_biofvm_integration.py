@@ -654,6 +654,24 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
                     repeated.samples[-1].internalized_field_quantity,
                     places=12,
                 )
+                self.assertEqual(
+                    tuple(series.identifier for series in result.recipient_uptake_series),
+                    tuple(series.identifier for series in repeated.recipient_uptake_series),
+                )
+                for first_series, second_series in zip(
+                    result.recipient_uptake_series,
+                    repeated.recipient_uptake_series,
+                ):
+                    self.assertEqual(len(first_series.samples), len(second_series.samples))
+                    for first_sample, second_sample in zip(
+                        first_series.samples,
+                        second_series.samples,
+                    ):
+                        self.assertAlmostEqual(
+                            first_sample.internalized_field_quantity,
+                            second_sample.internalized_field_quantity,
+                            places=12,
+                        )
 
                 totals.append(summary.total_internalized_quantity)
 
