@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issue: #8
+Issues: #8, #11, #13
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -76,7 +76,7 @@ The runner:
 6. samples the field at every requested output time and at the final time;
 7. returns mean/min/max concentration summaries plus exact engine metadata.
 
-Only the BioFVM transport translation units required by these verification targets are linked. Unused MultiCellDS, MATLAB I/O, agent-container and XML components are not part of this executable.
+The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
 ## Result contract
 
