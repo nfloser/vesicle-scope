@@ -9,7 +9,9 @@ import subprocess
 
 from vesiclescope.domain import (
     BoundaryCondition,
+    CircularReleaseSource,
     CircularUptakeSink,
+    PointReleaseSource,
     PointUptakeSink,
     TransportExperiment,
 )
@@ -156,6 +158,176 @@ class BioFVMNumerics:
             "time_step_min",
             _positive_finite(self.time_step_min, "time_step_min"),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class BioFVMReleaseComponent:
+    """One native net-export agent component after donor rasterization."""
+
+    x_micron: float
+    y_micron: float
+    release_rate_per_min: float
+
+    def __post_init__(self) -> None:
+        for value, field_name in (
+            (self.x_micron, "x_micron"),
+            (self.y_micron, "y_micron"),
+            (self.release_rate_per_min, "release_rate_per_min"),
+        ):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(f"{field_name} must be a real number")
+            numeric = float(value)
+            if not math.isfinite(numeric) or numeric < 0.0:
+                raise ValueError(f"{field_name} must be finite and non-negative")
+            object.__setattr__(self, field_name, numeric)
+
+
+@dataclass(frozen=True, slots=True)
+class DiscretizedReleaseSource:
+    """One scientific release source mapped to one or more BioFVM components."""
+
+    identifier: str
+    geometry_kind: str
+    x_micron: float
+    y_micron: float
+    footprint_radius_micron: float
+    release_rate_per_min: float
+    components: tuple[BioFVMReleaseComponent, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.identifier, str) or not self.identifier.strip():
+            raise ValueError("source identifier must be non-blank")
+        object.__setattr__(self, "identifier", self.identifier.strip())
+        if self.geometry_kind not in {"point", "circle"}:
+            raise ValueError("geometry_kind must be 'point' or 'circle'")
+        for value, field_name in (
+            (self.x_micron, "x_micron"),
+            (self.y_micron, "y_micron"),
+            (self.footprint_radius_micron, "footprint_radius_micron"),
+            (self.release_rate_per_min, "release_rate_per_min"),
+        ):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(f"{field_name} must be a real number")
+            numeric = float(value)
+            if not math.isfinite(numeric) or numeric < 0.0:
+                raise ValueError(f"{field_name} must be finite and non-negative")
+            object.__setattr__(self, field_name, numeric)
+        if self.geometry_kind == "point" and self.footprint_radius_micron != 0.0:
+            raise ValueError("point release source must have zero footprint radius")
+        if self.geometry_kind == "circle" and self.footprint_radius_micron <= 0.0:
+            raise ValueError("circular release source must have positive radius")
+        if not isinstance(self.components, tuple) or not self.components:
+            raise ValueError("release source must contain at least one component")
+        if not all(
+            isinstance(item, BioFVMReleaseComponent)
+            for item in self.components
+        ):
+            raise TypeError(
+                "components must contain BioFVMReleaseComponent objects"
+            )
+
+
+def _discretize_release_sources_for_grid(
+    experiment: TransportExperiment,
+    grid_spacing_micron: float,
+) -> tuple[DiscretizedReleaseSource, ...]:
+    """Rasterize finite donor footprints while preserving aggregate release."""
+
+    if not isinstance(experiment, TransportExperiment):
+        raise TypeError("experiment must be a TransportExperiment")
+
+    grid = _positive_finite(grid_spacing_micron, "grid_spacing_micron")
+    if not _is_integer_multiple(experiment.domain.width_micron, grid):
+        raise ValueError("grid spacing must tile domain width exactly")
+    if not _is_integer_multiple(experiment.domain.height_micron, grid):
+        raise ValueError("grid spacing must tile domain height exactly")
+
+    nx = round(experiment.domain.width_micron / grid)
+    ny = round(experiment.domain.height_micron / grid)
+    sources: list[DiscretizedReleaseSource] = []
+
+    for source in experiment.release_sources:
+        if isinstance(source, PointReleaseSource):
+            component_positions = ((source.x_micron, source.y_micron),)
+            geometry_kind = "point"
+            radius = 0.0
+        elif isinstance(source, CircularReleaseSource):
+            selected: list[tuple[float, float]] = []
+            radius = source.footprint_radius_micron
+            tolerance = max(1e-12, radius * 1e-12)
+            for y_index in range(ny):
+                y = (y_index + 0.5) * grid
+                for x_index in range(nx):
+                    x = (x_index + 0.5) * grid
+                    if math.hypot(x - source.x_micron, y - source.y_micron) <= (
+                        radius + tolerance
+                    ):
+                        selected.append((x, y))
+            if not selected:
+                raise ValueError(
+                    f"circular release source {source.identifier!r} does not cover "
+                    "any voxel centers at the selected grid spacing"
+                )
+            component_positions = tuple(selected)
+            geometry_kind = "circle"
+        else:
+            raise TypeError("unsupported release source type")
+
+        component_count = len(component_positions)
+        rate_share = source.release_rate.value / component_count
+        components: list[BioFVMReleaseComponent] = []
+        occupied_voxels: set[tuple[int, int]] = set()
+
+        for component_index, (x, y) in enumerate(component_positions):
+            voxel = (math.floor(x / grid), math.floor(y / grid))
+            if voxel in occupied_voxels:
+                raise ValueError(
+                    f"release source {source.identifier!r} maps multiple "
+                    f"components to numerical voxel {voxel}"
+                )
+            occupied_voxels.add(voxel)
+
+            component_rate = (
+                source.release_rate.value
+                - rate_share * (component_count - 1)
+                if component_index == component_count - 1
+                else rate_share
+            )
+            components.append(
+                BioFVMReleaseComponent(
+                    x_micron=x,
+                    y_micron=y,
+                    release_rate_per_min=component_rate,
+                )
+            )
+
+        sources.append(
+            DiscretizedReleaseSource(
+                identifier=source.identifier,
+                geometry_kind=geometry_kind,
+                x_micron=source.x_micron,
+                y_micron=source.y_micron,
+                footprint_radius_micron=radius,
+                release_rate_per_min=source.release_rate.value,
+                components=tuple(components),
+            )
+        )
+
+    return tuple(sources)
+
+
+def discretize_release_sources(
+    experiment: TransportExperiment,
+    numerics: BioFVMNumerics,
+) -> tuple[DiscretizedReleaseSource, ...]:
+    """Rasterize release sources for one explicit BioFVM grid."""
+
+    if not isinstance(numerics, BioFVMNumerics):
+        raise TypeError("numerics must be BioFVMNumerics")
+    return _discretize_release_sources_for_grid(
+        experiment,
+        numerics.grid_spacing_micron,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -549,6 +721,7 @@ def _validate_mapping(
     if not _is_integer_multiple(experiment.domain.height_micron, grid):
         raise ValueError("grid spacing must tile domain height exactly")
 
+    discretize_release_sources(experiment, numerics)
     discretize_uptake_sinks(experiment, numerics)
 
     dt = numerics.time_step_min
@@ -598,18 +771,37 @@ def build_command(
         _format_number(numerics.time_step_min),
     ]
 
-    if experiment.release_sources:
-        source = experiment.release_sources[0]
+    sources = discretize_release_sources(experiment, numerics)
+    if sources:
+        source = sources[0]
         command.extend(
             (
+                "--source-kind",
+                source.geometry_kind,
                 "--source-x-micron",
                 _format_number(source.x_micron),
                 "--source-y-micron",
                 _format_number(source.y_micron),
+                "--source-radius-micron",
+                _format_number(source.footprint_radius_micron),
                 "--source-rate-particle-equivalent-per-min",
-                _format_number(source.release_rate.value),
+                _format_number(source.release_rate_per_min),
+                "--source-component-count",
+                str(len(source.components)),
             )
         )
+        for component_index, component in enumerate(source.components):
+            component_prefix = f"--source-component-{component_index}"
+            command.extend(
+                (
+                    f"{component_prefix}-x-micron",
+                    _format_number(component.x_micron),
+                    f"{component_prefix}-y-micron",
+                    _format_number(component.y_micron),
+                    f"{component_prefix}-rate-particle-equivalent-per-min",
+                    _format_number(component.release_rate_per_min),
+                )
+            )
 
     recipients = discretize_uptake_sinks(experiment, numerics)
     command.extend(("--uptake-count", str(len(recipients))))
