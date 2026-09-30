@@ -512,6 +512,23 @@ class BioFVMRunnerTests(unittest.TestCase):
         self.assertTrue(kwargs["capture_output"])
 
     @patch("vesiclescope.engines.biofvm.subprocess.run")
+    def test_rejects_result_grid_that_differs_from_requested_numerics(self, run_mock) -> None:
+        samples = BioFVMResultTests().base_samples()
+        run_mock.return_value = subprocess.CompletedProcess(
+            args=["runner"],
+            returncode=0,
+            stdout=result_output(samples),
+            stderr="",
+        )
+
+        with self.assertRaises(ValueError):
+            run_transport(
+                experiment(),
+                BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+                Path("runner"),
+            )
+
+    @patch("vesiclescope.engines.biofvm.subprocess.run")
     def test_surfaces_native_runner_failure(self, run_mock) -> None:
         run_mock.side_effect = subprocess.CalledProcessError(
             returncode=2,
