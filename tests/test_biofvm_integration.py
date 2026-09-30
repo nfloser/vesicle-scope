@@ -6,6 +6,7 @@ from pathlib import Path
 from vesiclescope.analysis import analyze_recipient_population
 from vesiclescope.domain import (
     BoundaryCondition,
+    CircularReleaseSource,
     CircularUptakeSink,
     EvidenceCategory,
     PointReleaseSource,
@@ -61,6 +62,46 @@ def uniform_experiment(decay_per_min: float) -> TransportExperiment:
             "initial.concentration",
             2.0,
             "synthetic_concentration",
+        ),
+    )
+
+
+def finite_release_experiment(
+    rate_per_min: float = 120.0,
+) -> TransportExperiment:
+    return TransportExperiment(
+        experiment_id=f"synthetic.finite-release.{rate_per_min:g}",
+        domain=RectangularDomain2D(
+            width_micron=210.0,
+            height_micron=210.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=20.0,
+        sample_every_min=5.0,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter(
+            "transport.diffusion",
+            100.0,
+            "micron^2/min",
+        ),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            0.0,
+            "particle_equivalent/micron^3",
+        ),
+        release_sources=(
+            CircularReleaseSource(
+                identifier="source.circular",
+                x_micron=105.0,
+                y_micron=105.0,
+                footprint_radius_micron=15.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    rate_per_min,
+                    "particle_equivalent/min",
+                ),
+            ),
         ),
     )
 
@@ -434,6 +475,45 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             derived_mean,
             result.samples[-1].mean_concentration,
             places=12,
+        )
+
+    def test_finite_donor_release_preserves_mass_across_grid_refinement(self) -> None:
+        experiment = finite_release_experiment()
+        rate = experiment.release_sources[0].release_rate.value
+        final_amounts: list[float] = []
+
+        for grid in (10.0, 5.0):
+            result = run_transport(
+                experiment,
+                BioFVMNumerics(
+                    grid_spacing_micron=grid,
+                    time_step_min=0.1,
+                ),
+                self.runner,
+            )
+
+            for sample in result.samples:
+                expected = rate * sample.time_min
+                self.assertAlmostEqual(
+                    sample.integrated_field_quantity,
+                    expected,
+                    delta=max(1e-8, expected * 1e-9),
+                )
+                self.assertEqual(sample.internalized_field_quantity, 0.0)
+
+            final_field = result.field_snapshots[-1]
+            self.assertGreater(max(final_field.values), min(final_field.values))
+            final_amounts.append(result.samples[-1].integrated_field_quantity)
+
+        self.assertAlmostEqual(
+            final_amounts[0],
+            final_amounts[1],
+            delta=1e-8,
+        )
+        self.assertAlmostEqual(
+            final_amounts[0],
+            rate * experiment.duration_min,
+            delta=1e-8,
         )
 
     def test_localized_release_amount_is_resolution_invariant(self) -> None:
