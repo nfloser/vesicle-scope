@@ -15,7 +15,10 @@ from vesiclescope.domain import (
     TransportExperiment,
 )
 from vesiclescope.engines.biofvm import BioFVMNumerics, run_transport
-from vesiclescope.scenarios import recipient_count_sweep_experiment
+from vesiclescope.scenarios import (
+    finite_recipient_count_sweep_experiment,
+    recipient_count_sweep_experiment,
+)
 from vesiclescope.validation import first_order_decay
 
 
@@ -599,6 +602,92 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
         self.assertLess(
             summaries[1].total_internalized_quantity,
             summaries[2].total_internalized_quantity,
+        )
+
+    def test_finite_recipient_count_sweep_is_monotone_and_resolution_stable(self) -> None:
+        uptake_by_grid: dict[float, tuple[float, ...]] = {}
+
+        for grid in (10.0, 5.0):
+            totals: list[float] = []
+            for recipient_count in (2, 4, 8):
+                experiment = finite_recipient_count_sweep_experiment(recipient_count)
+                numerics = BioFVMNumerics(
+                    grid_spacing_micron=grid,
+                    time_step_min=0.1,
+                )
+                result = run_transport(experiment, numerics, self.runner)
+                summary = analyze_recipient_population(
+                    experiment,
+                    result,
+                    time_min=experiment.duration_min,
+                )
+
+                self.assertEqual(summary.recipient_count, recipient_count)
+                self.assertEqual(len(result.recipient_uptake_series), recipient_count)
+                for sink, recipient in zip(
+                    experiment.uptake_sinks,
+                    summary.recipients,
+                ):
+                    self.assertIsInstance(sink, CircularUptakeSink)
+                    self.assertEqual(sink.footprint_radius_micron, 15.0)
+                    self.assertEqual(sink.effective_volume_micron3, 1000.0)
+                    self.assertEqual(sink.uptake_rate.value, 0.5)
+                    self.assertAlmostEqual(
+                        recipient.donor_distance_micron,
+                        50.0,
+                        delta=1e-12,
+                    )
+
+                release_rate = experiment.release_sources[0].release_rate.value
+                for sample in result.samples:
+                    released = release_rate * sample.time_min
+                    self.assertAlmostEqual(
+                        sample.integrated_field_quantity
+                        + sample.internalized_field_quantity,
+                        released,
+                        delta=max(1e-8, released * 1e-9),
+                    )
+
+                repeated = run_transport(experiment, numerics, self.runner)
+                self.assertAlmostEqual(
+                    result.samples[-1].internalized_field_quantity,
+                    repeated.samples[-1].internalized_field_quantity,
+                    places=12,
+                )
+
+                totals.append(summary.total_internalized_quantity)
+
+            self.assertLess(totals[0], totals[1])
+            self.assertLess(totals[1], totals[2])
+            uptake_by_grid[grid] = tuple(totals)
+
+        self.assertEqual(
+            tuple(
+                sorted(
+                    range(3),
+                    key=uptake_by_grid[10.0].__getitem__,
+                )
+            ),
+            tuple(
+                sorted(
+                    range(3),
+                    key=uptake_by_grid[5.0].__getitem__,
+                )
+            ),
+        )
+
+        print(
+            "VESICLESCOPE_FINITE_COUNT_SWEEP "
+            + " ".join(
+                (
+                    f"grid10_count2={uptake_by_grid[10.0][0]:.17g}",
+                    f"grid10_count4={uptake_by_grid[10.0][1]:.17g}",
+                    f"grid10_count8={uptake_by_grid[10.0][2]:.17g}",
+                    f"grid5_count2={uptake_by_grid[5.0][0]:.17g}",
+                    f"grid5_count4={uptake_by_grid[5.0][1]:.17g}",
+                    f"grid5_count8={uptake_by_grid[5.0][2]:.17g}",
+                )
+            )
         )
 
     def test_recipient_count_sweep_high_count_scenario_is_deterministic(self) -> None:
