@@ -110,7 +110,7 @@ def result_output(
     recipient_quantities: tuple[tuple[float, ...], ...] | None = None,
 ) -> str:
     lines = [
-        "VESICLESCOPE_BIOFVM_RESULT\t4",
+        "VESICLESCOPE_BIOFVM_RESULT\t5",
         "engine\tBioFVM",
         f"physicell_release\t{physicell_release}",
         "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763",
@@ -140,14 +140,15 @@ def result_output(
         lines.append(
             "recipient\t"
             + str(index)
-            + "\t"
+            + "\tpoint\t"
             + str(recipient.x_micron)
             + "\t"
             + str(recipient.y_micron)
-            + "\t"
+            + "\t0\t"
             + str(recipient.effective_volume_micron3)
             + "\t"
             + str(recipient.uptake_rate.value)
+            + "\t1"
         )
 
     for sample_index, (time, mean, minimum, maximum, internalized) in enumerate(samples):
@@ -602,7 +603,7 @@ class BioFVMResultTests(unittest.TestCase):
 
     def test_rejects_missing_or_non_monotonic_samples(self) -> None:
         no_samples = (
-            "VESICLESCOPE_BIOFVM_RESULT\t4\n"
+            "VESICLESCOPE_BIOFVM_RESULT\t5\n"
             "engine\tBioFVM\n"
             "physicell_release\t1.14.2\n"
             "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763\n"
