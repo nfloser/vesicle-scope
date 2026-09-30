@@ -90,7 +90,7 @@ class RecipientCountFigureRenderTests(unittest.TestCase):
         for footprint_id in footprint_ids:
             self.assertIn(footprint_id, groups)
             footprint_svg = ET.tostring(groups[footprint_id], encoding="unicode")
-            self.assertIn("#ffffff", footprint_svg)
+            self.assertIn("fill: none", footprint_svg)
             self.assertIn("#000000", footprint_svg)
             visible_shapes = [
                 element
