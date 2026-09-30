@@ -60,8 +60,15 @@ Required invariants include:
 - at `lambda = 0`, concentration is unchanged;
 - non-negative initial value, rate, and time remain finite and non-negative.
 
+## Implemented engine verification
+
+The pinned BioFVM integration now covers two complementary synthetic checks:
+
+- the [spatial cosine-mode diffusion benchmark](research/biofvm-diffusion-benchmark.md), which compares BioFVM against a bounded analytical diffusion solution;
+- the [contract-driven uniform-decay adapter](biofvm-adapter.md), which maps this `TransportExperiment` into the native solver and compares sampled output with `first_order_decay`.
+
+Both are numerical verification artefacts. Neither introduces biological EV defaults.
+
 ## What comes next
 
-The next engine-integration milestone can construct a uniform BioFVM field using this contract and compare sampled numerical concentration against the closed-form decay curve.
-
-A later spatial benchmark should add a diffusion reference with a known solution and resolution-refinement checks. Donor release and recipient uptake should be introduced only after the transport-only adapter is verified.
+Donor release and recipient uptake should only be introduced after a dedicated evidence review defines the biological mechanism, parameter provenance, observables and validation target. Spatial result storage/export should be added when that first real consumer exists rather than pre-designing a general field format.
