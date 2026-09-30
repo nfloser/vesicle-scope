@@ -12,8 +12,9 @@ from vesiclescope.domain import BoundaryCondition, TransportExperiment
 
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
-_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t2"
+_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t3"
 _PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
+_FIELD_ORDERING = "x_fastest_then_y"
 
 
 class BioFVMRunError(RuntimeError):
@@ -36,6 +37,16 @@ def _finite(value: str, field_name: str) -> float:
         raise ValueError(f"{field_name} must be numeric") from exc
     if not math.isfinite(numeric):
         raise ValueError(f"{field_name} must be finite")
+    return numeric
+
+
+def _positive_int_text(value: str, field_name: str) -> int:
+    try:
+        numeric = int(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be an integer") from exc
+    if numeric <= 0:
+        raise ValueError(f"{field_name} must be greater than zero")
     return numeric
 
 
@@ -143,6 +154,80 @@ class BioFVMNumerics:
 
 
 @dataclass(frozen=True, slots=True)
+class BioFVMGrid2D:
+    """Explicit rectangular mesh descriptor for normalized 2D field snapshots."""
+
+    nx: int
+    ny: int
+    grid_spacing_micron: float
+    slice_thickness_micron: float
+    ordering: str = _FIELD_ORDERING
+
+    def __post_init__(self) -> None:
+        for value, field_name in ((self.nx, "nx"), (self.ny, "ny")):
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"{field_name} must be an integer")
+            if value <= 0:
+                raise ValueError(f"{field_name} must be greater than zero")
+
+        object.__setattr__(
+            self,
+            "grid_spacing_micron",
+            _positive_finite(self.grid_spacing_micron, "grid_spacing_micron"),
+        )
+        object.__setattr__(
+            self,
+            "slice_thickness_micron",
+            _positive_finite(
+                self.slice_thickness_micron,
+                "slice_thickness_micron",
+            ),
+        )
+        if self.ordering != _FIELD_ORDERING:
+            raise ValueError(
+                f"unsupported BioFVM field ordering: {self.ordering!r}"
+            )
+
+    @property
+    def voxel_count(self) -> int:
+        return self.nx * self.ny
+
+
+@dataclass(frozen=True, slots=True)
+class SpatialFieldSnapshot2D:
+    """Immutable row-major extracellular concentration field at one sample time."""
+
+    time_min: float
+    values: tuple[float, ...]
+
+    def __post_init__(self) -> None:
+        if isinstance(self.time_min, bool) or not isinstance(
+            self.time_min,
+            (int, float),
+        ):
+            raise TypeError("field snapshot time must be a real number")
+        time_min = float(self.time_min)
+        if not math.isfinite(time_min) or time_min < 0.0:
+            raise ValueError("field snapshot time must be finite and non-negative")
+        if not isinstance(self.values, tuple):
+            raise TypeError("field snapshot values must be a tuple")
+
+        normalized: list[float] = []
+        for value in self.values:
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError("field snapshot values must be real numbers")
+            numeric = float(value)
+            if not math.isfinite(numeric) or numeric < 0.0:
+                raise ValueError(
+                    "field snapshot values must be finite and non-negative"
+                )
+            normalized.append(numeric)
+
+        object.__setattr__(self, "time_min", time_min)
+        object.__setattr__(self, "values", tuple(normalized))
+
+
+@dataclass(frozen=True, slots=True)
 class TransportSample:
     """Normalized spatial summary at one requested simulation time."""
 
@@ -198,14 +283,16 @@ class TransportSample:
 
 @dataclass(frozen=True, slots=True)
 class BioFVMRunResult:
-    """Engine-neutral identity plus normalized summary samples."""
+    """Engine-neutral identity plus normalized summary and spatial samples."""
 
     experiment_id: str
     concentration_unit: str
     integrated_quantity_unit: str
     internalized_quantity_unit: str
     engine: BioFVMEngineMetadata
+    grid: BioFVMGrid2D
     samples: tuple[TransportSample, ...]
+    field_snapshots: tuple[SpatialFieldSnapshot2D, ...]
 
 
 def _validate_mapping(
@@ -320,7 +407,7 @@ def parse_result(
     experiment: TransportExperiment,
     stdout: str,
 ) -> BioFVMRunResult:
-    """Parse and validate the native runner's deliberately small TSV contract."""
+    """Parse and cross-check the native runner's TSV v3 result contract."""
 
     if not isinstance(experiment, TransportExperiment):
         raise TypeError("experiment must be a TransportExperiment")
@@ -332,10 +419,30 @@ def parse_result(
         raise ValueError("BioFVM result header is missing or unsupported")
 
     metadata: dict[str, str] = {}
+    grid: BioFVMGrid2D | None = None
     samples: list[TransportSample] = []
+    field_snapshots: list[SpatialFieldSnapshot2D] = []
 
     for line in lines[1:]:
         fields = line.split("\t")
+
+        if fields[0] == "grid":
+            if grid is not None:
+                raise ValueError("BioFVM result contains duplicate grid metadata")
+            if len(fields) != 6:
+                raise ValueError(f"invalid BioFVM grid line: {line!r}")
+            grid = BioFVMGrid2D(
+                nx=_positive_int_text(fields[1], "grid nx"),
+                ny=_positive_int_text(fields[2], "grid ny"),
+                grid_spacing_micron=_finite(fields[3], "grid spacing"),
+                slice_thickness_micron=_finite(
+                    fields[4],
+                    "grid slice thickness",
+                ),
+                ordering=fields[5],
+            )
+            continue
+
         if fields[0] == "sample":
             if len(fields) != 6:
                 raise ValueError(f"invalid BioFVM sample line: {line!r}")
@@ -352,6 +459,20 @@ def parse_result(
                     internalized_field_quantity=_finite(
                         fields[5],
                         "sample internalized field quantity",
+                    ),
+                )
+            )
+            continue
+
+        if fields[0] == "field":
+            if len(fields) < 3:
+                raise ValueError(f"invalid BioFVM field line: {line!r}")
+            field_snapshots.append(
+                SpatialFieldSnapshot2D(
+                    time_min=_finite(fields[1], "field time"),
+                    values=tuple(
+                        _finite(value, "field concentration")
+                        for value in fields[2:]
                     ),
                 )
             )
@@ -380,8 +501,37 @@ def parse_result(
             f"BioFVM engine metadata does not match the reviewed pin: {observed!r}"
         )
 
+    if grid is None:
+        raise ValueError("BioFVM result contains no grid metadata")
+
+    if not math.isclose(
+        grid.nx * grid.grid_spacing_micron,
+        experiment.domain.width_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError("BioFVM grid width does not match experiment domain")
+    if not math.isclose(
+        grid.ny * grid.grid_spacing_micron,
+        experiment.domain.height_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError("BioFVM grid height does not match experiment domain")
+    if not math.isclose(
+        grid.slice_thickness_micron,
+        experiment.domain.slice_thickness_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError("BioFVM grid slice thickness does not match experiment")
+
     if not samples:
         raise ValueError("BioFVM result contains no samples")
+    if len(field_snapshots) != len(samples):
+        raise ValueError(
+            "BioFVM result must contain exactly one field snapshot per sample"
+        )
 
     if not experiment.uptake_sinks:
         if any(
@@ -429,6 +579,49 @@ def parse_result(
             f"expected={expected_times}, observed={observed_times}"
         )
 
+    field_times = tuple(snapshot.time_min for snapshot in field_snapshots)
+    if len(field_times) != len(observed_times) or any(
+        not math.isclose(field_time, sample_time, rel_tol=0.0, abs_tol=1e-9)
+        for field_time, sample_time in zip(field_times, observed_times)
+    ):
+        raise ValueError("BioFVM field times must match summary sample times exactly")
+
+    for sample, snapshot in zip(samples, field_snapshots):
+        if len(snapshot.values) != grid.voxel_count:
+            raise ValueError(
+                "BioFVM field value count does not match grid dimensions"
+            )
+
+        field_mean = sum(snapshot.values) / float(grid.voxel_count)
+        field_min = min(snapshot.values)
+        field_max = max(snapshot.values)
+        field_integrated = field_mean * experiment.domain.volume_micron3
+
+        for observed_value, derived_value, label in (
+            (sample.mean_concentration, field_mean, "mean"),
+            (sample.min_concentration, field_min, "minimum"),
+            (sample.max_concentration, field_max, "maximum"),
+        ):
+            if not math.isclose(
+                observed_value,
+                derived_value,
+                rel_tol=1e-12,
+                abs_tol=1e-12,
+            ):
+                raise ValueError(
+                    f"BioFVM field-derived {label} does not match sample summary"
+                )
+
+        if not math.isclose(
+            sample.integrated_field_quantity,
+            field_integrated,
+            rel_tol=1e-12,
+            abs_tol=1e-8,
+        ):
+            raise ValueError(
+                "BioFVM field-derived integrated quantity does not match sample summary"
+            )
+
     return BioFVMRunResult(
         experiment_id=experiment.experiment_id,
         concentration_unit=experiment.initial_concentration.unit,
@@ -439,7 +632,9 @@ def parse_result(
             experiment.initial_concentration.unit
         ),
         engine=observed,
+        grid=grid,
         samples=tuple(samples),
+        field_snapshots=tuple(field_snapshots),
     )
 
 
