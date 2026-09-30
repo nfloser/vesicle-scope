@@ -89,6 +89,7 @@ agree with the corresponding normalized summary values within numerical toleranc
 It also verifies:
 
 - grid dimensions reproduce the experiment width/height;
+- returned x/y grid spacing matches the numerical configuration requested by `run_transport`;
 - slice thickness matches the physical experiment;
 - field value count is exactly `nx * ny`;
 - field times match summary times one-for-one.
