@@ -390,6 +390,11 @@ int main(int argc, char* argv[])
                 );
             }
         }
+        if (!integer_multiple(width, grid) || !integer_multiple(height, grid))
+        {
+            throw std::invalid_argument("grid spacing must tile the 2D domain exactly");
+        }
+
         for (const UptakeConfig& uptake : uptake_configs)
         {
             if (uptake.kind != "point" && uptake.kind != "circle")
@@ -429,8 +434,38 @@ int main(int argc, char* argv[])
                         "circular uptake footprint must lie fully inside domain"
                     );
                 }
+
+                const int nx = static_cast<int>(std::lround(width / grid));
+                const int ny = static_cast<int>(std::lround(height / grid));
+                std::size_t expected_component_count = 0;
+                const double radius_tolerance =
+                    std::max(1e-12, uptake.radius * 1e-12);
+                for (int y_index = 0; y_index < ny; ++y_index)
+                {
+                    const double y = (static_cast<double>(y_index) + 0.5) * grid;
+                    for (int x_index = 0; x_index < nx; ++x_index)
+                    {
+                        const double x =
+                            (static_cast<double>(x_index) + 0.5) * grid;
+                        if (
+                            std::hypot(x - uptake.x, y - uptake.y)
+                            <= uptake.radius + radius_tolerance
+                        )
+                        {
+                            ++expected_component_count;
+                        }
+                    }
+                }
+                if (uptake.components.size() != expected_component_count)
+                {
+                    throw std::invalid_argument(
+                        "circular uptake component count does not match footprint"
+                    );
+                }
             }
 
+            const double expected_component_volume =
+                uptake.volume / static_cast<double>(uptake.components.size());
             double component_volume_sum = 0.0;
             for (const UptakeComponentConfig& component : uptake.components)
             {
@@ -482,6 +517,17 @@ int main(int argc, char* argv[])
                         );
                     }
                 }
+                const double component_volume_tolerance =
+                    std::max(1e-12, uptake.volume * 1e-12);
+                if (
+                    std::abs(component.volume - expected_component_volume)
+                    > component_volume_tolerance
+                )
+                {
+                    throw std::invalid_argument(
+                        "uptake component volume must match equal recipient share"
+                    );
+                }
                 component_volume_sum += component.volume;
             }
 
@@ -507,10 +553,6 @@ int main(int argc, char* argv[])
         if (sample_every > duration)
         {
             throw std::invalid_argument("sample interval cannot exceed duration");
-        }
-        if (!integer_multiple(width, grid) || !integer_multiple(height, grid))
-        {
-            throw std::invalid_argument("grid spacing must tile the 2D domain exactly");
         }
         if (!integer_multiple(duration, dt) || !integer_multiple(sample_every, dt))
         {
