@@ -35,7 +35,11 @@ def synthetic_parameter(identifier: str, value: float, unit: str) -> ScientificP
 def experiment() -> TransportExperiment:
     return TransportExperiment(
         experiment_id="synthetic.uniform-decay",
-        domain=RectangularDomain2D(width_micron=200.0, height_micron=100.0),
+        domain=RectangularDomain2D(
+            width_micron=200.0,
+            height_micron=100.0,
+            slice_thickness_micron=25.0,
+        ),
         duration_min=10.0,
         sample_every_min=2.0,
         boundary=BoundaryCondition.NO_FLUX,
@@ -104,6 +108,10 @@ class BioFVMCommandTests(unittest.TestCase):
 
         self.assertEqual(command[0], "build/native/biofvm_transport_runner")
         self.assertIn("--boundary", command)
+        self.assertEqual(
+            command[command.index("--slice-thickness-micron") + 1],
+            "25",
+        )
         self.assertEqual(command[command.index("--boundary") + 1], "no_flux")
         self.assertEqual(
             command[command.index("--diffusion-micron2-per-min") + 1],
@@ -126,6 +134,26 @@ class BioFVMCommandTests(unittest.TestCase):
             "20",
         )
         self.assertEqual(command[command.index("--time-step-min") + 1], "0.1")
+
+
+    def test_grid_refinement_does_not_change_physical_slice_thickness(self) -> None:
+        exp = experiment()
+
+        coarse = build_command(
+            exp,
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            Path("runner"),
+        )
+        fine = build_command(
+            exp,
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            Path("runner"),
+        )
+
+        coarse_thickness = coarse[coarse.index("--slice-thickness-micron") + 1]
+        fine_thickness = fine[fine.index("--slice-thickness-micron") + 1]
+        self.assertEqual(coarse_thickness, "25")
+        self.assertEqual(fine_thickness, "25")
 
 
 class BioFVMResultTests(unittest.TestCase):
