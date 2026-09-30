@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issues: #8, #11, #13, #15, #17
+Issues: #8, #11, #13, #15, #17, #19
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -79,7 +79,7 @@ The runner:
 6. samples the field at every requested output time and at the final time;
 7. optionally applies one BioFVM net-export source agent;
 8. optionally applies one explicit-volume BioFVM uptake agent and tracks its internalized substrate;
-9. returns mean/min/max concentration summaries, integrated extracellular/internalized quantities, and exact engine metadata.
+9. returns mean/min/max concentration summaries, integrated extracellular/internalized quantities, one complete sampled 2D concentration field per requested output time, and exact engine metadata.
 
 The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
@@ -90,7 +90,9 @@ The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Age
 - experiment identifier;
 - concentration unit from the source experiment;
 - exact engine metadata;
-- ordered `TransportSample` records.
+- one validated `BioFVMGrid2D` descriptor;
+- ordered `TransportSample` records;
+- one ordered `SpatialFieldSnapshot2D` for every summary sample.
 
 Each sample contains:
 
@@ -105,15 +107,21 @@ Each sample contains:
 
 The integrated field quantity is especially important for source/sink verification. Because the domain carries a physical slice thickness, it is not tied to the x/y mesh spacing.
 
+Each spatial field snapshot contains the extracellular concentration value for every x/y voxel at the same sample time. Values are flattened with x changing fastest, then y, on the current single-z-layer mesh.
+
 The parser rejects:
 
 - missing or unknown result headers;
 - missing/changed engine metadata;
+- missing or duplicate grid metadata;
 - malformed or non-finite samples;
+- malformed, negative or incorrectly sized field snapshots;
 - non-monotonic sample times;
-- sample times that do not match the requested experiment.
+- field times that do not match summary sample times;
+- grid geometry that does not match the experiment;
+- field-derived mean/min/max/integrated quantity that disagrees with the summary.
 
-This summary contract is sufficient for the current uniform-field verification. Spatial field export is intentionally deferred until the first real spatial result consumer exists.
+The full protocol, ordering and current stdout-size limitation are documented in [spatial field result contract](spatial-field-results.md).
 
 ## Uniform-decay verification
 
@@ -200,11 +208,17 @@ Scientific motivation, published distance observations and limitations are docum
 
 ## Result protocol
 
-Adding cumulative internalized quantity changes the native TSV sample contract. The runner/parser therefore use `VESICLESCOPE_BIOFVM_RESULT\t2` rather than silently extending result protocol v1.
+The result stream is versioned instead of being silently extended:
+
+- v1 introduced transport summary samples;
+- v2 added cumulative internalized quantity;
+- v3 adds explicit 2D grid metadata and one complete extracellular field snapshot per sample.
+
+The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t3`.
 
 ## What this validates
 
-Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport, synthetic localized-release, synthetic explicit-volume uptake, and combined donor-recipient cases, and that result/metadata mapping is reproducible.
+Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport, synthetic localized-release, synthetic explicit-volume uptake, and combined donor-recipient cases, and that normalized summaries, 2D spatial fields, and engine metadata are mutually consistent and reproducible.
 
 It does **not** validate:
 
