@@ -229,21 +229,28 @@ def render_recipient_count_figure(
         donor_x, donor_y = data.donor_position_micron
         recipient_x = tuple(position[0] for position in data.recipient_positions_micron)
         recipient_y = tuple(position[1] for position in data.recipient_positions_micron)
-        heatmap_axis.scatter(
+        donor_collection = heatmap_axis.scatter(
             (donor_x,),
             (donor_y,),
             marker="*",
             s=130,
+            facecolors="white",
+            edgecolors="black",
+            linewidths=0.9,
             label="Donor",
         )
-        heatmap_axis.scatter(
+        donor_collection.set_gid("donor-marker")
+        recipient_collection = heatmap_axis.scatter(
             recipient_x,
             recipient_y,
             marker="o",
-            facecolors="none",
+            facecolors="white",
+            edgecolors="black",
+            linewidths=1.0,
             s=55,
             label="Recipients",
         )
+        recipient_collection.set_gid("recipient-markers")
         heatmap_axis.set_xlabel("x [micron]")
         heatmap_axis.set_ylabel("y [micron]")
         heatmap_axis.set_title(
