@@ -12,6 +12,8 @@ Writing a bespoke PDE solver would provide control but would also make VesicleSc
 
 The alternatives reviewed are BioFVM/PhysiCell, CompuCell3D, Morpheus, Smoldyn and a small custom SciPy implementation.
 
+The upstream PhysiCell/BioFVM tree inspected for this decision reported PhysiCell version **1.14.2**. This records the reviewed baseline; the implementation must still pin an exact release or commit and capture it in run metadata.
+
 ## Decision
 
 Use **BioFVM** as the first continuum transport engine and place it behind a narrow headless VesicleScope adapter/runner.
