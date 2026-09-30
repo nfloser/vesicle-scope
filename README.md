@@ -21,6 +21,8 @@ See:
 - [first engine decision](docs/decisions/0001-first-engine.md)
 - [parameter provenance contract](docs/parameter-provenance.md)
 - [synthetic transport benchmark](docs/transport-benchmark.md)
+- [BioFVM diffusion verification](docs/research/biofvm-diffusion-benchmark.md)
+- [third-party software record](THIRD_PARTY.md)
 
 ## Scientific principles
 
