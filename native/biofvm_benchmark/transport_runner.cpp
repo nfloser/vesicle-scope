@@ -118,7 +118,11 @@ void require_non_negative(double value, const std::string& name)
     }
 }
 
-void print_sample(BioFVM::Microenvironment& microenvironment, double time_min)
+void print_sample(
+    BioFVM::Microenvironment& microenvironment,
+    double time_min,
+    BioFVM::Basic_Agent* uptake_agent
+)
 {
     double sum = 0.0;
     double minimum = std::numeric_limits<double>::infinity();
@@ -135,13 +139,18 @@ void print_sample(BioFVM::Microenvironment& microenvironment, double time_min)
 
     const double mean =
         sum / static_cast<double>(microenvironment.number_of_voxels());
+    const double internalized =
+        uptake_agent == nullptr
+            ? 0.0
+            : (*(uptake_agent->internalized_substrates))[0];
 
     std::cout
         << "sample\t"
         << std::setprecision(17) << time_min << '\t'
         << mean << '\t'
         << minimum << '\t'
-        << maximum << '\n';
+        << maximum << '\t'
+        << internalized << '\n';
 }
 }
 
@@ -217,6 +226,54 @@ int main(int argc, char* argv[])
             );
         }
 
+        const bool has_uptake_x = has_argument(argc, argv, "--uptake-x-micron");
+        const bool has_uptake_y = has_argument(argc, argv, "--uptake-y-micron");
+        const bool has_uptake_volume =
+            has_argument(argc, argv, "--uptake-volume-micron3");
+        const bool has_uptake_rate =
+            has_argument(argc, argv, "--uptake-rate-per-min");
+        const bool has_uptake =
+            has_uptake_x || has_uptake_y || has_uptake_volume || has_uptake_rate;
+        if (
+            has_uptake
+            && !(has_uptake_x && has_uptake_y && has_uptake_volume && has_uptake_rate)
+        )
+        {
+            throw std::invalid_argument(
+                "localized uptake requires x, y, effective volume and uptake-rate arguments"
+            );
+        }
+        if (has_source && has_uptake)
+        {
+            throw std::invalid_argument(
+                "combined localized release and uptake is outside this runner contract"
+            );
+        }
+
+        double uptake_x = 0.0;
+        double uptake_y = 0.0;
+        double uptake_volume = 0.0;
+        double uptake_rate = 0.0;
+        if (has_uptake)
+        {
+            uptake_x = parse_number(
+                argument(argc, argv, "--uptake-x-micron"),
+                "uptake x"
+            );
+            uptake_y = parse_number(
+                argument(argc, argv, "--uptake-y-micron"),
+                "uptake y"
+            );
+            uptake_volume = parse_number(
+                argument(argc, argv, "--uptake-volume-micron3"),
+                "uptake effective volume"
+            );
+            uptake_rate = parse_number(
+                argument(argc, argv, "--uptake-rate-per-min"),
+                "uptake rate"
+            );
+        }
+
         require_positive(width, "width");
         require_positive(height, "height");
         require_positive(slice_thickness, "slice thickness");
@@ -241,6 +298,17 @@ int main(int argc, char* argv[])
                 throw std::invalid_argument(
                     "localized source requires particle_equivalent/micron^3 concentration"
                 );
+            }
+        }
+        if (has_uptake)
+        {
+            require_non_negative(uptake_x, "uptake x");
+            require_non_negative(uptake_y, "uptake y");
+            require_positive(uptake_volume, "uptake effective volume");
+            require_non_negative(uptake_rate, "uptake rate");
+            if (uptake_x >= width || uptake_y >= height)
+            {
+                throw std::invalid_argument("localized uptake lies outside 2D domain");
             }
         }
 
@@ -297,14 +365,21 @@ int main(int argc, char* argv[])
 
         BioFVM::Agent_Container agent_container;
         BioFVM::Basic_Agent* source_agent = nullptr;
-        if (has_source)
+        BioFVM::Basic_Agent* uptake_agent = nullptr;
+        if (has_source || has_uptake)
         {
             agent_container.initialize(
                 static_cast<int>(microenvironment.number_of_voxels())
             );
             microenvironment.agent_container = &agent_container;
             BioFVM::set_default_microenvironment(&microenvironment);
+        }
 
+        BioFVM::default_microenvironment_options
+            .track_internalized_substrates_in_each_agent = has_uptake;
+
+        if (has_source)
+        {
             source_agent = BioFVM::create_basic_agent();
             source_agent->set_total_volume(1.0);
             if (!source_agent->assign_position(source_x, source_y, 0.0))
@@ -317,17 +392,31 @@ int main(int argc, char* argv[])
             source_agent->set_internal_uptake_constants(dt);
         }
 
+        if (has_uptake)
+        {
+            uptake_agent = BioFVM::create_basic_agent();
+            uptake_agent->set_total_volume(uptake_volume);
+            if (!uptake_agent->assign_position(uptake_x, uptake_y, 0.0))
+            {
+                throw std::invalid_argument(
+                    "localized uptake position is invalid in BioFVM mesh"
+                );
+            }
+            (*uptake_agent->uptake_rates)[0] = uptake_rate;
+            uptake_agent->set_internal_uptake_constants(dt);
+        }
+
         const long total_steps = std::lround(duration / dt);
         const long sample_steps = std::lround(sample_every / dt);
 
         std::cout
-            << "VESICLESCOPE_BIOFVM_RESULT\t1\n"
+            << "VESICLESCOPE_BIOFVM_RESULT\t2\n"
             << "engine\tBioFVM\n"
             << "physicell_release\t" << VESICLESCOPE_PHYSICELL_RELEASE << '\n'
             << "physicell_commit\t" << VESICLESCOPE_PHYSICELL_COMMIT << '\n'
             << "biofvm_version\t" << VESICLESCOPE_BIOFVM_VERSION << '\n';
 
-        print_sample(microenvironment, 0.0);
+        print_sample(microenvironment, 0.0, uptake_agent);
 
         for (long step = 1; step <= total_steps; ++step)
         {
@@ -335,13 +424,21 @@ int main(int argc, char* argv[])
             {
                 source_agent->simulate_secretion_and_uptake(&microenvironment, dt);
             }
+            if (uptake_agent != nullptr)
+            {
+                uptake_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+            }
             {
                 ScopedCoutToStderr redirect_solver_output;
                 microenvironment.simulate_diffusion_decay(dt);
             }
             if (step % sample_steps == 0 || step == total_steps)
             {
-                print_sample(microenvironment, static_cast<double>(step) * dt);
+                print_sample(
+                    microenvironment,
+                    static_cast<double>(step) * dt,
+                    uptake_agent
+                );
             }
         }
     }
