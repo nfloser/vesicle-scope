@@ -12,11 +12,14 @@ from vesiclescope.engines import (
     TransportSample,
 )
 from vesiclescope.figures import prepare_recipient_count_figure_data
-from vesiclescope.scenarios import recipient_count_sweep_experiment
+from vesiclescope.scenarios import (
+    finite_recipient_count_sweep_experiment,
+    recipient_count_sweep_experiment,
+)
 
 
-def synthetic_result(recipient_count: int, total_uptake: float) -> BioFVMRunResult:
-    experiment = recipient_count_sweep_experiment(recipient_count)
+def synthetic_result(experiment, total_uptake: float) -> BioFVMRunResult:
+    recipient_count = len(experiment.uptake_sinks)
     per_recipient = total_uptake / recipient_count
 
     recipient_series = tuple(
@@ -79,17 +82,14 @@ def synthetic_result(recipient_count: int, total_uptake: float) -> BioFVMRunResu
 
 
 class RecipientCountFigureDataTests(unittest.TestCase):
-    def test_uses_normalized_fields_and_analysis_summaries(self) -> None:
-        totals = (11.0, 23.0, 47.0)
-        experiments = tuple(
-            recipient_count_sweep_experiment(count)
+    def finite_experiments(self):
+        return tuple(
+            finite_recipient_count_sweep_experiment(count)
             for count in (2, 4, 8)
         )
-        results = tuple(
-            synthetic_result(count, total)
-            for count, total in zip((2, 4, 8), totals)
-        )
-        summaries = tuple(
+
+    def summaries(self, experiments, results):
+        return tuple(
             analyze_recipient_population(
                 experiment,
                 result,
@@ -97,6 +97,15 @@ class RecipientCountFigureDataTests(unittest.TestCase):
             )
             for experiment, result in zip(experiments, results)
         )
+
+    def test_uses_finite_geometry_normalized_fields_and_analysis_summaries(self) -> None:
+        totals = (11.0, 23.0, 47.0)
+        experiments = self.finite_experiments()
+        results = tuple(
+            synthetic_result(experiment, total)
+            for experiment, total in zip(experiments, totals)
+        )
+        summaries = self.summaries(experiments, results)
 
         data = prepare_recipient_count_figure_data(
             experiments,
@@ -119,24 +128,66 @@ class RecipientCountFigureDataTests(unittest.TestCase):
             data.heatmap_rows[0],
             results[-1].field_snapshots[-1].values[:21],
         )
+        self.assertEqual(
+            data.recipient_positions_micron,
+            tuple(
+                (sink.x_micron, sink.y_micron)
+                for sink in experiments[-1].uptake_sinks
+            ),
+        )
+        self.assertEqual(
+            data.recipient_radii_micron,
+            tuple(
+                sink.footprint_radius_micron
+                for sink in experiments[-1].uptake_sinks
+            ),
+        )
+        self.assertEqual(data.recipient_radii_micron, (15.0,) * 8)
 
-    def test_rejects_mismatched_scenario_result_identity(self) -> None:
-        experiments = tuple(
+    def test_rejects_historical_point_or_mixed_recipient_geometry(self) -> None:
+        point_experiments = tuple(
             recipient_count_sweep_experiment(count)
             for count in (2, 4, 8)
         )
-        results = tuple(
-            synthetic_result(count, float(count))
-            for count in (2, 4, 8)
+        point_results = tuple(
+            synthetic_result(experiment, float(count))
+            for experiment, count in zip(point_experiments, (2, 4, 8))
         )
-        summaries = tuple(
-            analyze_recipient_population(
-                experiment,
-                result,
-                time_min=experiment.duration_min,
+        point_summaries = self.summaries(point_experiments, point_results)
+
+        with self.assertRaises(ValueError):
+            prepare_recipient_count_figure_data(
+                point_experiments,
+                point_results,
+                point_summaries,
             )
-            for experiment, result in zip(experiments, results)
+
+        finite_experiments = self.finite_experiments()
+        mixed_experiments = (
+            finite_experiments[0],
+            finite_experiments[1],
+            point_experiments[2],
         )
+        mixed_results = tuple(
+            synthetic_result(experiment, float(count))
+            for experiment, count in zip(mixed_experiments, (2, 4, 8))
+        )
+        mixed_summaries = self.summaries(mixed_experiments, mixed_results)
+
+        with self.assertRaises(ValueError):
+            prepare_recipient_count_figure_data(
+                mixed_experiments,
+                mixed_results,
+                mixed_summaries,
+            )
+
+    def test_rejects_mismatched_scenario_result_identity(self) -> None:
+        experiments = self.finite_experiments()
+        results = tuple(
+            synthetic_result(experiment, float(count))
+            for experiment, count in zip(experiments, (2, 4, 8))
+        )
+        summaries = self.summaries(experiments, results)
         bad_results = (
             replace(results[0], experiment_id="wrong"),
             results[1],
@@ -151,24 +202,14 @@ class RecipientCountFigureDataTests(unittest.TestCase):
             )
 
     def test_rejects_heatmap_grid_that_does_not_match_scenario_geometry(self) -> None:
-        experiments = tuple(
-            recipient_count_sweep_experiment(count)
-            for count in (2, 4, 8)
-        )
+        experiments = self.finite_experiments()
         results = list(
-            synthetic_result(count, float(count))
-            for count in (2, 4, 8)
+            synthetic_result(experiment, float(count))
+            for experiment, count in zip(experiments, (2, 4, 8))
         )
         bad_grid = replace(results[-1].grid, grid_spacing_micron=9.0)
         results[-1] = replace(results[-1], grid=bad_grid)
-        summaries = tuple(
-            analyze_recipient_population(
-                experiment,
-                result,
-                time_min=experiment.duration_min,
-            )
-            for experiment, result in zip(experiments, results)
-        )
+        summaries = self.summaries(experiments, results)
 
         with self.assertRaises(ValueError):
             prepare_recipient_count_figure_data(
@@ -178,13 +219,10 @@ class RecipientCountFigureDataTests(unittest.TestCase):
             )
 
     def test_rejects_heatmap_shape_that_does_not_match_grid(self) -> None:
-        experiments = tuple(
-            recipient_count_sweep_experiment(count)
-            for count in (2, 4, 8)
-        )
+        experiments = self.finite_experiments()
         results = list(
-            synthetic_result(count, float(count))
-            for count in (2, 4, 8)
+            synthetic_result(experiment, float(count))
+            for experiment, count in zip(experiments, (2, 4, 8))
         )
         final = results[-1]
         bad_snapshot = replace(
@@ -195,14 +233,7 @@ class RecipientCountFigureDataTests(unittest.TestCase):
             final,
             field_snapshots=(final.field_snapshots[0], bad_snapshot),
         )
-        summaries = tuple(
-            analyze_recipient_population(
-                experiment,
-                result,
-                time_min=experiment.duration_min,
-            )
-            for experiment, result in zip(experiments, results)
-        )
+        summaries = self.summaries(experiments, results)
 
         with self.assertRaises(ValueError):
             prepare_recipient_count_figure_data(
