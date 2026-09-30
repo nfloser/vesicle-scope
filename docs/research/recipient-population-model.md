@@ -98,3 +98,5 @@ Passing this benchmark does not establish:
 - a biological communication range.
 
 Those remain later model/evidence decisions.
+
+The first fixed-grid count sweep and engine-independent planar-density/distance analysis are documented in [recipient count and planar-density analysis](recipient-density-analysis.md).
