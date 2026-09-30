@@ -119,6 +119,7 @@ The parser rejects:
 - non-monotonic sample times;
 - field times that do not match summary sample times;
 - grid geometry that does not match the experiment;
+- returned grid spacing that differs from the requested numerical configuration;
 - field-derived mean/min/max/integrated quantity that disagrees with the summary.
 
 The full protocol, ordering and current stdout-size limitation are documented in [spatial field result contract](spatial-field-results.md).
