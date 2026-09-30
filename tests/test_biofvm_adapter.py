@@ -7,6 +7,7 @@ from unittest.mock import patch
 from vesiclescope.domain import (
     BoundaryCondition,
     EvidenceCategory,
+    PointReleaseSource,
     RectangularDomain2D,
     ScientificParameter,
     TransportExperiment,
@@ -32,7 +33,24 @@ def synthetic_parameter(identifier: str, value: float, unit: str) -> ScientificP
     )
 
 
-def experiment() -> TransportExperiment:
+def point_source(identifier: str = "source.center") -> PointReleaseSource:
+    return PointReleaseSource(
+        identifier=identifier,
+        x_micron=100.0,
+        y_micron=50.0,
+        release_rate=synthetic_parameter(
+            f"{identifier}.release",
+            120.0,
+            "particle_equivalent/min",
+        ),
+    )
+
+
+def experiment(
+    *,
+    release_sources: tuple[PointReleaseSource, ...] = (),
+    concentration_unit: str = "particle_equivalent/micron^3",
+) -> TransportExperiment:
     return TransportExperiment(
         experiment_id="synthetic.uniform-decay",
         domain=RectangularDomain2D(
@@ -48,8 +66,9 @@ def experiment() -> TransportExperiment:
         initial_concentration=synthetic_parameter(
             "initial.concentration",
             2.0,
-            "particle_equivalent/micron^3",
+            concentration_unit,
         ),
+        release_sources=release_sources,
     )
 
 
@@ -156,6 +175,53 @@ class BioFVMCommandTests(unittest.TestCase):
         self.assertEqual(fine_thickness, "25")
 
 
+    def test_maps_one_localized_release_source(self) -> None:
+        command = build_command(
+            experiment(release_sources=(point_source(),)),
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            Path("runner"),
+        )
+
+        self.assertEqual(
+            command[command.index("--source-x-micron") + 1],
+            "100",
+        )
+        self.assertEqual(
+            command[command.index("--source-y-micron") + 1],
+            "50",
+        )
+        self.assertEqual(
+            command[
+                command.index("--source-rate-particle-equivalent-per-min") + 1
+            ],
+            "120",
+        )
+
+    def test_rejects_multiple_sources_until_native_contract_supports_them(self) -> None:
+        with self.assertRaises(ValueError):
+            build_command(
+                experiment(
+                    release_sources=(
+                        point_source("source.one"),
+                        point_source("source.two"),
+                    )
+                ),
+                BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+                Path("runner"),
+            )
+
+    def test_source_requires_particle_equivalent_concentration_semantics(self) -> None:
+        with self.assertRaises(ValueError):
+            build_command(
+                experiment(
+                    release_sources=(point_source(),),
+                    concentration_unit="synthetic_concentration",
+                ),
+                BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+                Path("runner"),
+            )
+
+
 class BioFVMResultTests(unittest.TestCase):
     def test_parses_normalized_samples_and_engine_metadata(self) -> None:
         output = """VESICLESCOPE_BIOFVM_RESULT\t1
@@ -177,6 +243,7 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
         self.assertEqual(result.engine, pinned_engine_metadata())
         self.assertEqual(len(result.samples), 6)
         self.assertEqual(result.samples[0].time_min, 0.0)
+        self.assertAlmostEqual(result.samples[0].total_amount, 1_000_000.0)
         self.assertAlmostEqual(result.samples[-1].mean_concentration, 0.735758882343)
 
     def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
