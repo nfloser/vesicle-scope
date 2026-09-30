@@ -158,12 +158,25 @@ class TransportSample:
             raise ValueError("transport sample values must be finite")
         if numeric[0] < 0.0:
             raise ValueError("sample time must be non-negative")
-        if numeric[2] > numeric[1] or numeric[1] > numeric[3]:
-            raise ValueError("sample minimum, mean and maximum are inconsistent")
+
+        mean = numeric[1]
+        minimum = numeric[2]
+        maximum = numeric[3]
+        if minimum > maximum:
+            raise ValueError("sample minimum cannot exceed maximum")
+        if mean < minimum:
+            if not math.isclose(mean, minimum, rel_tol=1e-12, abs_tol=1e-15):
+                raise ValueError("sample minimum, mean and maximum are inconsistent")
+            mean = minimum
+        elif mean > maximum:
+            if not math.isclose(mean, maximum, rel_tol=1e-12, abs_tol=1e-15):
+                raise ValueError("sample minimum, mean and maximum are inconsistent")
+            mean = maximum
+
         object.__setattr__(self, "time_min", numeric[0])
-        object.__setattr__(self, "mean_concentration", numeric[1])
-        object.__setattr__(self, "min_concentration", numeric[2])
-        object.__setattr__(self, "max_concentration", numeric[3])
+        object.__setattr__(self, "mean_concentration", mean)
+        object.__setattr__(self, "min_concentration", minimum)
+        object.__setattr__(self, "max_concentration", maximum)
 
 
 @dataclass(frozen=True, slots=True)
