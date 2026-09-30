@@ -125,6 +125,25 @@ def prepare_recipient_count_figure_data(
         raise ValueError("heatmap must use the final normalized field snapshot")
 
     grid = heatmap_result.grid
+    if not math.isclose(
+        grid.nx * grid.grid_spacing_micron,
+        heatmap_experiment.domain.width_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ) or not math.isclose(
+        grid.ny * grid.grid_spacing_micron,
+        heatmap_experiment.domain.height_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError("heatmap grid extent does not match scenario domain")
+    if not math.isclose(
+        grid.slice_thickness_micron,
+        heatmap_experiment.domain.slice_thickness_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError("heatmap grid slice thickness does not match scenario")
     if len(final_snapshot.values) != grid.voxel_count:
         raise ValueError("heatmap field length does not match normalized grid")
 
