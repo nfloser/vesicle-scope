@@ -12,7 +12,7 @@ from vesiclescope.domain import BoundaryCondition, TransportExperiment
 
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
-_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t1"
+_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t2"
 _PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
 
 
@@ -151,6 +151,7 @@ class TransportSample:
     min_concentration: float
     max_concentration: float
     integrated_field_quantity: float
+    internalized_field_quantity: float
 
     def __post_init__(self) -> None:
         values = (
@@ -159,6 +160,7 @@ class TransportSample:
             self.min_concentration,
             self.max_concentration,
             self.integrated_field_quantity,
+            self.internalized_field_quantity,
         )
         if not all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in values):
             raise TypeError("transport sample values must be real numbers")
@@ -188,7 +190,10 @@ class TransportSample:
         object.__setattr__(self, "max_concentration", maximum)
         if numeric[4] < 0.0:
             raise ValueError("sample integrated field quantity must be non-negative")
+        if numeric[5] < 0.0:
+            raise ValueError("sample internalized field quantity must be non-negative")
         object.__setattr__(self, "integrated_field_quantity", numeric[4])
+        object.__setattr__(self, "internalized_field_quantity", numeric[5])
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,6 +203,7 @@ class BioFVMRunResult:
     experiment_id: str
     concentration_unit: str
     integrated_quantity_unit: str
+    internalized_quantity_unit: str
     engine: BioFVMEngineMetadata
     samples: tuple[TransportSample, ...]
 
@@ -215,6 +221,12 @@ def _validate_mapping(
 
     if len(experiment.release_sources) > 1:
         raise ValueError("the v0.1 BioFVM adapter supports at most one release source")
+    if len(experiment.uptake_sinks) > 1:
+        raise ValueError("the v0.1 BioFVM adapter supports at most one uptake sink")
+    if experiment.release_sources and experiment.uptake_sinks:
+        raise ValueError(
+            "combined localized release and uptake is outside the v0.1 adapter contract"
+        )
     if experiment.release_sources and (
         experiment.initial_concentration.unit != _PARTICLE_CONCENTRATION_UNIT
     ):
@@ -289,6 +301,21 @@ def build_command(
             )
         )
 
+    if experiment.uptake_sinks:
+        sink = experiment.uptake_sinks[0]
+        command.extend(
+            (
+                "--uptake-x-micron",
+                _format_number(sink.x_micron),
+                "--uptake-y-micron",
+                _format_number(sink.y_micron),
+                "--uptake-volume-micron3",
+                _format_number(sink.effective_volume_micron3),
+                "--uptake-rate-per-min",
+                _format_number(sink.uptake_rate.value),
+            )
+        )
+
     return tuple(command)
 
 
@@ -314,7 +341,7 @@ def parse_result(
     for line in lines[1:]:
         fields = line.split("\t")
         if fields[0] == "sample":
-            if len(fields) != 5:
+            if len(fields) != 6:
                 raise ValueError(f"invalid BioFVM sample line: {line!r}")
             samples.append(
                 TransportSample(
@@ -325,6 +352,10 @@ def parse_result(
                     integrated_field_quantity=(
                         _finite(fields[2], "sample mean")
                         * experiment.domain.volume_micron3
+                    ),
+                    internalized_field_quantity=_finite(
+                        fields[5],
+                        "sample internalized field quantity",
                     ),
                 )
             )
@@ -358,6 +389,14 @@ def parse_result(
     for previous, current in zip(samples, samples[1:]):
         if current.time_min <= previous.time_min:
             raise ValueError("BioFVM sample times must be strictly increasing")
+        if (
+            experiment.uptake_sinks
+            and current.internalized_field_quantity + 1e-12
+            < previous.internalized_field_quantity
+        ):
+            raise ValueError(
+                "BioFVM internalized field quantity must not decrease in uptake-only runs"
+            )
 
     expected_times = _expected_sample_times(experiment)
     observed_times = tuple(sample.time_min for sample in samples)
@@ -374,6 +413,9 @@ def parse_result(
         experiment_id=experiment.experiment_id,
         concentration_unit=experiment.initial_concentration.unit,
         integrated_quantity_unit=_integrated_quantity_unit(
+            experiment.initial_concentration.unit
+        ),
+        internalized_quantity_unit=_integrated_quantity_unit(
             experiment.initial_concentration.unit
         ),
         engine=observed,
