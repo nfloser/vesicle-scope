@@ -91,8 +91,37 @@ The benchmark is run across x/y mesh refinement at fixed physical slice thicknes
 
 See [localized release model baseline](research/localized-release-model.md) for the evidence boundary and model rationale.
 
+## Localized uptake benchmark
+
+The first sink-side extension adds a synthetic `PointUptakeSink` with:
+
+- explicit effective recipient volume in `micron^3`;
+- uptake coefficient in `1/min`;
+- explicit x/y location.
+
+The benchmark uses BioFVM's own `Basic_Agent.uptake_rates` update and internalized-substrate tracking.
+
+With zero source, zero extracellular decay and zero diffusion, CI verifies both:
+
+```text
+rho[n+1] = rho[n] / (1 + dt * (V_agent / V_voxel) * U)
+```
+
+and
+
+```text
+extracellular integrated quantity + internalized quantity
+= initial integrated quantity
+```
+
+A timestep-refinement check confirms the implicit discrete update converges toward its continuous local first-order limit.
+
+Unlike the constant amount-per-time source benchmark, point-sink uptake is not expected to be spatial-resolution invariant because `V_voxel` is part of BioFVM's sink discretization. This limitation is explicit rather than hidden.
+
+See [recipient uptake model baseline](research/recipient-uptake-model.md) for the evidence boundary and model rationale.
+
 ## What comes next
 
-Recipient uptake remains a separate model decision because BioFVM uptake semantics introduce an explicit agent/cell-volume dependence in addition to an uptake-rate parameter. That geometry and evidence must be specified before uptake is added.
+The verified release and uptake mechanisms remain intentionally uncoupled. A later donor-recipient experiment should combine them only after defining finite donor/recipient geometry, biologically anchored parameter provenance, and the observables needed to ask a concrete communication-range question.
 
 Spatial result storage/export should be added when the first real spatial analysis or viewer requires it rather than pre-designing a general field format.
