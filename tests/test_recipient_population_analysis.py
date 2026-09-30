@@ -181,6 +181,27 @@ class RecipientPopulationAnalysisTests(unittest.TestCase):
                 time_min=10.0,
             )
 
+    def test_rejects_recipient_geometry_that_disagrees_with_experiment(self) -> None:
+        normalized = result()
+        mismatched_series = (
+            replace(
+                normalized.recipient_uptake_series[0],
+                x_micron=71.0,
+            ),
+            normalized.recipient_uptake_series[1],
+        )
+        inconsistent = replace(
+            normalized,
+            recipient_uptake_series=mismatched_series,
+        )
+
+        with self.assertRaises(ValueError):
+            analyze_recipient_population(
+                experiment(),
+                inconsistent,
+                time_min=10.0,
+            )
+
     def test_rejects_recipient_total_that_disagrees_with_normalized_aggregate(self) -> None:
         normalized = result()
         inconsistent = replace(
