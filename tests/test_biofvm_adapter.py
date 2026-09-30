@@ -89,6 +89,50 @@ def experiment(
     )
 
 
+GRID_NX = 10
+GRID_NY = 5
+GRID_SPACING = 20.0
+GRID_THICKNESS = 25.0
+
+
+def result_output(
+    samples: tuple[tuple[float, float, float, float, float], ...],
+    *,
+    physicell_release: str = "1.14.2",
+    include_grid: bool = True,
+    fields: tuple[tuple[float, ...], ...] | None = None,
+) -> str:
+    lines = [
+        "VESICLESCOPE_BIOFVM_RESULT\t3",
+        "engine\tBioFVM",
+        f"physicell_release\t{physicell_release}",
+        "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763",
+        "biofvm_version\t1.1.7",
+    ]
+    if include_grid:
+        lines.append(
+            "grid\t10\t5\t20\t25\tx_fastest_then_y"
+        )
+
+    for index, (time, mean, minimum, maximum, internalized) in enumerate(samples):
+        lines.append(
+            f"sample\t{time}\t{mean}\t{minimum}\t{maximum}\t{internalized}"
+        )
+        values = (
+            fields[index]
+            if fields is not None
+            else tuple(mean for _ in range(GRID_NX * GRID_NY))
+        )
+        lines.append(
+            "field\t"
+            + str(time)
+            + "\t"
+            + "\t".join(str(value) for value in values)
+        )
+
+    return "\n".join(lines) + "\n"
+
+
 class BioFVMMetadataTests(unittest.TestCase):
     def test_pinned_metadata_matches_reviewed_upstream_release(self) -> None:
         metadata = pinned_engine_metadata()
@@ -297,26 +341,32 @@ class BioFVMCommandTests(unittest.TestCase):
 
 
 class BioFVMResultTests(unittest.TestCase):
-    def test_parses_normalized_samples_and_engine_metadata(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2\t2\t2\t0
-sample\t2\t1.63746150616\t1.63746150616\t1.63746150616\t0
-sample\t4\t1.34064009207\t1.34064009207\t1.34064009207\t0
-sample\t6\t1.09762327219\t1.09762327219\t1.09762327219\t0
-sample\t8\t0.898657928234\t0.898657928234\t0.898657928234\t0
-sample\t10\t0.735758882343\t0.735758882343\t0.735758882343\t0
-"""
-        result = parse_result(experiment(), output)
+    def base_samples(self) -> tuple[tuple[float, float, float, float, float], ...]:
+        return (
+            (0.0, 2.0, 2.0, 2.0, 0.0),
+            (2.0, 1.63746150616, 1.63746150616, 1.63746150616, 0.0),
+            (4.0, 1.34064009207, 1.34064009207, 1.34064009207, 0.0),
+            (6.0, 1.09762327219, 1.09762327219, 1.09762327219, 0.0),
+            (8.0, 0.898657928234, 0.898657928234, 0.898657928234, 0.0),
+            (10.0, 0.735758882343, 0.735758882343, 0.735758882343, 0.0),
+        )
+
+    def test_parses_samples_grid_fields_and_engine_metadata(self) -> None:
+        result = parse_result(experiment(), result_output(self.base_samples()))
 
         self.assertEqual(result.experiment_id, "synthetic.uniform-decay")
         self.assertEqual(result.concentration_unit, "particle_equivalent/micron^3")
         self.assertEqual(result.engine, pinned_engine_metadata())
+        self.assertEqual(result.grid.nx, 10)
+        self.assertEqual(result.grid.ny, 5)
+        self.assertEqual(result.grid.grid_spacing_micron, 20.0)
+        self.assertEqual(result.grid.slice_thickness_micron, 25.0)
+        self.assertEqual(result.grid.ordering, "x_fastest_then_y")
         self.assertEqual(len(result.samples), 6)
-        self.assertEqual(result.samples[0].time_min, 0.0)
+        self.assertEqual(len(result.field_snapshots), 6)
+        self.assertEqual(len(result.field_snapshots[0].values), 50)
+        self.assertEqual(result.field_snapshots[0].time_min, 0.0)
+        self.assertTrue(all(value == 2.0 for value in result.field_snapshots[0].values))
         self.assertAlmostEqual(result.samples[0].integrated_field_quantity, 1_000_000.0)
         self.assertEqual(result.integrated_quantity_unit, "particle_equivalent")
         self.assertEqual(result.internalized_quantity_unit, "particle_equivalent")
@@ -324,133 +374,127 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343\t0
         self.assertAlmostEqual(result.samples[-1].mean_concentration, 0.735758882343)
 
     def test_parses_nonzero_internalized_quantity(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2\t2\t2\t0
-sample\t2\t1.999\t1.95\t2\t500
-sample\t4\t1.998\t1.90\t2\t1000
-sample\t6\t1.997\t1.85\t2\t1500
-sample\t8\t1.996\t1.80\t2\t2000
-sample\t10\t1.995\t1.75\t2\t2500
-"""
+        samples = (
+            (0.0, 2.0, 2.0, 2.0, 0.0),
+            (2.0, 1.999, 1.999, 1.999, 500.0),
+            (4.0, 1.998, 1.998, 1.998, 1000.0),
+            (6.0, 1.997, 1.997, 1.997, 1500.0),
+            (8.0, 1.996, 1.996, 1.996, 2000.0),
+            (10.0, 1.995, 1.995, 1.995, 2500.0),
+        )
 
         result = parse_result(
             experiment(uptake_sinks=(point_sink(),)),
-            output,
+            result_output(samples),
         )
 
         self.assertEqual(result.samples[0].internalized_field_quantity, 0.0)
         self.assertEqual(result.samples[-1].internalized_field_quantity, 2500.0)
-        self.assertEqual(result.internalized_quantity_unit, "particle_equivalent")
+
+    def test_rejects_missing_or_duplicate_grid(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_result(
+                experiment(),
+                result_output(self.base_samples(), include_grid=False),
+            )
+
+        output = result_output(self.base_samples())
+        duplicate = output.replace(
+            "grid\t10\t5\t20\t25\tx_fastest_then_y\n",
+            "grid\t10\t5\t20\t25\tx_fastest_then_y\n"
+            "grid\t10\t5\t20\t25\tx_fastest_then_y\n",
+            1,
+        )
+        with self.assertRaises(ValueError):
+            parse_result(experiment(), duplicate)
+
+    def test_rejects_wrong_field_length(self) -> None:
+        samples = self.base_samples()
+        fields = tuple(
+            tuple(sample[1] for _ in range(49))
+            for sample in samples
+        )
+        with self.assertRaises(ValueError):
+            parse_result(experiment(), result_output(samples, fields=fields))
+
+    def test_rejects_field_summary_mismatch(self) -> None:
+        samples = self.base_samples()
+        fields = list(
+            tuple(sample[1] for _ in range(50))
+            for sample in samples
+        )
+        fields[0] = (3.0,) + tuple(2.0 for _ in range(49))
+
+        with self.assertRaises(ValueError):
+            parse_result(
+                experiment(),
+                result_output(samples, fields=tuple(fields)),
+            )
 
     def test_rejects_internalized_quantity_without_uptake_or_at_uptake_start(self) -> None:
-        unexpected_without_sink = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2\t2\t2\t0
-sample\t2\t2\t2\t2\t1
-sample\t4\t2\t2\t2\t1
-sample\t6\t2\t2\t2\t1
-sample\t8\t2\t2\t2\t1
-sample\t10\t2\t2\t2\t1
-"""
+        unexpected = list(self.base_samples())
+        unexpected[1] = (*unexpected[1][:4], 1.0)
         with self.assertRaises(ValueError):
-            parse_result(experiment(), unexpected_without_sink)
+            parse_result(experiment(), result_output(tuple(unexpected)))
 
-        nonzero_uptake_start = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2\t2\t2\t1
-sample\t2\t1.999\t1.95\t2\t500
-sample\t4\t1.998\t1.90\t2\t1000
-sample\t6\t1.997\t1.85\t2\t1500
-sample\t8\t1.996\t1.80\t2\t2000
-sample\t10\t1.995\t1.75\t2\t2500
-"""
+        nonzero_start = list(self.base_samples())
+        nonzero_start[0] = (*nonzero_start[0][:4], 1.0)
         with self.assertRaises(ValueError):
             parse_result(
                 experiment(uptake_sinks=(point_sink(),)),
-                nonzero_uptake_start,
+                result_output(tuple(nonzero_start)),
             )
 
-    def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2.0000000000000004\t2\t2\t0
-sample\t2\t1.6374615061600002\t1.63746150616\t1.63746150616\t0
-sample\t4\t1.3406400920700002\t1.34064009207\t1.34064009207\t0
-sample\t6\t1.0976232721900001\t1.09762327219\t1.09762327219\t0
-sample\t8\t0.8986579282340001\t0.898657928234\t0.898657928234\t0
-sample\t10\t0.7357588823430001\t0.735758882343\t0.735758882343\t0
-"""
+    def test_accepts_roundoff_sized_summary_drift(self) -> None:
+        samples = list(self.base_samples())
+        samples[0] = (0.0, 2.0000000000000004, 2.0, 2.0, 0.0)
+        fields = tuple(
+            tuple(2.0 if index == 0 else sample[1] for _ in range(50))
+            for index, sample in enumerate(samples)
+        )
 
-        result = parse_result(experiment(), output)
+        result = parse_result(
+            experiment(),
+            result_output(tuple(samples), fields=fields),
+        )
 
-        self.assertEqual(len(result.samples), 6)
         self.assertAlmostEqual(result.samples[0].mean_concentration, 2.0)
 
     def test_rejects_engine_metadata_that_does_not_match_pin(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.3
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2\t2\t2\t0
-"""
-
         with self.assertRaises(ValueError):
-            parse_result(experiment(), output)
+            parse_result(
+                experiment(),
+                result_output(self.base_samples(), physicell_release="1.14.3"),
+            )
 
     def test_rejects_missing_or_non_monotonic_samples(self) -> None:
-        no_samples = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-"""
+        no_samples = (
+            "VESICLESCOPE_BIOFVM_RESULT\t3\n"
+            "engine\tBioFVM\n"
+            "physicell_release\t1.14.2\n"
+            "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763\n"
+            "biofvm_version\t1.1.7\n"
+            "grid\t10\t5\t20\t25\tx_fastest_then_y\n"
+        )
         with self.assertRaises(ValueError):
             parse_result(experiment(), no_samples)
 
-        backwards = """VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t2\t1\t1\t1\t0
-sample\t1\t1\t1\t1\t0
-"""
+        backwards = (
+            (2.0, 1.0, 1.0, 1.0, 0.0),
+            (1.0, 1.0, 1.0, 1.0, 0.0),
+        )
         with self.assertRaises(ValueError):
-            parse_result(experiment(), backwards)
+            parse_result(experiment(), result_output(backwards))
 
 
 class BioFVMRunnerTests(unittest.TestCase):
     @patch("vesiclescope.engines.biofvm.subprocess.run")
     def test_runs_without_shell_and_parses_stdout(self, run_mock) -> None:
+        samples = BioFVMResultTests().base_samples()
         run_mock.return_value = subprocess.CompletedProcess(
             args=["runner"],
             returncode=0,
-            stdout="""VESICLESCOPE_BIOFVM_RESULT\t2
-engine\tBioFVM
-physicell_release\t1.14.2
-physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
-biofvm_version\t1.1.7
-sample\t0\t2\t2\t2\t0
-sample\t2\t1.63746150616\t1.63746150616\t1.63746150616\t0
-sample\t4\t1.34064009207\t1.34064009207\t1.34064009207\t0
-sample\t6\t1.09762327219\t1.09762327219\t1.09762327219\t0
-sample\t8\t0.898657928234\t0.898657928234\t0.898657928234\t0
-sample\t10\t0.735758882343\t0.735758882343\t0.735758882343\t0
-""",
+            stdout=result_output(samples),
             stderr="",
         )
 
@@ -461,10 +505,28 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343\t0
         )
 
         self.assertEqual(result.samples[-1].time_min, 10.0)
+        self.assertEqual(result.field_snapshots[-1].time_min, 10.0)
         _, kwargs = run_mock.call_args
         self.assertTrue(kwargs["check"])
         self.assertTrue(kwargs["text"])
         self.assertTrue(kwargs["capture_output"])
+
+    @patch("vesiclescope.engines.biofvm.subprocess.run")
+    def test_rejects_result_grid_that_differs_from_requested_numerics(self, run_mock) -> None:
+        samples = BioFVMResultTests().base_samples()
+        run_mock.return_value = subprocess.CompletedProcess(
+            args=["runner"],
+            returncode=0,
+            stdout=result_output(samples),
+            stderr="",
+        )
+
+        with self.assertRaises(ValueError):
+            run_transport(
+                experiment(),
+                BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+                Path("runner"),
+            )
 
     @patch("vesiclescope.engines.biofvm.subprocess.run")
     def test_surfaces_native_runner_failure(self, run_mock) -> None:

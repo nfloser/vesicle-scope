@@ -135,8 +135,16 @@ Two otherwise identical runs vary only donor-recipient separation. The verificat
 
 See [donor-recipient distance model baseline](research/donor-recipient-distance-model.md) for the evidence boundary and operator-splitting semantics.
 
+## Spatial result contract
+
+Protocol v3 now exposes the complete extracellular 2D concentration field at every requested sample time, together with explicit grid geometry and ordering.
+
+The normalized Python result cross-checks each field against the corresponding mean/min/max summary and integrated extracellular quantity before analysis can consume it. Uniform transport cases therefore preserve uniform fields, while localized release produces a verified non-uniform field without changing the existing mass-balance invariants.
+
+See [spatial field result contract](spatial-field-results.md) for the protocol, ordering, validation rules and current stdout-size limitation.
+
 ## What comes next
 
-The next scientific step is no longer to prove that source and uptake can interact. It is to represent recipient populations/density and finite geometry without hiding point-sink resolution effects.
+The next scientific step is to represent recipient populations/density and finite geometry without hiding point-sink resolution effects.
 
-Spatial field storage/export should be introduced with that first real spatial/density analysis so that distance-binned exposure and reproducible figures are generated from stored primary output rather than simulator internals.
+Those experiments can now derive distance-binned exposure and reproducible scientific figures from normalized primary spatial output rather than simulator internals. A persistent file format should be introduced only when that first analysis defines concrete storage requirements.

@@ -151,6 +151,15 @@ void print_sample(
         << minimum << '\t'
         << maximum << '\t'
         << internalized << '\n';
+
+    std::cout << "field\t" << std::setprecision(17) << time_min;
+    for (unsigned int index = 0; index < microenvironment.number_of_voxels(); ++index)
+    {
+        std::cout
+            << '\t'
+            << microenvironment.density_vector(static_cast<int>(index))[0];
+    }
+    std::cout << '\n';
 }
 }
 
@@ -403,11 +412,17 @@ int main(int argc, char* argv[])
         const long sample_steps = std::lround(sample_every / dt);
 
         std::cout
-            << "VESICLESCOPE_BIOFVM_RESULT\t2\n"
+            << "VESICLESCOPE_BIOFVM_RESULT\t3\n"
             << "engine\tBioFVM\n"
             << "physicell_release\t" << VESICLESCOPE_PHYSICELL_RELEASE << '\n'
             << "physicell_commit\t" << VESICLESCOPE_PHYSICELL_COMMIT << '\n'
-            << "biofvm_version\t" << VESICLESCOPE_BIOFVM_VERSION << '\n';
+            << "biofvm_version\t" << VESICLESCOPE_BIOFVM_VERSION << '\n'
+            << "grid\t"
+            << microenvironment.mesh.x_coordinates.size() << '\t'
+            << microenvironment.mesh.y_coordinates.size() << '\t'
+            << std::setprecision(17) << microenvironment.mesh.dx << '\t'
+            << microenvironment.mesh.dz << '\t'
+            << "x_fastest_then_y\n";
 
         print_sample(microenvironment, 0.0, uptake_agent);
 
