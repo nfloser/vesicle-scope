@@ -1,6 +1,7 @@
 import importlib.util
 import os
 from pathlib import Path
+import xml.etree.ElementTree as ET
 import tempfile
 import unittest
 
@@ -72,6 +73,26 @@ class RecipientCountFigureRenderTests(unittest.TestCase):
         ):
             with self.subTest(required_text=required_text):
                 self.assertIn(required_text, svg)
+
+        root = ET.fromstring(svg)
+        groups = {
+            element.attrib.get("id"): element
+            for element in root.iter()
+            if element.tag.endswith("g") and element.attrib.get("id")
+        }
+        self.assertIn("donor-marker", groups)
+        self.assertIn("recipient-markers", groups)
+
+        recipient_group = groups["recipient-markers"]
+        recipient_svg = ET.tostring(recipient_group, encoding="unicode")
+        self.assertIn("#ffffff", recipient_svg)
+        self.assertIn("#000000", recipient_svg)
+        visible_shapes = [
+            element
+            for element in recipient_group.iter()
+            if element.tag.endswith(("path", "use"))
+        ]
+        self.assertGreaterEqual(len(visible_shapes), 8)
 
         import matplotlib
 
