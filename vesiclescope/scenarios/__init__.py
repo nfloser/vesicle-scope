@@ -1,8 +1,15 @@
 """Reviewed reusable synthetic VesicleScope scenarios."""
 
-from .recipient_count import RECIPIENT_RING_POSITIONS, recipient_count_sweep_experiment
+from .recipient_count import (
+    FINITE_RECIPIENT_RING_POSITIONS,
+    RECIPIENT_RING_POSITIONS,
+    finite_recipient_count_sweep_experiment,
+    recipient_count_sweep_experiment,
+)
 
 __all__ = [
+    "FINITE_RECIPIENT_RING_POSITIONS",
     "RECIPIENT_RING_POSITIONS",
+    "finite_recipient_count_sweep_experiment",
     "recipient_count_sweep_experiment",
 ]
