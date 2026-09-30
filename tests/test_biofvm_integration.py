@@ -592,6 +592,32 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             summaries[2].total_internalized_quantity,
         )
 
+    def test_recipient_count_sweep_high_count_scenario_is_deterministic(self) -> None:
+        experiment = recipient_count_sweep_experiment(8)
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+
+        first = run_transport(experiment, numerics, self.runner)
+        second = run_transport(experiment, numerics, self.runner)
+
+        self.assertAlmostEqual(
+            first.samples[-1].internalized_field_quantity,
+            second.samples[-1].internalized_field_quantity,
+            places=12,
+        )
+        self.assertEqual(
+            tuple(series.identifier for series in first.recipient_uptake_series),
+            tuple(series.identifier for series in second.recipient_uptake_series),
+        )
+        for first_series, second_series in zip(
+            first.recipient_uptake_series,
+            second.recipient_uptake_series,
+        ):
+            self.assertAlmostEqual(
+                first_series.samples[-1].internalized_field_quantity,
+                second_series.samples[-1].internalized_field_quantity,
+                places=12,
+            )
+
     def test_population_run_is_deterministic_per_recipient(self) -> None:
         experiment = symmetric_recipient_population_experiment()
         numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
