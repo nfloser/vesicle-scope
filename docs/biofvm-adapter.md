@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issues: #8, #11, #13
+Issues: #8, #11, #13, #15
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -49,7 +49,10 @@ The adapter currently accepts only the existing v0.1 contract:
 - first-order decay in `1/min`;
 - explicit initial-concentration unit;
 - duration and output interval in minutes;
-- zero or one localized synthetic release source in `particle_equivalent/min`.
+- zero or one localized synthetic release source in `particle_equivalent/min`;
+- zero or one localized synthetic uptake sink with explicit effective volume in `micron^3` and uptake coefficient in `1/min`.
+
+The current adapter intentionally rejects an experiment that combines a localized source and uptake sink. Those mechanisms are verified independently before a coupled donor-recipient experiment is introduced.
 
 There is no implicit unit conversion. Localized release additionally requires concentration unit `particle_equivalent/micron^3` so amount and concentration semantics stay explicit.
 
@@ -74,7 +77,8 @@ The runner:
 4. initializes a spatially uniform field;
 5. uses the pinned BioFVM 2D constant-coefficient LOD solver;
 6. samples the field at every requested output time and at the final time;
-7. returns mean/min/max concentration summaries plus exact engine metadata.
+7. optionally applies one explicit-volume BioFVM uptake agent and tracks its internalized substrate;
+8. returns mean/min/max concentration summaries, integrated extracellular/internalized quantities, and exact engine metadata.
 
 The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
@@ -93,9 +97,10 @@ Each sample contains:
 - mean concentration;
 - minimum concentration;
 - maximum concentration;
-- integrated field quantity `∫c dV`, calculated from mean concentration and the explicit physical domain volume.
+- integrated field quantity `∫c dV`, calculated from mean concentration and the explicit physical domain volume;
+- cumulative internalized field quantity reported by the configured uptake agent.
 
-`BioFVMRunResult.integrated_quantity_unit` records the derived unit. For `particle_equivalent/micron^3`, the integrated quantity unit is `particle_equivalent`; for other synthetic concentration units it remains a concentration-volume quantity rather than being mislabeled as a biological amount.
+`BioFVMRunResult.integrated_quantity_unit` and `internalized_quantity_unit` record the derived units. For `particle_equivalent/micron^3`, the integrated quantity unit is `particle_equivalent`; for other synthetic concentration units it remains a concentration-volume quantity rather than being mislabeled as a biological amount.
 
 The integrated field quantity is especially important for source/sink verification. Because the domain carries a physical slice thickness, it is not tied to the x/y mesh spacing.
 
@@ -144,14 +149,41 @@ The adapter currently rejects more than one source. That is an intentional capab
 
 Scientific rationale and evidence limits are documented in [localized release model baseline](research/localized-release-model.md).
 
+## Localized-uptake verification
+
+A synthetic `PointUptakeSink` maps to a separate BioFVM `Basic_Agent`. Both the effective agent volume and the `1/min` uptake coefficient are explicit experiment inputs.
+
+For zero source, zero extracellular decay and zero diffusion, CI verifies BioFVM's pinned implicit update directly:
+
+```text
+rho[n+1] = rho[n] / (1 + dt * (V_agent / V_voxel) * U)
+```
+
+BioFVM internalized-substrate tracking is enabled only for uptake runs. At every sampled time CI also verifies:
+
+```text
+extracellular integrated quantity + internalized quantity
+= initial integrated quantity
+```
+
+The internalized quantity must remain non-negative and non-decreasing. A timestep-refinement check confirms convergence toward the corresponding continuous local first-order limit.
+
+The point-sink kinetics are **not** asserted to be spatial-resolution invariant. Because the pinned BioFVM discretization contains `V_agent / V_voxel`, changing x/y mesh resolution changes local point-sink kinetics. A finite recipient geometry is required before a stronger spatial-refinement claim would be justified.
+
+Scientific rationale and evidence limits are documented in [recipient uptake model baseline](research/recipient-uptake-model.md).
+
+## Result protocol
+
+Adding cumulative internalized quantity changes the native TSV sample contract. The runner/parser therefore use `VESICLESCOPE_BIOFVM_RESULT\t2` rather than silently extending result protocol v1.
+
 ## What this validates
 
-Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport and synthetic localized-release cases, and that result/metadata mapping is reproducible.
+Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport, synthetic localized-release, and synthetic explicit-volume uptake cases, and that result/metadata mapping is reproducible.
 
 It does **not** validate:
 
 - a biological EV decay rate;
-- a biological EV secretion rate or uptake model;
+- a biological EV secretion rate or biological uptake coefficient;
 - donor/recipient geometry;
 - communication range;
 - ECM interaction or flow;
