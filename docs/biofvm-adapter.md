@@ -93,9 +93,11 @@ Each sample contains:
 - mean concentration;
 - minimum concentration;
 - maximum concentration;
-- integrated field amount, calculated from mean concentration and the explicit physical domain volume.
+- integrated field quantity `∫c dV`, calculated from mean concentration and the explicit physical domain volume.
 
-The integrated amount is especially important for source/sink verification. Because the domain carries a physical slice thickness, this quantity is not tied to the x/y mesh spacing.
+`BioFVMRunResult.integrated_quantity_unit` records the derived unit. For `particle_equivalent/micron^3`, the integrated quantity unit is `particle_equivalent`; for other synthetic concentration units it remains a concentration-volume quantity rather than being mislabeled as a biological amount.
+
+The integrated field quantity is especially important for source/sink verification. Because the domain carries a physical slice thickness, it is not tied to the x/y mesh spacing.
 
 The parser rejects:
 
@@ -131,7 +133,7 @@ The source-capable runner links BioFVM's `Basic_Agent` and minimal `Agent_Contai
 With zero initial concentration, zero decay, no uptake and no-flux boundaries, CI checks:
 
 ```text
-total amount(t) = release rate * t
+integrated field quantity(t) = release rate * t
 ```
 
 at every requested sample.
@@ -144,12 +146,12 @@ Scientific rationale and evidence limits are documented in [localized release mo
 
 ## What this validates
 
-Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport-only cases, and that result/metadata mapping is reproducible.
+Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport and synthetic localized-release cases, and that result/metadata mapping is reproducible.
 
 It does **not** validate:
 
 - a biological EV decay rate;
-- secretion or uptake;
+- a biological EV secretion rate or uptake model;
 - donor/recipient geometry;
 - communication range;
 - ECM interaction or flow;
