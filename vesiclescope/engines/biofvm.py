@@ -231,6 +231,8 @@ def build_command(
         _format_number(experiment.domain.width_micron),
         "--height-micron",
         _format_number(experiment.domain.height_micron),
+        "--slice-thickness-micron",
+        _format_number(experiment.domain.slice_thickness_micron),
         "--duration-min",
         _format_number(experiment.duration_min),
         "--sample-every-min",
