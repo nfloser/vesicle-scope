@@ -52,6 +52,12 @@ def _is_integer_multiple(total: float, step: float) -> bool:
     return math.isclose(ratio, round(ratio), rel_tol=0.0, abs_tol=1e-9)
 
 
+def _integrated_quantity_unit(concentration_unit: str) -> str:
+    if concentration_unit == _PARTICLE_CONCENTRATION_UNIT:
+        return "particle_equivalent"
+    return f"{concentration_unit}*micron^3"
+
+
 def _expected_sample_times(experiment: TransportExperiment) -> tuple[float, ...]:
     count = int(math.floor(experiment.duration_min / experiment.sample_every_min))
     times = [0.0]
@@ -144,7 +150,7 @@ class TransportSample:
     mean_concentration: float
     min_concentration: float
     max_concentration: float
-    total_amount: float
+    integrated_field_quantity: float
 
     def __post_init__(self) -> None:
         values = (
@@ -152,7 +158,7 @@ class TransportSample:
             self.mean_concentration,
             self.min_concentration,
             self.max_concentration,
-            self.total_amount,
+            self.integrated_field_quantity,
         )
         if not all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in values):
             raise TypeError("transport sample values must be real numbers")
@@ -181,8 +187,8 @@ class TransportSample:
         object.__setattr__(self, "min_concentration", minimum)
         object.__setattr__(self, "max_concentration", maximum)
         if numeric[4] < 0.0:
-            raise ValueError("sample total amount must be non-negative")
-        object.__setattr__(self, "total_amount", numeric[4])
+            raise ValueError("sample integrated field quantity must be non-negative")
+        object.__setattr__(self, "integrated_field_quantity", numeric[4])
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,6 +197,7 @@ class BioFVMRunResult:
 
     experiment_id: str
     concentration_unit: str
+    integrated_quantity_unit: str
     engine: BioFVMEngineMetadata
     samples: tuple[TransportSample, ...]
 
@@ -315,7 +322,7 @@ def parse_result(
                     mean_concentration=_finite(fields[2], "sample mean"),
                     min_concentration=_finite(fields[3], "sample minimum"),
                     max_concentration=_finite(fields[4], "sample maximum"),
-                    total_amount=(
+                    integrated_field_quantity=(
                         _finite(fields[2], "sample mean")
                         * experiment.domain.volume_micron3
                     ),
@@ -366,6 +373,9 @@ def parse_result(
     return BioFVMRunResult(
         experiment_id=experiment.experiment_id,
         concentration_unit=experiment.initial_concentration.unit,
+        integrated_quantity_unit=_integrated_quantity_unit(
+            experiment.initial_concentration.unit
+        ),
         engine=observed,
         samples=tuple(samples),
     )
