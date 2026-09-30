@@ -5,6 +5,7 @@ from dataclasses import FrozenInstanceError
 from vesiclescope.domain import EvidenceCategory, ScientificParameter
 from vesiclescope.domain.transport import (
     BoundaryCondition,
+    PointReleaseSource,
     RectangularDomain2D,
     TransportExperiment,
 )
@@ -57,6 +58,7 @@ class TransportExperimentTests(unittest.TestCase):
         decay: ScientificParameter | None = None,
         duration_min: float = 60.0,
         sample_every_min: float = 5.0,
+        release_sources: tuple[PointReleaseSource, ...] = (),
     ) -> TransportExperiment:
         return TransportExperiment(
             experiment_id="synthetic.decay",
@@ -76,6 +78,7 @@ class TransportExperimentTests(unittest.TestCase):
                 2.0,
                 "particle_equivalent/micron^3",
             ),
+            release_sources=release_sources,
         )
 
     def test_preserves_provenance_objects(self) -> None:
@@ -144,6 +147,98 @@ class TransportExperimentTests(unittest.TestCase):
             with self.subTest(diffusion=diffusion.value, decay=decay.value):
                 with self.assertRaises(ValueError):
                     self.make_experiment(diffusion=diffusion, decay=decay)
+
+    def test_preserves_valid_localized_release_source(self) -> None:
+        source = PointReleaseSource(
+            identifier="source.center",
+            x_micron=100.0,
+            y_micron=50.0,
+            release_rate=synthetic_parameter(
+                "source.release",
+                120.0,
+                "particle_equivalent/min",
+            ),
+        )
+
+        experiment = self.make_experiment(release_sources=(source,))
+
+        self.assertEqual(experiment.release_sources, (source,))
+        self.assertIs(experiment.release_sources[0], source)
+
+    def test_rejects_invalid_localized_release_source_fields(self) -> None:
+        valid_rate = synthetic_parameter(
+            "source.release",
+            120.0,
+            "particle_equivalent/min",
+        )
+
+        for identifier, x, y in (
+            ("   ", 100.0, 50.0),
+            ("source", -1.0, 50.0),
+            ("source", math.nan, 50.0),
+            ("source", 100.0, -1.0),
+            ("source", 100.0, math.inf),
+        ):
+            with self.subTest(identifier=identifier, x=x, y=y):
+                with self.assertRaises(ValueError):
+                    PointReleaseSource(
+                        identifier=identifier,
+                        x_micron=x,
+                        y_micron=y,
+                        release_rate=valid_rate,
+                    )
+
+        with self.assertRaises(ValueError):
+            PointReleaseSource(
+                identifier="source",
+                x_micron=100.0,
+                y_micron=50.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    120.0,
+                    "particle_equivalent/sec",
+                ),
+            )
+
+        with self.assertRaises(ValueError):
+            PointReleaseSource(
+                identifier="source",
+                x_micron=100.0,
+                y_micron=50.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    -1.0,
+                    "particle_equivalent/min",
+                ),
+            )
+
+    def test_rejects_sources_outside_domain_or_invalid_collection(self) -> None:
+        outside = PointReleaseSource(
+            identifier="outside",
+            x_micron=200.0,
+            y_micron=50.0,
+            release_rate=synthetic_parameter(
+                "source.release",
+                1.0,
+                "particle_equivalent/min",
+            ),
+        )
+
+        with self.assertRaises(ValueError):
+            self.make_experiment(release_sources=(outside,))
+
+        valid = PointReleaseSource(
+            identifier="center",
+            x_micron=100.0,
+            y_micron=50.0,
+            release_rate=synthetic_parameter(
+                "source.release",
+                1.0,
+                "particle_equivalent/min",
+            ),
+        )
+        with self.assertRaises(TypeError):
+            self.make_experiment(release_sources=[valid])  # type: ignore[arg-type]
 
     def test_zero_diffusion_and_decay_are_valid_limiting_cases(self) -> None:
         experiment = self.make_experiment(
