@@ -7,7 +7,7 @@ import math
 from pathlib import Path
 
 from vesiclescope.analysis import RecipientPopulationSummary
-from vesiclescope.domain import TransportExperiment
+from vesiclescope.domain import CircularUptakeSink, TransportExperiment
 from vesiclescope.engines import BioFVMRunResult
 
 
@@ -31,6 +31,7 @@ class RecipientCountFigureData:
     domain_height_micron: float
     donor_position_micron: tuple[float, float]
     recipient_positions_micron: tuple[tuple[float, float], ...]
+    recipient_radii_micron: tuple[float, ...]
 
 
 def _validate_triplet(name: str, value: tuple[object, ...]) -> None:
@@ -63,6 +64,14 @@ def prepare_recipient_count_figure_data(
         raise ValueError(
             f"figure requires recipient-count scenarios {_EXPECTED_COUNTS}, "
             f"observed={observed_counts}"
+        )
+    if not all(
+        isinstance(sink, CircularUptakeSink)
+        for experiment in experiments
+        for sink in experiment.uptake_sinks
+    ):
+        raise ValueError(
+            "population figure requires finite circular recipient footprints"
         )
 
     reference_domain = experiments[0].domain
@@ -175,6 +184,11 @@ def prepare_recipient_count_figure_data(
             (sink.x_micron, sink.y_micron)
             for sink in heatmap_experiment.uptake_sinks
         ),
+        recipient_radii_micron=tuple(
+            sink.footprint_radius_micron
+            for sink in heatmap_experiment.uptake_sinks
+            if isinstance(sink, CircularUptakeSink)
+        ),
     )
 
 
@@ -227,8 +241,6 @@ def render_recipient_count_figure(
             aspect="equal",
         )
         donor_x, donor_y = data.donor_position_micron
-        recipient_x = tuple(position[0] for position in data.recipient_positions_micron)
-        recipient_y = tuple(position[1] for position in data.recipient_positions_micron)
         donor_collection = heatmap_axis.scatter(
             (donor_x,),
             (donor_y,),
@@ -240,21 +252,31 @@ def render_recipient_count_figure(
             label="Donor",
         )
         donor_collection.set_gid("donor-marker")
-        recipient_collection = heatmap_axis.scatter(
-            recipient_x,
-            recipient_y,
-            marker="o",
-            facecolors="white",
-            edgecolors="black",
-            linewidths=1.0,
-            s=55,
-            label="Recipients",
-        )
-        recipient_collection.set_gid("recipient-markers")
+
+        from matplotlib.patches import Circle
+
+        for index, (position, radius) in enumerate(
+            zip(
+                data.recipient_positions_micron,
+                data.recipient_radii_micron,
+            ),
+            start=1,
+        ):
+            footprint = Circle(
+                position,
+                radius=radius,
+                facecolor="none",
+                edgecolor="black",
+                linewidth=1.0,
+                label="Finite recipients" if index == 1 else None,
+            )
+            footprint.set_gid(f"recipient-footprint-{index}")
+            heatmap_axis.add_patch(footprint)
+
         heatmap_axis.set_xlabel("x [micron]")
         heatmap_axis.set_ylabel("y [micron]")
         heatmap_axis.set_title(
-            f"8 recipients — extracellular field at {data.heatmap_time_min:g} min"
+            f"8 finite recipient footprints — extracellular field at {data.heatmap_time_min:g} min"
         )
         heatmap_axis.legend(loc="upper right")
         colorbar = figure.colorbar(image, ax=heatmap_axis)
@@ -289,7 +311,7 @@ def render_recipient_count_figure(
         figure.text(
             0.5,
             0.01,
-            "Synthetic benchmark at one fixed numerical resolution; "
+            "Synthetic finite recipient footprints at one fixed numerical resolution; "
             "not experimental evidence.",
             ha="center",
         )

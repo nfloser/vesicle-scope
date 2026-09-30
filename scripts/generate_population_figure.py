@@ -9,7 +9,7 @@ from pathlib import Path
 from vesiclescope.analysis import analyze_recipient_population
 from vesiclescope.engines.biofvm import BioFVMNumerics, run_transport
 from vesiclescope.figures import render_recipient_count_figure
-from vesiclescope.scenarios import recipient_count_sweep_experiment
+from vesiclescope.scenarios import finite_recipient_count_sweep_experiment
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -43,7 +43,7 @@ def main() -> int:
         raise SystemExit(f"native runner does not exist: {runner}")
 
     experiments = tuple(
-        recipient_count_sweep_experiment(count)
+        finite_recipient_count_sweep_experiment(count)
         for count in (2, 4, 8)
     )
     numerics = BioFVMNumerics(

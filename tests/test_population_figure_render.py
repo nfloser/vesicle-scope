@@ -8,7 +8,7 @@ import unittest
 from vesiclescope.analysis import analyze_recipient_population
 from vesiclescope.engines.biofvm import BioFVMNumerics, run_transport
 from vesiclescope.figures import render_recipient_count_figure
-from vesiclescope.scenarios import recipient_count_sweep_experiment
+from vesiclescope.scenarios import finite_recipient_count_sweep_experiment
 
 
 RUNNER = os.environ.get("VESICLESCOPE_BIOFVM_RUNNER")
@@ -25,9 +25,9 @@ class RecipientCountFigureRenderTests(unittest.TestCase):
         assert RUNNER is not None
         return Path(RUNNER)
 
-    def test_generates_inspectable_headless_svg_from_normalized_results(self) -> None:
+    def test_generates_inspectable_finite_recipient_svg_from_normalized_results(self) -> None:
         experiments = tuple(
-            recipient_count_sweep_experiment(count)
+            finite_recipient_count_sweep_experiment(count)
             for count in (2, 4, 8)
         )
         numerics = BioFVMNumerics(
@@ -63,6 +63,7 @@ class RecipientCountFigureRenderTests(unittest.TestCase):
 
         for required_text in (
             "Synthetic fixed-grid verification",
+            "finite recipient footprints",
             "particle_equivalent/micron^3",
             "recipient/mm^2",
             "particle_equivalent",
@@ -81,18 +82,22 @@ class RecipientCountFigureRenderTests(unittest.TestCase):
             if element.tag.endswith("g") and element.attrib.get("id")
         }
         self.assertIn("donor-marker", groups)
-        self.assertIn("recipient-markers", groups)
 
-        recipient_group = groups["recipient-markers"]
-        recipient_svg = ET.tostring(recipient_group, encoding="unicode")
-        self.assertIn("#ffffff", recipient_svg)
-        self.assertIn("#000000", recipient_svg)
-        visible_shapes = [
-            element
-            for element in recipient_group.iter()
-            if element.tag.endswith(("path", "use"))
-        ]
-        self.assertGreaterEqual(len(visible_shapes), 8)
+        footprint_ids = tuple(
+            f"recipient-footprint-{index}"
+            for index in range(1, 9)
+        )
+        for footprint_id in footprint_ids:
+            self.assertIn(footprint_id, groups)
+            footprint_svg = ET.tostring(groups[footprint_id], encoding="unicode")
+            self.assertIn("fill: none", footprint_svg)
+            self.assertIn("#000000", footprint_svg)
+            visible_shapes = [
+                element
+                for element in groups[footprint_id].iter()
+                if element.tag.endswith(("path", "use"))
+            ]
+            self.assertGreaterEqual(len(visible_shapes), 1)
 
         import matplotlib
 
