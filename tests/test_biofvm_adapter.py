@@ -263,7 +263,7 @@ class BioFVMCommandTests(unittest.TestCase):
             "0.5",
         )
 
-    def test_rejects_multiple_uptake_sinks_or_combined_source_sink(self) -> None:
+    def test_rejects_multiple_uptake_sinks(self) -> None:
         with self.assertRaises(ValueError):
             build_command(
                 experiment(
@@ -276,15 +276,24 @@ class BioFVMCommandTests(unittest.TestCase):
                 Path("runner"),
             )
 
-        with self.assertRaises(ValueError):
-            build_command(
-                experiment(
-                    release_sources=(point_source(),),
-                    uptake_sinks=(point_sink(),),
-                ),
-                BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
-                Path("runner"),
-            )
+    def test_maps_combined_release_and_uptake(self) -> None:
+        command = build_command(
+            experiment(
+                release_sources=(point_source(),),
+                uptake_sinks=(point_sink(),),
+            ),
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            Path("runner"),
+        )
+
+        self.assertEqual(
+            command[command.index("--source-rate-particle-equivalent-per-min") + 1],
+            "120",
+        )
+        self.assertEqual(
+            command[command.index("--uptake-rate-per-min") + 1],
+            "0.5",
+        )
 
 
 class BioFVMResultTests(unittest.TestCase):
