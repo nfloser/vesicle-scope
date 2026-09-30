@@ -11,6 +11,7 @@ from .parameters import ScientificParameter
 
 DIFFUSION_UNIT = "micron^2/min"
 RATE_UNIT = "1/min"
+RELEASE_RATE_UNIT = "particle_equivalent/min"
 
 
 class BoundaryCondition(str, Enum):
@@ -25,6 +26,15 @@ def _positive_finite(value: float, field_name: str) -> float:
     numeric_value = float(value)
     if not math.isfinite(numeric_value) or numeric_value <= 0.0:
         raise ValueError(f"{field_name} must be finite and greater than zero")
+    return numeric_value
+
+
+def _non_negative_finite(value: float, field_name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{field_name} must be a real number")
+    numeric_value = float(value)
+    if not math.isfinite(numeric_value) or numeric_value < 0.0:
+        raise ValueError(f"{field_name} must be finite and non-negative")
     return numeric_value
 
 
@@ -82,6 +92,44 @@ class RectangularDomain2D:
             ),
         )
 
+    @property
+    def volume_micron3(self) -> float:
+        """Physical volume represented by the 2D slice."""
+
+        return self.width_micron * self.height_micron * self.slice_thickness_micron
+
+
+@dataclass(frozen=True, slots=True)
+class PointReleaseSource:
+    """A localized synthetic amount-per-time source in the 2D slice."""
+
+    identifier: str
+    x_micron: float
+    y_micron: float
+    release_rate: ScientificParameter
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "identifier",
+            _required_text(self.identifier, "identifier"),
+        )
+        object.__setattr__(
+            self,
+            "x_micron",
+            _non_negative_finite(self.x_micron, "x_micron"),
+        )
+        object.__setattr__(
+            self,
+            "y_micron",
+            _non_negative_finite(self.y_micron, "y_micron"),
+        )
+
+        release_rate = _require_parameter(self.release_rate, "release_rate")
+        _require_unit(release_rate, RELEASE_RATE_UNIT, "release_rate")
+        if release_rate.value < 0.0:
+            raise ValueError("release_rate must be non-negative")
+
 
 @dataclass(frozen=True, slots=True)
 class TransportExperiment:
@@ -99,6 +147,7 @@ class TransportExperiment:
     diffusion: ScientificParameter
     decay: ScientificParameter
     initial_concentration: ScientificParameter
+    release_sources: tuple[PointReleaseSource, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -139,3 +188,22 @@ class TransportExperiment:
             raise ValueError("decay must be non-negative")
         if initial_concentration.value < 0.0:
             raise ValueError("initial_concentration must be non-negative")
+
+        if not isinstance(self.release_sources, tuple):
+            raise TypeError("release_sources must be a tuple of PointReleaseSource objects")
+
+        seen_source_ids: set[str] = set()
+        for source in self.release_sources:
+            if not isinstance(source, PointReleaseSource):
+                raise TypeError("release_sources must contain only PointReleaseSource objects")
+            if source.identifier in seen_source_ids:
+                raise ValueError(f"duplicate release source identifier: {source.identifier!r}")
+            seen_source_ids.add(source.identifier)
+            if source.x_micron >= self.domain.width_micron:
+                raise ValueError(
+                    f"release source {source.identifier!r} lies outside domain width"
+                )
+            if source.y_micron >= self.domain.height_micron:
+                raise ValueError(
+                    f"release source {source.identifier!r} lies outside domain height"
+                )

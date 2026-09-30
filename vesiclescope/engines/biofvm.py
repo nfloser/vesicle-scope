@@ -13,6 +13,7 @@ from vesiclescope.domain import BoundaryCondition, TransportExperiment
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
 _RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t1"
+_PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
 
 
 class BioFVMRunError(RuntimeError):
@@ -49,6 +50,12 @@ def _format_number(value: float) -> str:
 def _is_integer_multiple(total: float, step: float) -> bool:
     ratio = total / step
     return math.isclose(ratio, round(ratio), rel_tol=0.0, abs_tol=1e-9)
+
+
+def _integrated_quantity_unit(concentration_unit: str) -> str:
+    if concentration_unit == _PARTICLE_CONCENTRATION_UNIT:
+        return "particle_equivalent"
+    return f"{concentration_unit}*micron^3"
 
 
 def _expected_sample_times(experiment: TransportExperiment) -> tuple[float, ...]:
@@ -143,6 +150,7 @@ class TransportSample:
     mean_concentration: float
     min_concentration: float
     max_concentration: float
+    integrated_field_quantity: float
 
     def __post_init__(self) -> None:
         values = (
@@ -150,6 +158,7 @@ class TransportSample:
             self.mean_concentration,
             self.min_concentration,
             self.max_concentration,
+            self.integrated_field_quantity,
         )
         if not all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in values):
             raise TypeError("transport sample values must be real numbers")
@@ -177,6 +186,9 @@ class TransportSample:
         object.__setattr__(self, "mean_concentration", mean)
         object.__setattr__(self, "min_concentration", minimum)
         object.__setattr__(self, "max_concentration", maximum)
+        if numeric[4] < 0.0:
+            raise ValueError("sample integrated field quantity must be non-negative")
+        object.__setattr__(self, "integrated_field_quantity", numeric[4])
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,6 +197,7 @@ class BioFVMRunResult:
 
     experiment_id: str
     concentration_unit: str
+    integrated_quantity_unit: str
     engine: BioFVMEngineMetadata
     samples: tuple[TransportSample, ...]
 
@@ -199,6 +212,16 @@ def _validate_mapping(
         raise TypeError("numerics must be BioFVMNumerics")
     if experiment.boundary is not BoundaryCondition.NO_FLUX:
         raise ValueError(f"unsupported BioFVM boundary: {experiment.boundary!r}")
+
+    if len(experiment.release_sources) > 1:
+        raise ValueError("the v0.1 BioFVM adapter supports at most one release source")
+    if experiment.release_sources and (
+        experiment.initial_concentration.unit != _PARTICLE_CONCENTRATION_UNIT
+    ):
+        raise ValueError(
+            "localized particle-equivalent release requires concentration unit "
+            f"{_PARTICLE_CONCENTRATION_UNIT!r}"
+        )
 
     grid = numerics.grid_spacing_micron
     if not _is_integer_multiple(experiment.domain.width_micron, grid):
@@ -225,7 +248,7 @@ def build_command(
     if not str(executable_path):
         raise ValueError("executable path must not be blank")
 
-    return (
+    command = [
         str(executable_path),
         "--width-micron",
         _format_number(experiment.domain.width_micron),
@@ -251,7 +274,23 @@ def build_command(
         _format_number(numerics.grid_spacing_micron),
         "--time-step-min",
         _format_number(numerics.time_step_min),
-    )
+    ]
+
+    if experiment.release_sources:
+        source = experiment.release_sources[0]
+        command.extend(
+            (
+                "--source-x-micron",
+                _format_number(source.x_micron),
+                "--source-y-micron",
+                _format_number(source.y_micron),
+                "--source-rate-particle-equivalent-per-min",
+                _format_number(source.release_rate.value),
+            )
+        )
+
+    return tuple(command)
+
 
 
 def parse_result(
@@ -283,6 +322,10 @@ def parse_result(
                     mean_concentration=_finite(fields[2], "sample mean"),
                     min_concentration=_finite(fields[3], "sample minimum"),
                     max_concentration=_finite(fields[4], "sample maximum"),
+                    integrated_field_quantity=(
+                        _finite(fields[2], "sample mean")
+                        * experiment.domain.volume_micron3
+                    ),
                 )
             )
             continue
@@ -330,6 +373,9 @@ def parse_result(
     return BioFVMRunResult(
         experiment_id=experiment.experiment_id,
         concentration_unit=experiment.initial_concentration.unit,
+        integrated_quantity_unit=_integrated_quantity_unit(
+            experiment.initial_concentration.unit
+        ),
         engine=observed,
         samples=tuple(samples),
     )

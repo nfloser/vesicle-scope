@@ -218,4 +218,10 @@ The first executable engine boundary is a process adapter in `vesiclescope.engin
 
 The Python scientific contract does not import or embed BioFVM. It validates the `TransportExperiment`, constructs an explicit argument vector for a pinned native runner, and parses a small normalized result stream. This keeps BioFVM-specific build and runtime details behind the adapter while avoiding a binding framework that the current research question does not require.
 
-The native runner currently exposes only the transport behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, and sampled mean/min/max concentration. Full spatial-field serialization is deferred until an actual downstream analysis or viewer requires it.
+The native runner currently exposes only the behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, and at most one localized synthetic amount-per-time release source.
+
+A source is represented engine-neutrally as a `PointReleaseSource` with explicit position and provenance-bearing release rate. The BioFVM adapter maps that source to `net_export_rates`, because this preserves amount-per-time semantics without introducing a saturation target that the current evidence does not justify.
+
+Normalized samples carry mean/min/max concentration plus integrated field amount. Integrated amount is derived using the explicit physical slice volume, so source mass balance can be checked independently of x/y mesh resolution.
+
+Full spatial-field serialization is deferred until an actual downstream analysis or viewer requires it.

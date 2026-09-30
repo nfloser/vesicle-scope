@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issue: #8
+Issues: #8, #11, #13
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -48,9 +48,10 @@ The adapter currently accepts only the existing v0.1 contract:
 - diffusion in `micron^2/min`;
 - first-order decay in `1/min`;
 - explicit initial-concentration unit;
-- duration and output interval in minutes.
+- duration and output interval in minutes;
+- zero or one localized synthetic release source in `particle_equivalent/min`.
 
-There is no implicit unit conversion.
+There is no implicit unit conversion. Localized release additionally requires concentration unit `particle_equivalent/micron^3` so amount and concentration semantics stay explicit.
 
 The numerical configuration is separate from physical geometry and biological/model parameters:
 
@@ -75,7 +76,7 @@ The runner:
 6. samples the field at every requested output time and at the final time;
 7. returns mean/min/max concentration summaries plus exact engine metadata.
 
-Only the BioFVM transport translation units required by these verification targets are linked. Unused MultiCellDS, MATLAB I/O, agent-container and XML components are not part of this executable.
+The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
 ## Result contract
 
@@ -91,7 +92,12 @@ Each sample contains:
 - time;
 - mean concentration;
 - minimum concentration;
-- maximum concentration.
+- maximum concentration;
+- integrated field quantity `∫c dV`, calculated from mean concentration and the explicit physical domain volume.
+
+`BioFVMRunResult.integrated_quantity_unit` records the derived unit. For `particle_equivalent/micron^3`, the integrated quantity unit is `particle_equivalent`; for other synthetic concentration units it remains a concentration-volume quantity rather than being mislabeled as a biological amount.
+
+The integrated field quantity is especially important for source/sink verification. Because the domain carries a physical slice thickness, it is not tied to the x/y mesh spacing.
 
 The parser rejects:
 
@@ -120,14 +126,32 @@ CI verifies:
 
 All values used by these tests are labelled synthetic verification inputs. They are not EV diffusivity, clearance or concentration estimates.
 
+## Localized-release verification
+
+The source-capable runner links BioFVM's `Basic_Agent` and minimal `Agent_Container` implementation only for this executable. A single synthetic `PointReleaseSource` is mapped to BioFVM `net_export_rates`.
+
+With zero initial concentration, zero decay, no uptake and no-flux boundaries, CI checks:
+
+```text
+integrated field quantity(t) = release rate * t
+```
+
+at every requested sample.
+
+The same experiment is run at two x/y grid spacings with fixed physical slice thickness. Integrated amount must remain unchanged under refinement.
+
+The adapter currently rejects more than one source. That is an intentional capability boundary, not a claim that biological systems have only one donor.
+
+Scientific rationale and evidence limits are documented in [localized release model baseline](research/localized-release-model.md).
+
 ## What this validates
 
-Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport-only cases, and that result/metadata mapping is reproducible.
+Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport and synthetic localized-release cases, and that result/metadata mapping is reproducible.
 
 It does **not** validate:
 
 - a biological EV decay rate;
-- secretion or uptake;
+- a biological EV secretion rate or uptake model;
 - donor/recipient geometry;
 - communication range;
 - ECM interaction or flow;

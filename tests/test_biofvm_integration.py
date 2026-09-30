@@ -5,6 +5,7 @@ from pathlib import Path
 from vesiclescope.domain import (
     BoundaryCondition,
     EvidenceCategory,
+    PointReleaseSource,
     RectangularDomain2D,
     ScientificParameter,
     TransportExperiment,
@@ -56,8 +57,45 @@ def uniform_experiment(decay_per_min: float) -> TransportExperiment:
     )
 
 
+def localized_release_experiment(rate_per_min: float = 120.0) -> TransportExperiment:
+    return TransportExperiment(
+        experiment_id=f"synthetic.localized-release.{rate_per_min:g}",
+        domain=RectangularDomain2D(
+            width_micron=200.0,
+            height_micron=100.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=20.0,
+        sample_every_min=5.0,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter(
+            "transport.diffusion",
+            1000.0,
+            "micron^2/min",
+        ),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            0.0,
+            "particle_equivalent/micron^3",
+        ),
+        release_sources=(
+            PointReleaseSource(
+                identifier="source.center",
+                x_micron=100.0,
+                y_micron=50.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    rate_per_min,
+                    "particle_equivalent/min",
+                ),
+            ),
+        ),
+    )
+
+
 @unittest.skipUnless(RUNNER, "native BioFVM runner is not built for this test job")
-class BioFVMUniformDecayIntegrationTests(unittest.TestCase):
+class BioFVMTransportIntegrationTests(unittest.TestCase):
     @property
     def runner(self) -> Path:
         assert RUNNER is not None
@@ -119,6 +157,47 @@ class BioFVMUniformDecayIntegrationTests(unittest.TestCase):
 
         self.assertLessEqual(coarse_error, 5e-3)
         self.assertLess(fine_error, coarse_error)
+
+    def test_localized_release_matches_amount_per_time_mass_balance(self) -> None:
+        rate = 120.0
+        result = run_transport(
+            localized_release_experiment(rate),
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            self.runner,
+        )
+
+        for sample in result.samples:
+            expected_amount = rate * sample.time_min
+            self.assertAlmostEqual(
+                sample.integrated_field_quantity,
+                expected_amount,
+                delta=max(1e-9, expected_amount * 1e-10),
+            )
+
+    def test_localized_release_amount_is_resolution_invariant(self) -> None:
+        experiment = localized_release_experiment()
+
+        coarse = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            self.runner,
+        )
+        fine = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            self.runner,
+        )
+
+        self.assertAlmostEqual(
+            coarse.samples[-1].integrated_field_quantity,
+            fine.samples[-1].integrated_field_quantity,
+            delta=1e-8,
+        )
+        self.assertAlmostEqual(
+            coarse.samples[-1].integrated_field_quantity,
+            120.0 * experiment.duration_min,
+            delta=1e-8,
+        )
 
     def test_uniform_solution_is_stable_across_spatial_resolution(self) -> None:
         rate = 0.05

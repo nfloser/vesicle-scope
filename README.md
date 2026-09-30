@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; transport-only numerical verification implemented.**
+**Research baseline established; transport and localized-release numerical verification implemented.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -23,6 +23,7 @@ See:
 - [synthetic transport benchmark](docs/transport-benchmark.md)
 - [BioFVM transport adapter](docs/biofvm-adapter.md)
 - [BioFVM diffusion verification](docs/research/biofvm-diffusion-benchmark.md)
+- [localized release model baseline](docs/research/localized-release-model.md)
 - [third-party software record](THIRD_PARTY.md)
 
 ## Scientific principles
