@@ -143,8 +143,18 @@ The normalized Python result cross-checks each field against the corresponding m
 
 See [spatial field result contract](spatial-field-results.md) for the protocol, ordering, validation rules and current stdout-size limitation.
 
+## Recipient population benchmark
+
+Protocol v4 extends uptake verification to multiple point recipients with separate cumulative uptake series.
+
+The first population benchmark places two identical recipients in mirror-symmetric, distinct numerical voxels around one donor. CI verifies equal uptake within numerical tolerance, aggregate internalized quantity equal to the per-recipient sum, deterministic reruns, and the existing global mass balance.
+
+Recipients that map to the same numerical voxel are rejected because per-recipient attribution would otherwise depend on sequential sink order.
+
+See [recipient population model baseline](research/recipient-population-model.md).
+
 ## What comes next
 
-The next scientific step is to represent recipient populations/density and finite geometry without hiding point-sink resolution effects.
+The next scientific step is a controlled recipient-count/density sweep on fixed numerical resolution, followed by finite recipient geometry before any spatial-refinement-independent density claim is made.
 
-Those experiments can now derive distance-binned exposure and reproducible scientific figures from normalized primary spatial output rather than simulator internals. A persistent file format should be introduced only when that first analysis defines concrete storage requirements.
+The v4 per-recipient series and v3 spatial fields now provide the primary data needed for distance-binned exposure, uptake distributions and reproducible figures. A persistent file format should be introduced only when that analysis defines concrete storage requirements.

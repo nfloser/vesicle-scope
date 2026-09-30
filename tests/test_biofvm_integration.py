@@ -186,6 +186,67 @@ def donor_recipient_experiment(
     )
 
 
+def symmetric_recipient_population_experiment() -> TransportExperiment:
+    return TransportExperiment(
+        experiment_id="synthetic.recipient-population.symmetric",
+        domain=RectangularDomain2D(
+            width_micron=210.0,
+            height_micron=110.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=20.0,
+        sample_every_min=5.0,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter(
+            "transport.diffusion",
+            100.0,
+            "micron^2/min",
+        ),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            0.0,
+            "particle_equivalent/micron^3",
+        ),
+        release_sources=(
+            PointReleaseSource(
+                identifier="source.center",
+                x_micron=105.0,
+                y_micron=55.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    120.0,
+                    "particle_equivalent/min",
+                ),
+            ),
+        ),
+        uptake_sinks=(
+            PointUptakeSink(
+                identifier="sink.left",
+                x_micron=75.0,
+                y_micron=55.0,
+                effective_volume_micron3=1000.0,
+                uptake_rate=synthetic_parameter(
+                    "sink.left.uptake",
+                    0.5,
+                    "1/min",
+                ),
+            ),
+            PointUptakeSink(
+                identifier="sink.right",
+                x_micron=135.0,
+                y_micron=55.0,
+                effective_volume_micron3=1000.0,
+                uptake_rate=synthetic_parameter(
+                    "sink.right.uptake",
+                    0.5,
+                    "1/min",
+                ),
+            ),
+        ),
+    )
+
+
 @unittest.skipUnless(RUNNER, "native BioFVM runner is not built for this test job")
 class BioFVMTransportIntegrationTests(unittest.TestCase):
     @property
@@ -373,6 +434,60 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             tuple(field.time_min for field in result.field_snapshots),
             tuple(sample.time_min for sample in result.samples),
         )
+
+    def test_symmetric_recipients_have_equal_uptake_and_close_mass_balance(self) -> None:
+        experiment = symmetric_recipient_population_experiment()
+        result = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            self.runner,
+        )
+
+        self.assertEqual(
+            tuple(series.identifier for series in result.recipient_uptake_series),
+            ("sink.left", "sink.right"),
+        )
+        left = result.recipient_uptake_series[0]
+        right = result.recipient_uptake_series[1]
+        self.assertEqual(len(left.samples), len(result.samples))
+        self.assertEqual(len(right.samples), len(result.samples))
+
+        release_rate = experiment.release_sources[0].release_rate.value
+        for sample_index, sample in enumerate(result.samples):
+            left_value = left.samples[sample_index].internalized_field_quantity
+            right_value = right.samples[sample_index].internalized_field_quantity
+            self.assertAlmostEqual(left_value, right_value, delta=1e-8)
+            self.assertAlmostEqual(
+                sample.internalized_field_quantity,
+                left_value + right_value,
+                delta=1e-8,
+            )
+            released = release_rate * sample.time_min
+            self.assertAlmostEqual(
+                sample.integrated_field_quantity
+                + sample.internalized_field_quantity,
+                released,
+                delta=max(1e-8, released * 1e-9),
+            )
+
+    def test_population_run_is_deterministic_per_recipient(self) -> None:
+        experiment = symmetric_recipient_population_experiment()
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+
+        first = run_transport(experiment, numerics, self.runner)
+        second = run_transport(experiment, numerics, self.runner)
+
+        for first_series, second_series in zip(
+            first.recipient_uptake_series,
+            second.recipient_uptake_series,
+        ):
+            self.assertEqual(first_series.identifier, second_series.identifier)
+            for left, right in zip(first_series.samples, second_series.samples):
+                self.assertAlmostEqual(
+                    left.internalized_field_quantity,
+                    right.internalized_field_quantity,
+                    places=12,
+                )
 
     def test_combined_donor_recipient_run_is_deterministic(self) -> None:
         experiment = donor_recipient_experiment(75.0)

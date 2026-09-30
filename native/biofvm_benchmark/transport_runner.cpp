@@ -5,8 +5,10 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <set>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #ifndef VESICLESCOPE_PHYSICELL_RELEASE
 #error "VESICLESCOPE_PHYSICELL_RELEASE must be supplied by the build"
@@ -61,6 +63,34 @@ double parse_number(const std::string& text, const std::string& name)
     }
     return value;
 }
+
+int parse_non_negative_integer(const std::string& text, const std::string& name)
+{
+    std::size_t consumed = 0;
+    int value = 0;
+    try
+    {
+        value = std::stoi(text, &consumed);
+    }
+    catch (const std::exception&)
+    {
+        throw std::invalid_argument(name + " must be an integer");
+    }
+
+    if (consumed != text.size() || value < 0)
+    {
+        throw std::invalid_argument(name + " must be a non-negative integer");
+    }
+    return value;
+}
+
+struct UptakeConfig
+{
+    double x;
+    double y;
+    double volume;
+    double rate;
+};
 
 bool has_argument(int argc, char* argv[], const std::string& name)
 {
@@ -121,7 +151,7 @@ void require_non_negative(double value, const std::string& name)
 void print_sample(
     BioFVM::Microenvironment& microenvironment,
     double time_min,
-    BioFVM::Basic_Agent* uptake_agent
+    const std::vector<BioFVM::Basic_Agent*>& uptake_agents
 )
 {
     double sum = 0.0;
@@ -139,10 +169,12 @@ void print_sample(
 
     const double mean =
         sum / static_cast<double>(microenvironment.number_of_voxels());
-    const double internalized =
-        uptake_agent == nullptr
-            ? 0.0
-            : (*(uptake_agent->internalized_substrates))[0];
+
+    double total_internalized = 0.0;
+    for (BioFVM::Basic_Agent* uptake_agent : uptake_agents)
+    {
+        total_internalized += (*(uptake_agent->internalized_substrates))[0];
+    }
 
     std::cout
         << "sample\t"
@@ -150,7 +182,7 @@ void print_sample(
         << mean << '\t'
         << minimum << '\t'
         << maximum << '\t'
-        << internalized << '\n';
+        << total_internalized << '\n';
 
     std::cout << "field\t" << std::setprecision(17) << time_min;
     for (unsigned int index = 0; index < microenvironment.number_of_voxels(); ++index)
@@ -160,6 +192,17 @@ void print_sample(
             << microenvironment.density_vector(static_cast<int>(index))[0];
     }
     std::cout << '\n';
+
+    for (std::size_t index = 0; index < uptake_agents.size(); ++index)
+    {
+        std::cout
+            << "recipient_uptake\t"
+            << std::setprecision(17) << time_min << '\t'
+            << index << '\t'
+            << (*(uptake_agents[index]->internalized_substrates))[0]
+            << '\n';
+    }
+
 }
 }
 
@@ -235,45 +278,34 @@ int main(int argc, char* argv[])
             );
         }
 
-        const bool has_uptake_x = has_argument(argc, argv, "--uptake-x-micron");
-        const bool has_uptake_y = has_argument(argc, argv, "--uptake-y-micron");
-        const bool has_uptake_volume =
-            has_argument(argc, argv, "--uptake-volume-micron3");
-        const bool has_uptake_rate =
-            has_argument(argc, argv, "--uptake-rate-per-min");
-        const bool has_uptake =
-            has_uptake_x || has_uptake_y || has_uptake_volume || has_uptake_rate;
-        if (
-            has_uptake
-            && !(has_uptake_x && has_uptake_y && has_uptake_volume && has_uptake_rate)
-        )
+        const int uptake_count = parse_non_negative_integer(
+            argument(argc, argv, "--uptake-count"),
+            "uptake count"
+        );
+        std::vector<UptakeConfig> uptake_configs;
+        uptake_configs.reserve(static_cast<std::size_t>(uptake_count));
+
+        for (int index = 0; index < uptake_count; ++index)
         {
-            throw std::invalid_argument(
-                "localized uptake requires x, y, effective volume and uptake-rate arguments"
-            );
-        }
-        double uptake_x = 0.0;
-        double uptake_y = 0.0;
-        double uptake_volume = 0.0;
-        double uptake_rate = 0.0;
-        if (has_uptake)
-        {
-            uptake_x = parse_number(
-                argument(argc, argv, "--uptake-x-micron"),
+            const std::string prefix = "--uptake-" + std::to_string(index);
+            UptakeConfig config;
+            config.x = parse_number(
+                argument(argc, argv, prefix + "-x-micron"),
                 "uptake x"
             );
-            uptake_y = parse_number(
-                argument(argc, argv, "--uptake-y-micron"),
+            config.y = parse_number(
+                argument(argc, argv, prefix + "-y-micron"),
                 "uptake y"
             );
-            uptake_volume = parse_number(
-                argument(argc, argv, "--uptake-volume-micron3"),
+            config.volume = parse_number(
+                argument(argc, argv, prefix + "-volume-micron3"),
                 "uptake effective volume"
             );
-            uptake_rate = parse_number(
-                argument(argc, argv, "--uptake-rate-per-min"),
+            config.rate = parse_number(
+                argument(argc, argv, prefix + "-rate-per-min"),
                 "uptake rate"
             );
+            uptake_configs.push_back(config);
         }
 
         require_positive(width, "width");
@@ -302,13 +334,13 @@ int main(int argc, char* argv[])
                 );
             }
         }
-        if (has_uptake)
+        for (const UptakeConfig& uptake : uptake_configs)
         {
-            require_non_negative(uptake_x, "uptake x");
-            require_non_negative(uptake_y, "uptake y");
-            require_positive(uptake_volume, "uptake effective volume");
-            require_non_negative(uptake_rate, "uptake rate");
-            if (uptake_x >= width || uptake_y >= height)
+            require_non_negative(uptake.x, "uptake x");
+            require_non_negative(uptake.y, "uptake y");
+            require_positive(uptake.volume, "uptake effective volume");
+            require_non_negative(uptake.rate, "uptake rate");
+            if (uptake.x >= width || uptake.y >= height)
             {
                 throw std::invalid_argument("localized uptake lies outside 2D domain");
             }
@@ -367,8 +399,8 @@ int main(int argc, char* argv[])
 
         BioFVM::Agent_Container agent_container;
         BioFVM::Basic_Agent* source_agent = nullptr;
-        BioFVM::Basic_Agent* uptake_agent = nullptr;
-        if (has_source || has_uptake)
+        std::vector<BioFVM::Basic_Agent*> uptake_agents;
+        if (has_source || !uptake_configs.empty())
         {
             agent_container.initialize(
                 static_cast<int>(microenvironment.number_of_voxels())
@@ -378,7 +410,7 @@ int main(int argc, char* argv[])
         }
 
         BioFVM::default_microenvironment_options
-            .track_internalized_substrates_in_each_agent = has_uptake;
+            .track_internalized_substrates_in_each_agent = !uptake_configs.empty();
 
         if (has_source)
         {
@@ -394,25 +426,35 @@ int main(int argc, char* argv[])
             source_agent->set_internal_uptake_constants(dt);
         }
 
-        if (has_uptake)
+        std::set<int> uptake_voxel_indices;
+        for (const UptakeConfig& uptake : uptake_configs)
         {
-            uptake_agent = BioFVM::create_basic_agent();
-            uptake_agent->set_total_volume(uptake_volume);
-            if (!uptake_agent->assign_position(uptake_x, uptake_y, 0.0))
+            BioFVM::Basic_Agent* uptake_agent = BioFVM::create_basic_agent();
+            uptake_agent->set_total_volume(uptake.volume);
+            if (!uptake_agent->assign_position(uptake.x, uptake.y, 0.0))
             {
                 throw std::invalid_argument(
                     "localized uptake position is invalid in BioFVM mesh"
                 );
             }
-            (*uptake_agent->uptake_rates)[0] = uptake_rate;
+            if (!uptake_voxel_indices.insert(
+                uptake_agent->get_current_voxel_index()
+            ).second)
+            {
+                throw std::invalid_argument(
+                    "multiple uptake recipients map to the same BioFVM voxel"
+                );
+            }
+            (*uptake_agent->uptake_rates)[0] = uptake.rate;
             uptake_agent->set_internal_uptake_constants(dt);
+            uptake_agents.push_back(uptake_agent);
         }
 
         const long total_steps = std::lround(duration / dt);
         const long sample_steps = std::lround(sample_every / dt);
 
         std::cout
-            << "VESICLESCOPE_BIOFVM_RESULT\t3\n"
+            << "VESICLESCOPE_BIOFVM_RESULT\t4\n"
             << "engine\tBioFVM\n"
             << "physicell_release\t" << VESICLESCOPE_PHYSICELL_RELEASE << '\n'
             << "physicell_commit\t" << VESICLESCOPE_PHYSICELL_COMMIT << '\n'
@@ -424,7 +466,18 @@ int main(int argc, char* argv[])
             << microenvironment.mesh.dz << '\t'
             << "x_fastest_then_y\n";
 
-        print_sample(microenvironment, 0.0, uptake_agent);
+        for (std::size_t index = 0; index < uptake_configs.size(); ++index)
+        {
+            const UptakeConfig& uptake = uptake_configs[index];
+            std::cout
+                << "recipient\t" << index << '\t'
+                << std::setprecision(17) << uptake.x << '\t'
+                << uptake.y << '\t'
+                << uptake.volume << '\t'
+                << uptake.rate << '\n';
+        }
+
+        print_sample(microenvironment, 0.0, uptake_agents);
 
         for (long step = 1; step <= total_steps; ++step)
         {
@@ -439,7 +492,7 @@ int main(int argc, char* argv[])
                 BioFVM::default_microenvironment_options
                     .track_internalized_substrates_in_each_agent = track_internalized;
             }
-            if (uptake_agent != nullptr)
+            for (BioFVM::Basic_Agent* uptake_agent : uptake_agents)
             {
                 uptake_agent->simulate_secretion_and_uptake(&microenvironment, dt);
             }
@@ -452,7 +505,7 @@ int main(int argc, char* argv[])
                 print_sample(
                     microenvironment,
                     static_cast<double>(step) * dt,
-                    uptake_agent
+                    uptake_agents
                 );
             }
         }

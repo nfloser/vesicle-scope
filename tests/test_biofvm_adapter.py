@@ -47,11 +47,16 @@ def point_source(identifier: str = "source.center") -> PointReleaseSource:
     )
 
 
-def point_sink(identifier: str = "sink.center") -> PointUptakeSink:
+def point_sink(
+    identifier: str = "sink.center",
+    *,
+    x_micron: float = 100.0,
+    y_micron: float = 50.0,
+) -> PointUptakeSink:
     return PointUptakeSink(
         identifier=identifier,
-        x_micron=100.0,
-        y_micron=50.0,
+        x_micron=x_micron,
+        y_micron=y_micron,
         effective_volume_micron3=1000.0,
         uptake_rate=synthetic_parameter(
             f"{identifier}.uptake",
@@ -101,25 +106,56 @@ def result_output(
     physicell_release: str = "1.14.2",
     include_grid: bool = True,
     fields: tuple[tuple[float, ...], ...] | None = None,
+    recipients: tuple[PointUptakeSink, ...] = (),
+    recipient_quantities: tuple[tuple[float, ...], ...] | None = None,
 ) -> str:
     lines = [
-        "VESICLESCOPE_BIOFVM_RESULT\t3",
+        "VESICLESCOPE_BIOFVM_RESULT\t4",
         "engine\tBioFVM",
         f"physicell_release\t{physicell_release}",
         "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763",
         "biofvm_version\t1.1.7",
     ]
     if include_grid:
+        lines.append("grid\t10\t5\t20\t25\tx_fastest_then_y")
+
+    if recipient_quantities is None:
+        if len(recipients) == 1:
+            recipient_quantities = (
+                tuple(sample[4] for sample in samples),
+            )
+        elif recipients:
+            raise ValueError(
+                "test helper needs recipient_quantities for multiple recipients"
+            )
+        else:
+            recipient_quantities = ()
+
+    if len(recipient_quantities) != len(recipients):
+        raise ValueError("recipient quantity series must match recipient count")
+
+    for index, recipient in enumerate(recipients):
+        if len(recipient_quantities[index]) != len(samples):
+            raise ValueError("recipient quantity series must match sample count")
         lines.append(
-            "grid\t10\t5\t20\t25\tx_fastest_then_y"
+            "recipient\t"
+            + str(index)
+            + "\t"
+            + str(recipient.x_micron)
+            + "\t"
+            + str(recipient.y_micron)
+            + "\t"
+            + str(recipient.effective_volume_micron3)
+            + "\t"
+            + str(recipient.uptake_rate.value)
         )
 
-    for index, (time, mean, minimum, maximum, internalized) in enumerate(samples):
+    for sample_index, (time, mean, minimum, maximum, internalized) in enumerate(samples):
         lines.append(
             f"sample\t{time}\t{mean}\t{minimum}\t{maximum}\t{internalized}"
         )
         values = (
-            fields[index]
+            fields[sample_index]
             if fields is not None
             else tuple(mean for _ in range(GRID_NX * GRID_NY))
         )
@@ -129,6 +165,15 @@ def result_output(
             + "\t"
             + "\t".join(str(value) for value in values)
         )
+        for recipient_index in range(len(recipients)):
+            lines.append(
+                "recipient_uptake\t"
+                + str(time)
+                + "\t"
+                + str(recipient_index)
+                + "\t"
+                + str(recipient_quantities[recipient_index][sample_index])
+            )
 
     return "\n".join(lines) + "\n"
 
@@ -290,30 +335,41 @@ class BioFVMCommandTests(unittest.TestCase):
             Path("runner"),
         )
 
+        self.assertEqual(command[command.index("--uptake-count") + 1], "1")
+        self.assertEqual(command[command.index("--uptake-0-x-micron") + 1], "100")
+        self.assertEqual(command[command.index("--uptake-0-y-micron") + 1], "50")
         self.assertEqual(
-            command[command.index("--uptake-x-micron") + 1],
-            "100",
-        )
-        self.assertEqual(
-            command[command.index("--uptake-y-micron") + 1],
-            "50",
-        )
-        self.assertEqual(
-            command[command.index("--uptake-volume-micron3") + 1],
+            command[command.index("--uptake-0-volume-micron3") + 1],
             "1000",
         )
         self.assertEqual(
-            command[command.index("--uptake-rate-per-min") + 1],
+            command[command.index("--uptake-0-rate-per-min") + 1],
             "0.5",
         )
 
-    def test_rejects_multiple_uptake_sinks(self) -> None:
+    def test_maps_multiple_uptake_sinks(self) -> None:
+        command = build_command(
+            experiment(
+                uptake_sinks=(
+                    point_sink("sink.left", x_micron=70.0),
+                    point_sink("sink.right", x_micron=130.0),
+                )
+            ),
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            Path("runner"),
+        )
+
+        self.assertEqual(command[command.index("--uptake-count") + 1], "2")
+        self.assertEqual(command[command.index("--uptake-0-x-micron") + 1], "70")
+        self.assertEqual(command[command.index("--uptake-1-x-micron") + 1], "130")
+
+    def test_rejects_recipients_that_map_to_same_numerical_voxel(self) -> None:
         with self.assertRaises(ValueError):
             build_command(
                 experiment(
                     uptake_sinks=(
-                        point_sink("sink.one"),
-                        point_sink("sink.two"),
+                        point_sink("sink.one", x_micron=101.0, y_micron=51.0),
+                        point_sink("sink.two", x_micron=119.0, y_micron=59.0),
                     )
                 ),
                 BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
@@ -335,7 +391,7 @@ class BioFVMCommandTests(unittest.TestCase):
             "120",
         )
         self.assertEqual(
-            command[command.index("--uptake-rate-per-min") + 1],
+            command[command.index("--uptake-0-rate-per-min") + 1],
             "0.5",
         )
 
@@ -385,11 +441,66 @@ class BioFVMResultTests(unittest.TestCase):
 
         result = parse_result(
             experiment(uptake_sinks=(point_sink(),)),
-            result_output(samples),
+            result_output(samples, recipients=(point_sink(),)),
         )
 
         self.assertEqual(result.samples[0].internalized_field_quantity, 0.0)
         self.assertEqual(result.samples[-1].internalized_field_quantity, 2500.0)
+
+    def test_parses_multiple_recipient_uptake_series(self) -> None:
+        left = point_sink("sink.left", x_micron=70.0)
+        right = point_sink("sink.right", x_micron=130.0)
+        left_values = (0.0, 100.0, 200.0, 300.0, 400.0, 500.0)
+        right_values = (0.0, 150.0, 300.0, 450.0, 600.0, 750.0)
+        totals = tuple(
+            left_value + right_value
+            for left_value, right_value in zip(left_values, right_values)
+        )
+        samples = tuple(
+            (time, 2.0, 2.0, 2.0, total)
+            for (time, *_), total in zip(self.base_samples(), totals)
+        )
+
+        result = parse_result(
+            experiment(uptake_sinks=(left, right)),
+            result_output(
+                samples,
+                recipients=(left, right),
+                recipient_quantities=(left_values, right_values),
+            ),
+        )
+
+        self.assertEqual(
+            tuple(series.identifier for series in result.recipient_uptake_series),
+            ("sink.left", "sink.right"),
+        )
+        self.assertEqual(
+            result.recipient_uptake_series[0].samples[-1].internalized_field_quantity,
+            500.0,
+        )
+        self.assertEqual(
+            result.recipient_uptake_series[1].samples[-1].internalized_field_quantity,
+            750.0,
+        )
+
+    def test_rejects_recipient_sum_that_disagrees_with_aggregate(self) -> None:
+        left = point_sink("sink.left", x_micron=70.0)
+        right = point_sink("sink.right", x_micron=130.0)
+        samples = tuple(
+            (time, 2.0, 2.0, 2.0, 100.0 if time > 0.0 else 0.0)
+            for time, *_ in self.base_samples()
+        )
+        zeros = tuple(0.0 for _ in samples)
+
+        with self.assertRaises(ValueError):
+            parse_result(
+                experiment(uptake_sinks=(left, right)),
+                result_output(
+                    samples,
+                    recipients=(left, right),
+                    recipient_quantities=(zeros, zeros),
+                ),
+            )
 
     def test_rejects_missing_or_duplicate_grid(self) -> None:
         with self.assertRaises(ValueError):
@@ -442,7 +553,7 @@ class BioFVMResultTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_result(
                 experiment(uptake_sinks=(point_sink(),)),
-                result_output(tuple(nonzero_start)),
+                result_output(tuple(nonzero_start), recipients=(point_sink(),)),
             )
 
     def test_accepts_roundoff_sized_summary_drift(self) -> None:
@@ -469,7 +580,7 @@ class BioFVMResultTests(unittest.TestCase):
 
     def test_rejects_missing_or_non_monotonic_samples(self) -> None:
         no_samples = (
-            "VESICLESCOPE_BIOFVM_RESULT\t3\n"
+            "VESICLESCOPE_BIOFVM_RESULT\t4\n"
             "engine\tBioFVM\n"
             "physicell_release\t1.14.2\n"
             "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763\n"

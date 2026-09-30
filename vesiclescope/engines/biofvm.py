@@ -12,7 +12,7 @@ from vesiclescope.domain import BoundaryCondition, TransportExperiment
 
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
-_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t3"
+_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t4"
 _PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
 _FIELD_ORDERING = "x_fastest_then_y"
 
@@ -228,6 +228,63 @@ class SpatialFieldSnapshot2D:
 
 
 @dataclass(frozen=True, slots=True)
+class RecipientUptakeSample:
+    """Cumulative internalized field quantity for one recipient at one time."""
+
+    time_min: float
+    internalized_field_quantity: float
+
+    def __post_init__(self) -> None:
+        for value, field_name in (
+            (self.time_min, "time_min"),
+            (self.internalized_field_quantity, "internalized_field_quantity"),
+        ):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(f"{field_name} must be a real number")
+            numeric = float(value)
+            if not math.isfinite(numeric) or numeric < 0.0:
+                raise ValueError(f"{field_name} must be finite and non-negative")
+            object.__setattr__(self, field_name, numeric)
+
+
+@dataclass(frozen=True, slots=True)
+class RecipientUptakeSeries:
+    """Identifier-stable uptake time series for one configured recipient sink."""
+
+    identifier: str
+    x_micron: float
+    y_micron: float
+    effective_volume_micron3: float
+    uptake_rate_per_min: float
+    samples: tuple[RecipientUptakeSample, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.identifier, str) or not self.identifier.strip():
+            raise ValueError("recipient identifier must be non-blank")
+        object.__setattr__(self, "identifier", self.identifier.strip())
+
+        for value, field_name, allow_zero in (
+            (self.x_micron, "x_micron", True),
+            (self.y_micron, "y_micron", True),
+            (self.effective_volume_micron3, "effective_volume_micron3", False),
+            (self.uptake_rate_per_min, "uptake_rate_per_min", True),
+        ):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(f"{field_name} must be a real number")
+            numeric = float(value)
+            valid = numeric >= 0.0 if allow_zero else numeric > 0.0
+            if not math.isfinite(numeric) or not valid:
+                qualifier = "non-negative" if allow_zero else "greater than zero"
+                raise ValueError(f"{field_name} must be finite and {qualifier}")
+            object.__setattr__(self, field_name, numeric)
+
+        if not isinstance(self.samples, tuple):
+            raise TypeError("recipient samples must be a tuple")
+        if not all(isinstance(sample, RecipientUptakeSample) for sample in self.samples):
+            raise TypeError("recipient samples must contain RecipientUptakeSample objects")
+
+
+@dataclass(frozen=True, slots=True)
 class TransportSample:
     """Normalized spatial summary at one requested simulation time."""
 
@@ -293,6 +350,7 @@ class BioFVMRunResult:
     grid: BioFVMGrid2D
     samples: tuple[TransportSample, ...]
     field_snapshots: tuple[SpatialFieldSnapshot2D, ...]
+    recipient_uptake_series: tuple[RecipientUptakeSeries, ...]
 
 
 def _validate_mapping(
@@ -308,8 +366,6 @@ def _validate_mapping(
 
     if len(experiment.release_sources) > 1:
         raise ValueError("the v0.1 BioFVM adapter supports at most one release source")
-    if len(experiment.uptake_sinks) > 1:
-        raise ValueError("the v0.1 BioFVM adapter supports at most one uptake sink")
     if experiment.release_sources and (
         experiment.initial_concentration.unit != _PARTICLE_CONCENTRATION_UNIT
     ):
@@ -323,6 +379,20 @@ def _validate_mapping(
         raise ValueError("grid spacing must tile domain width exactly")
     if not _is_integer_multiple(experiment.domain.height_micron, grid):
         raise ValueError("grid spacing must tile domain height exactly")
+
+    occupied_recipient_voxels: dict[tuple[int, int], str] = {}
+    for sink in experiment.uptake_sinks:
+        voxel = (
+            math.floor(sink.x_micron / grid),
+            math.floor(sink.y_micron / grid),
+        )
+        previous = occupied_recipient_voxels.get(voxel)
+        if previous is not None:
+            raise ValueError(
+                "uptake sinks must map to distinct numerical voxels; "
+                f"{previous!r} and {sink.identifier!r} collide at {voxel}"
+            )
+        occupied_recipient_voxels[voxel] = sink.identifier
 
     dt = numerics.time_step_min
     if not _is_integer_multiple(experiment.duration_min, dt):
@@ -384,17 +454,18 @@ def build_command(
             )
         )
 
-    if experiment.uptake_sinks:
-        sink = experiment.uptake_sinks[0]
+    command.extend(("--uptake-count", str(len(experiment.uptake_sinks))))
+    for index, sink in enumerate(experiment.uptake_sinks):
+        prefix = f"--uptake-{index}"
         command.extend(
             (
-                "--uptake-x-micron",
+                f"{prefix}-x-micron",
                 _format_number(sink.x_micron),
-                "--uptake-y-micron",
+                f"{prefix}-y-micron",
                 _format_number(sink.y_micron),
-                "--uptake-volume-micron3",
+                f"{prefix}-volume-micron3",
                 _format_number(sink.effective_volume_micron3),
-                "--uptake-rate-per-min",
+                f"{prefix}-rate-per-min",
                 _format_number(sink.uptake_rate.value),
             )
         )
@@ -407,7 +478,7 @@ def parse_result(
     experiment: TransportExperiment,
     stdout: str,
 ) -> BioFVMRunResult:
-    """Parse and cross-check the native runner's TSV v3 result contract."""
+    """Parse and cross-check the native runner's TSV v4 result contract."""
 
     if not isinstance(experiment, TransportExperiment):
         raise TypeError("experiment must be a TransportExperiment")
@@ -422,6 +493,8 @@ def parse_result(
     grid: BioFVMGrid2D | None = None
     samples: list[TransportSample] = []
     field_snapshots: list[SpatialFieldSnapshot2D] = []
+    recipient_metadata: dict[int, tuple[float, float, float, float]] = {}
+    recipient_samples: dict[int, list[RecipientUptakeSample]] = {}
 
     for line in lines[1:]:
         fields = line.split("\t")
@@ -435,12 +508,29 @@ def parse_result(
                 nx=_positive_int_text(fields[1], "grid nx"),
                 ny=_positive_int_text(fields[2], "grid ny"),
                 grid_spacing_micron=_finite(fields[3], "grid spacing"),
-                slice_thickness_micron=_finite(
-                    fields[4],
-                    "grid slice thickness",
-                ),
+                slice_thickness_micron=_finite(fields[4], "grid slice thickness"),
                 ordering=fields[5],
             )
+            continue
+
+        if fields[0] == "recipient":
+            if len(fields) != 6:
+                raise ValueError(f"invalid BioFVM recipient line: {line!r}")
+            try:
+                index = int(fields[1])
+            except ValueError as exc:
+                raise ValueError("recipient index must be an integer") from exc
+            if index < 0:
+                raise ValueError("recipient index must be non-negative")
+            if index in recipient_metadata:
+                raise ValueError(f"duplicate BioFVM recipient index: {index}")
+            recipient_metadata[index] = (
+                _finite(fields[2], "recipient x"),
+                _finite(fields[3], "recipient y"),
+                _finite(fields[4], "recipient effective volume"),
+                _finite(fields[5], "recipient uptake rate"),
+            )
+            recipient_samples[index] = []
             continue
 
         if fields[0] == "sample":
@@ -478,6 +568,26 @@ def parse_result(
             )
             continue
 
+        if fields[0] == "recipient_uptake":
+            if len(fields) != 4:
+                raise ValueError(f"invalid BioFVM recipient uptake line: {line!r}")
+            try:
+                index = int(fields[2])
+            except ValueError as exc:
+                raise ValueError("recipient uptake index must be an integer") from exc
+            if index not in recipient_samples:
+                raise ValueError(f"unknown BioFVM recipient uptake index: {index}")
+            recipient_samples[index].append(
+                RecipientUptakeSample(
+                    time_min=_finite(fields[1], "recipient uptake time"),
+                    internalized_field_quantity=_finite(
+                        fields[3],
+                        "recipient internalized quantity",
+                    ),
+                )
+            )
+            continue
+
         if len(fields) != 2 or fields[0] not in {
             "engine",
             "physicell_release",
@@ -503,7 +613,6 @@ def parse_result(
 
     if grid is None:
         raise ValueError("BioFVM result contains no grid metadata")
-
     if not math.isclose(
         grid.nx * grid.grid_spacing_micron,
         experiment.domain.width_micron,
@@ -533,6 +642,55 @@ def parse_result(
             "BioFVM result must contain exactly one field snapshot per sample"
         )
 
+    expected_recipient_indexes = set(range(len(experiment.uptake_sinks)))
+    if set(recipient_metadata) != expected_recipient_indexes:
+        raise ValueError(
+            "BioFVM recipient metadata does not match configured uptake sinks"
+        )
+
+    recipient_series: list[RecipientUptakeSeries] = []
+    for index, sink in enumerate(experiment.uptake_sinks):
+        observed_recipient = recipient_metadata[index]
+        expected_values = (
+            sink.x_micron,
+            sink.y_micron,
+            sink.effective_volume_micron3,
+            sink.uptake_rate.value,
+        )
+        if any(
+            not math.isclose(observed_value, expected_value, rel_tol=0.0, abs_tol=1e-12)
+            for observed_value, expected_value in zip(observed_recipient, expected_values)
+        ):
+            raise ValueError(
+                f"BioFVM recipient metadata does not match sink {sink.identifier!r}"
+            )
+
+        series_samples = tuple(recipient_samples[index])
+        if len(series_samples) != len(samples):
+            raise ValueError(
+                f"BioFVM recipient {sink.identifier!r} must have one uptake value per sample"
+            )
+        for previous, current in zip(series_samples, series_samples[1:]):
+            if current.time_min <= previous.time_min:
+                raise ValueError(
+                    f"recipient {sink.identifier!r} uptake times must be strictly increasing"
+                )
+            if current.internalized_field_quantity + 1e-12 < previous.internalized_field_quantity:
+                raise ValueError(
+                    f"recipient {sink.identifier!r} internalized quantity must not decrease"
+                )
+
+        recipient_series.append(
+            RecipientUptakeSeries(
+                identifier=sink.identifier,
+                x_micron=sink.x_micron,
+                y_micron=sink.y_micron,
+                effective_volume_micron3=sink.effective_volume_micron3,
+                uptake_rate_per_min=sink.uptake_rate.value,
+                samples=series_samples,
+            )
+        )
+
     if not experiment.uptake_sinks:
         if any(
             not math.isclose(
@@ -552,9 +710,7 @@ def parse_result(
         rel_tol=0.0,
         abs_tol=1e-12,
     ):
-        raise ValueError(
-            "BioFVM uptake result must start with zero internalized quantity"
-        )
+        raise ValueError("BioFVM uptake result must start with zero internalized quantity")
 
     for previous, current in zip(samples, samples[1:]):
         if current.time_min <= previous.time_min:
@@ -580,18 +736,34 @@ def parse_result(
         )
 
     field_times = tuple(snapshot.time_min for snapshot in field_snapshots)
-    if len(field_times) != len(observed_times) or any(
+    if any(
         not math.isclose(field_time, sample_time, rel_tol=0.0, abs_tol=1e-9)
         for field_time, sample_time in zip(field_times, observed_times)
     ):
         raise ValueError("BioFVM field times must match summary sample times exactly")
 
-    for sample, snapshot in zip(samples, field_snapshots):
+    for series in recipient_series:
+        recipient_times = tuple(sample.time_min for sample in series.samples)
+        if any(
+            not math.isclose(recipient_time, sample_time, rel_tol=0.0, abs_tol=1e-9)
+            for recipient_time, sample_time in zip(recipient_times, observed_times)
+        ):
+            raise ValueError(
+                f"recipient {series.identifier!r} uptake times must match summary samples"
+            )
+        if not math.isclose(
+            series.samples[0].internalized_field_quantity,
+            0.0,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(f"recipient {series.identifier!r} uptake must start at zero")
+
+    for sample_index, (sample, snapshot) in enumerate(zip(samples, field_snapshots)):
         if len(snapshot.values) != grid.voxel_count:
             raise ValueError(
                 "BioFVM field value count does not match grid dimensions"
             )
-
         field_mean = sum(snapshot.values) / float(grid.voxel_count)
         field_min = min(snapshot.values)
         field_max = max(snapshot.values)
@@ -611,7 +783,6 @@ def parse_result(
                 raise ValueError(
                     f"BioFVM field-derived {label} does not match sample summary"
                 )
-
         if not math.isclose(
             sample.integrated_field_quantity,
             field_integrated,
@@ -620,6 +791,20 @@ def parse_result(
         ):
             raise ValueError(
                 "BioFVM field-derived integrated quantity does not match sample summary"
+            )
+
+        recipient_total = sum(
+            series.samples[sample_index].internalized_field_quantity
+            for series in recipient_series
+        )
+        if not math.isclose(
+            sample.internalized_field_quantity,
+            recipient_total,
+            rel_tol=1e-12,
+            abs_tol=1e-8,
+        ):
+            raise ValueError(
+                "BioFVM aggregate internalized quantity does not match recipient sum"
             )
 
     return BioFVMRunResult(
@@ -635,6 +820,7 @@ def parse_result(
         grid=grid,
         samples=tuple(samples),
         field_snapshots=tuple(field_snapshots),
+        recipient_uptake_series=tuple(recipient_series),
     )
 
 

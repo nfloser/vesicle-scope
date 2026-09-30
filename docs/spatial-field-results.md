@@ -1,7 +1,7 @@
 # Spatial field result contract
 
 Issue: #19  
-Status: protocol v3 result surface
+Status: field surface introduced in protocol v3; retained in current protocol v4
 
 ## Purpose
 
@@ -9,14 +9,14 @@ Global mean/min/max and integrated quantities are sufficient for solver verifica
 
 Distance-binned exposure, recipient-density experiments, heatmaps, and later reproducible figures require the primary extracellular concentration field at each requested output time.
 
-Protocol v3 therefore adds sampled 2D fields to the normalized BioFVM result contract without introducing a persistence layer or visualization dependency.
+Protocol v3 introduced sampled 2D fields to the normalized BioFVM result contract without introducing a persistence layer or visualization dependency.
 
-## Native protocol v3
+## Spatial field records in current protocol v4
 
 The native stdout stream starts with:
 
 ```text
-VESICLESCOPE_BIOFVM_RESULT<TAB>3
+VESICLESCOPE_BIOFVM_RESULT<TAB>4
 ```
 
 It then includes one grid descriptor:
@@ -98,7 +98,7 @@ This makes spatial analysis depend on internally consistent primary output rathe
 
 ## Scope and size limitation
 
-Protocol v3 intentionally transfers sampled fields through the existing subprocess stdout channel.
+The field records introduced in protocol v3 remain unchanged in protocol v4, which additionally carries per-recipient uptake records. The current protocol still transfers sampled fields through the existing subprocess stdout channel.
 
 That is appropriate for the small v0.1 verification domains and keeps the engine boundary inspectable.
 

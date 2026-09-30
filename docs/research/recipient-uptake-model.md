@@ -114,6 +114,16 @@ This is different from the amount-per-time source benchmark, whose integrated re
 
 A later biologically meaningful recipient model should represent finite recipient geometry or otherwise define how cell volume/footprint couples to the continuum mesh before spatial-refinement invariance is expected.
 
+## Population extension
+
+Issue #21 reuses the same point-sink equation for multiple recipients. It does not change the uptake coefficient semantics.
+
+Every recipient keeps its own identifier and cumulative internalized time series. The aggregate internalized quantity is required to equal the sum of those series.
+
+Two point recipients are not allowed to occupy the same numerical voxel in this model. Sequential uptake agents in one voxel would make the cell-specific attribution depend on agent ordering. Until finite cell geometry is represented, VesicleScope rejects that case rather than treating the ordering artifact as biology.
+
+The synthetic symmetry benchmark and protocol details are documented in [recipient population model baseline](recipient-population-model.md).
+
 ## What this does not establish
 
 Passing the benchmark does not establish:
