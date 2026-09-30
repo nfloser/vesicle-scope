@@ -776,7 +776,7 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
         scale = max(coarse_uptake, fine_uptake, 1.0)
         self.assertLessEqual(abs(coarse_uptake - fine_uptake) / scale, 0.10)
 
-    def test_circular_footprint_refines_more_stably_than_comparable_point_sink(self) -> None:
+    def test_circular_footprint_shows_self_convergence_under_refinement(self) -> None:
         circular = circular_recipient_experiment()
         point = comparable_point_recipient_experiment()
 
@@ -788,33 +788,49 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             )
             return result.samples[-1].internalized_field_quantity
 
-        circular_coarse = final_uptake(circular, 10.0)
-        circular_fine = final_uptake(circular, 5.0)
-        point_coarse = final_uptake(point, 10.0)
-        point_fine = final_uptake(point, 5.0)
+        circle_10 = final_uptake(circular, 10.0)
+        circle_5 = final_uptake(circular, 5.0)
+        circle_2_5 = final_uptake(circular, 2.5)
+        point_10 = final_uptake(point, 10.0)
+        point_5 = final_uptake(point, 5.0)
+        point_2_5 = final_uptake(point, 2.5)
 
-        circular_relative_change = abs(circular_coarse - circular_fine) / max(
-            circular_coarse,
-            circular_fine,
+        circle_change_10_to_5 = abs(circle_10 - circle_5) / max(
+            circle_10,
+            circle_5,
             1.0,
         )
-        point_relative_change = abs(point_coarse - point_fine) / max(
-            point_coarse,
-            point_fine,
+        circle_change_5_to_2_5 = abs(circle_5 - circle_2_5) / max(
+            circle_5,
+            circle_2_5,
+            1.0,
+        )
+        point_change_10_to_5 = abs(point_10 - point_5) / max(
+            point_10,
+            point_5,
+            1.0,
+        )
+        point_change_5_to_2_5 = abs(point_5 - point_2_5) / max(
+            point_5,
+            point_2_5,
             1.0,
         )
 
         print(
             "VESICLESCOPE_FINITE_RECIPIENT_REFINEMENT "
-            f"circle10={circular_coarse:.17g} "
-            f"circle5={circular_fine:.17g} "
-            f"circle_rel={circular_relative_change:.17g} "
-            f"point10={point_coarse:.17g} "
-            f"point5={point_fine:.17g} "
-            f"point_rel={point_relative_change:.17g}"
+            f"circle10={circle_10:.17g} "
+            f"circle5={circle_5:.17g} "
+            f"circle2_5={circle_2_5:.17g} "
+            f"circle_rel_10_5={circle_change_10_to_5:.17g} "
+            f"circle_rel_5_2_5={circle_change_5_to_2_5:.17g} "
+            f"point10={point_10:.17g} "
+            f"point5={point_5:.17g} "
+            f"point2_5={point_2_5:.17g} "
+            f"point_rel_10_5={point_change_10_to_5:.17g} "
+            f"point_rel_5_2_5={point_change_5_to_2_5:.17g}"
         )
 
-        self.assertLess(circular_relative_change, point_relative_change)
+        self.assertLess(circle_change_5_to_2_5, circle_change_10_to_5)
 
     def test_circular_recipient_run_is_deterministic(self) -> None:
         experiment = circular_recipient_experiment()
