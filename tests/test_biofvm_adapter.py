@@ -8,6 +8,7 @@ from vesiclescope.domain import (
     BoundaryCondition,
     EvidenceCategory,
     PointReleaseSource,
+    PointUptakeSink,
     RectangularDomain2D,
     ScientificParameter,
     TransportExperiment,
@@ -46,9 +47,24 @@ def point_source(identifier: str = "source.center") -> PointReleaseSource:
     )
 
 
+def point_sink(identifier: str = "sink.center") -> PointUptakeSink:
+    return PointUptakeSink(
+        identifier=identifier,
+        x_micron=100.0,
+        y_micron=50.0,
+        effective_volume_micron3=1000.0,
+        uptake_rate=synthetic_parameter(
+            f"{identifier}.uptake",
+            0.5,
+            "1/min",
+        ),
+    )
+
+
 def experiment(
     *,
     release_sources: tuple[PointReleaseSource, ...] = (),
+    uptake_sinks: tuple[PointUptakeSink, ...] = (),
     concentration_unit: str = "particle_equivalent/micron^3",
 ) -> TransportExperiment:
     return TransportExperiment(
@@ -69,6 +85,7 @@ def experiment(
             concentration_unit,
         ),
         release_sources=release_sources,
+        uptake_sinks=uptake_sinks,
     )
 
 
@@ -222,19 +239,67 @@ class BioFVMCommandTests(unittest.TestCase):
             )
 
 
+    def test_maps_one_explicit_volume_uptake_sink(self) -> None:
+        command = build_command(
+            experiment(uptake_sinks=(point_sink(),)),
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            Path("runner"),
+        )
+
+        self.assertEqual(
+            command[command.index("--uptake-x-micron") + 1],
+            "100",
+        )
+        self.assertEqual(
+            command[command.index("--uptake-y-micron") + 1],
+            "50",
+        )
+        self.assertEqual(
+            command[command.index("--uptake-volume-micron3") + 1],
+            "1000",
+        )
+        self.assertEqual(
+            command[command.index("--uptake-rate-per-min") + 1],
+            "0.5",
+        )
+
+    def test_rejects_multiple_uptake_sinks_or_combined_source_sink(self) -> None:
+        with self.assertRaises(ValueError):
+            build_command(
+                experiment(
+                    uptake_sinks=(
+                        point_sink("sink.one"),
+                        point_sink("sink.two"),
+                    )
+                ),
+                BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+                Path("runner"),
+            )
+
+        with self.assertRaises(ValueError):
+            build_command(
+                experiment(
+                    release_sources=(point_source(),),
+                    uptake_sinks=(point_sink(),),
+                ),
+                BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+                Path("runner"),
+            )
+
+
 class BioFVMResultTests(unittest.TestCase):
     def test_parses_normalized_samples_and_engine_metadata(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t1
+        output = """VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
 physicell_release\t1.14.2
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
-sample\t0\t2\t2\t2
-sample\t2\t1.63746150616\t1.63746150616\t1.63746150616
-sample\t4\t1.34064009207\t1.34064009207\t1.34064009207
-sample\t6\t1.09762327219\t1.09762327219\t1.09762327219
-sample\t8\t0.898657928234\t0.898657928234\t0.898657928234
-sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
+sample\t0\t2\t2\t2\t0
+sample\t2\t1.63746150616\t1.63746150616\t1.63746150616\t0
+sample\t4\t1.34064009207\t1.34064009207\t1.34064009207\t0
+sample\t6\t1.09762327219\t1.09762327219\t1.09762327219\t0
+sample\t8\t0.898657928234\t0.898657928234\t0.898657928234\t0
+sample\t10\t0.735758882343\t0.735758882343\t0.735758882343\t0
 """
         result = parse_result(experiment(), output)
 
@@ -245,20 +310,79 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
         self.assertEqual(result.samples[0].time_min, 0.0)
         self.assertAlmostEqual(result.samples[0].integrated_field_quantity, 1_000_000.0)
         self.assertEqual(result.integrated_quantity_unit, "particle_equivalent")
+        self.assertEqual(result.internalized_quantity_unit, "particle_equivalent")
+        self.assertEqual(result.samples[0].internalized_field_quantity, 0.0)
         self.assertAlmostEqual(result.samples[-1].mean_concentration, 0.735758882343)
 
-    def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t1
+    def test_parses_nonzero_internalized_quantity(self) -> None:
+        output = """VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
 physicell_release\t1.14.2
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
-sample\t0\t2.0000000000000004\t2\t2
-sample\t2\t1.6374615061600002\t1.63746150616\t1.63746150616
-sample\t4\t1.3406400920700002\t1.34064009207\t1.34064009207
-sample\t6\t1.0976232721900001\t1.09762327219\t1.09762327219
-sample\t8\t0.8986579282340001\t0.898657928234\t0.898657928234
-sample\t10\t0.7357588823430001\t0.735758882343\t0.735758882343
+sample\t0\t2\t2\t2\t0
+sample\t2\t1.999\t1.95\t2\t500
+sample\t4\t1.998\t1.90\t2\t1000
+sample\t6\t1.997\t1.85\t2\t1500
+sample\t8\t1.996\t1.80\t2\t2000
+sample\t10\t1.995\t1.75\t2\t2500
+"""
+
+        result = parse_result(
+            experiment(uptake_sinks=(point_sink(),)),
+            output,
+        )
+
+        self.assertEqual(result.samples[0].internalized_field_quantity, 0.0)
+        self.assertEqual(result.samples[-1].internalized_field_quantity, 2500.0)
+        self.assertEqual(result.internalized_quantity_unit, "particle_equivalent")
+
+    def test_rejects_internalized_quantity_without_uptake_or_at_uptake_start(self) -> None:
+        unexpected_without_sink = """VESICLESCOPE_BIOFVM_RESULT\t2
+engine\tBioFVM
+physicell_release\t1.14.2
+physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
+biofvm_version\t1.1.7
+sample\t0\t2\t2\t2\t0
+sample\t2\t2\t2\t2\t1
+sample\t4\t2\t2\t2\t1
+sample\t6\t2\t2\t2\t1
+sample\t8\t2\t2\t2\t1
+sample\t10\t2\t2\t2\t1
+"""
+        with self.assertRaises(ValueError):
+            parse_result(experiment(), unexpected_without_sink)
+
+        nonzero_uptake_start = """VESICLESCOPE_BIOFVM_RESULT\t2
+engine\tBioFVM
+physicell_release\t1.14.2
+physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
+biofvm_version\t1.1.7
+sample\t0\t2\t2\t2\t1
+sample\t2\t1.999\t1.95\t2\t500
+sample\t4\t1.998\t1.90\t2\t1000
+sample\t6\t1.997\t1.85\t2\t1500
+sample\t8\t1.996\t1.80\t2\t2000
+sample\t10\t1.995\t1.75\t2\t2500
+"""
+        with self.assertRaises(ValueError):
+            parse_result(
+                experiment(uptake_sinks=(point_sink(),)),
+                nonzero_uptake_start,
+            )
+
+    def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
+        output = """VESICLESCOPE_BIOFVM_RESULT\t2
+engine\tBioFVM
+physicell_release\t1.14.2
+physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
+biofvm_version\t1.1.7
+sample\t0\t2.0000000000000004\t2\t2\t0
+sample\t2\t1.6374615061600002\t1.63746150616\t1.63746150616\t0
+sample\t4\t1.3406400920700002\t1.34064009207\t1.34064009207\t0
+sample\t6\t1.0976232721900001\t1.09762327219\t1.09762327219\t0
+sample\t8\t0.8986579282340001\t0.898657928234\t0.898657928234\t0
+sample\t10\t0.7357588823430001\t0.735758882343\t0.735758882343\t0
 """
 
         result = parse_result(experiment(), output)
@@ -267,19 +391,19 @@ sample\t10\t0.7357588823430001\t0.735758882343\t0.735758882343
         self.assertAlmostEqual(result.samples[0].mean_concentration, 2.0)
 
     def test_rejects_engine_metadata_that_does_not_match_pin(self) -> None:
-        output = """VESICLESCOPE_BIOFVM_RESULT\t1
+        output = """VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
 physicell_release\t1.14.3
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
-sample\t0\t2\t2\t2
+sample\t0\t2\t2\t2\t0
 """
 
         with self.assertRaises(ValueError):
             parse_result(experiment(), output)
 
     def test_rejects_missing_or_non_monotonic_samples(self) -> None:
-        no_samples = """VESICLESCOPE_BIOFVM_RESULT\t1
+        no_samples = """VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
 physicell_release\t1.14.2
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
@@ -288,13 +412,13 @@ biofvm_version\t1.1.7
         with self.assertRaises(ValueError):
             parse_result(experiment(), no_samples)
 
-        backwards = """VESICLESCOPE_BIOFVM_RESULT\t1
+        backwards = """VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
 physicell_release\t1.14.2
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
-sample\t2\t1\t1\t1
-sample\t1\t1\t1\t1
+sample\t2\t1\t1\t1\t0
+sample\t1\t1\t1\t1\t0
 """
         with self.assertRaises(ValueError):
             parse_result(experiment(), backwards)
@@ -306,17 +430,17 @@ class BioFVMRunnerTests(unittest.TestCase):
         run_mock.return_value = subprocess.CompletedProcess(
             args=["runner"],
             returncode=0,
-            stdout="""VESICLESCOPE_BIOFVM_RESULT\t1
+            stdout="""VESICLESCOPE_BIOFVM_RESULT\t2
 engine\tBioFVM
 physicell_release\t1.14.2
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
-sample\t0\t2\t2\t2
-sample\t2\t1.63746150616\t1.63746150616\t1.63746150616
-sample\t4\t1.34064009207\t1.34064009207\t1.34064009207
-sample\t6\t1.09762327219\t1.09762327219\t1.09762327219
-sample\t8\t0.898657928234\t0.898657928234\t0.898657928234
-sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
+sample\t0\t2\t2\t2\t0
+sample\t2\t1.63746150616\t1.63746150616\t1.63746150616\t0
+sample\t4\t1.34064009207\t1.34064009207\t1.34064009207\t0
+sample\t6\t1.09762327219\t1.09762327219\t1.09762327219\t0
+sample\t8\t0.898657928234\t0.898657928234\t0.898657928234\t0
+sample\t10\t0.735758882343\t0.735758882343\t0.735758882343\t0
 """,
             stderr="",
         )

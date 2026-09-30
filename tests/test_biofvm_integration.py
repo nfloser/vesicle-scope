@@ -1,3 +1,4 @@
+import math
 import os
 import unittest
 from pathlib import Path
@@ -6,6 +7,7 @@ from vesiclescope.domain import (
     BoundaryCondition,
     EvidenceCategory,
     PointReleaseSource,
+    PointUptakeSink,
     RectangularDomain2D,
     ScientificParameter,
     TransportExperiment,
@@ -88,6 +90,44 @@ def localized_release_experiment(rate_per_min: float = 120.0) -> TransportExperi
                     "source.release",
                     rate_per_min,
                     "particle_equivalent/min",
+                ),
+            ),
+        ),
+    )
+
+
+def localized_uptake_experiment(
+    *,
+    uptake_rate_per_min: float = 0.5,
+    effective_volume_micron3: float = 1000.0,
+) -> TransportExperiment:
+    return TransportExperiment(
+        experiment_id="synthetic.localized-uptake",
+        domain=RectangularDomain2D(
+            width_micron=200.0,
+            height_micron=100.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=1.0,
+        sample_every_min=0.2,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter("transport.diffusion", 0.0, "micron^2/min"),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            2.0,
+            "particle_equivalent/micron^3",
+        ),
+        uptake_sinks=(
+            PointUptakeSink(
+                identifier="sink.center",
+                x_micron=100.0,
+                y_micron=50.0,
+                effective_volume_micron3=effective_volume_micron3,
+                uptake_rate=synthetic_parameter(
+                    "sink.uptake",
+                    uptake_rate_per_min,
+                    "1/min",
                 ),
             ),
         ),
@@ -198,6 +238,104 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             120.0 * experiment.duration_min,
             delta=1e-8,
         )
+
+    def test_localized_uptake_conserves_extracellular_plus_internalized_quantity(self) -> None:
+        experiment = localized_uptake_experiment()
+        result = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            self.runner,
+        )
+        initial_total = 2.0 * experiment.domain.volume_micron3
+
+        previous_internalized = -1.0
+        for sample in result.samples:
+            self.assertAlmostEqual(
+                sample.integrated_field_quantity
+                + sample.internalized_field_quantity,
+                initial_total,
+                delta=1e-8,
+            )
+            self.assertGreaterEqual(sample.internalized_field_quantity, 0.0)
+            self.assertGreaterEqual(
+                sample.internalized_field_quantity + 1e-12,
+                previous_internalized,
+            )
+            previous_internalized = sample.internalized_field_quantity
+
+    def test_zero_diffusion_uptake_matches_biofvm_discrete_update(self) -> None:
+        experiment = localized_uptake_experiment()
+        dt = 0.1
+        grid = 20.0
+        result = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=grid, time_step_min=dt),
+            self.runner,
+        )
+
+        voxel_volume = grid * grid * experiment.domain.slice_thickness_micron
+        sink = experiment.uptake_sinks[0]
+        alpha = (
+            dt
+            * sink.effective_volume_micron3
+            / voxel_volume
+            * sink.uptake_rate.value
+        )
+        unaffected_volume = experiment.domain.volume_micron3 - voxel_volume
+        initial_total = 2.0 * experiment.domain.volume_micron3
+
+        for sample in result.samples:
+            steps = round(sample.time_min / dt)
+            local_concentration = 2.0 / ((1.0 + alpha) ** steps)
+            expected_extracellular = (
+                2.0 * unaffected_volume
+                + local_concentration * voxel_volume
+            )
+            expected_internalized = initial_total - expected_extracellular
+
+            self.assertAlmostEqual(
+                sample.integrated_field_quantity,
+                expected_extracellular,
+                delta=1e-8,
+            )
+            self.assertAlmostEqual(
+                sample.internalized_field_quantity,
+                expected_internalized,
+                delta=1e-8,
+            )
+
+    def test_uptake_timestep_refinement_converges_toward_continuous_limit(self) -> None:
+        experiment = localized_uptake_experiment()
+        grid = 20.0
+        voxel_volume = grid * grid * experiment.domain.slice_thickness_micron
+        sink = experiment.uptake_sinks[0]
+        effective_rate = (
+            sink.effective_volume_micron3
+            / voxel_volume
+            * sink.uptake_rate.value
+        )
+        unaffected_volume = experiment.domain.volume_micron3 - voxel_volume
+        continuous_local = 2.0 * math.exp(-effective_rate * experiment.duration_min)
+        continuous_total = 2.0 * unaffected_volume + continuous_local * voxel_volume
+
+        coarse = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=grid, time_step_min=0.2),
+            self.runner,
+        )
+        fine = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=grid, time_step_min=0.1),
+            self.runner,
+        )
+
+        coarse_error = abs(
+            coarse.samples[-1].integrated_field_quantity - continuous_total
+        )
+        fine_error = abs(
+            fine.samples[-1].integrated_field_quantity - continuous_total
+        )
+        self.assertLess(fine_error, coarse_error)
 
     def test_uniform_solution_is_stable_across_spatial_resolution(self) -> None:
         rate = 0.05

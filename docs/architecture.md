@@ -218,10 +218,14 @@ The first executable engine boundary is a process adapter in `vesiclescope.engin
 
 The Python scientific contract does not import or embed BioFVM. It validates the `TransportExperiment`, constructs an explicit argument vector for a pinned native runner, and parses a small normalized result stream. This keeps BioFVM-specific build and runtime details behind the adapter while avoiding a binding framework that the current research question does not require.
 
-The native runner currently exposes only the behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, and at most one localized synthetic amount-per-time release source.
+The native runner currently exposes only the behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, at most one localized synthetic amount-per-time release source, or at most one explicit-volume synthetic uptake sink. The current adapter rejects combined source-and-sink runs so the two mechanisms remain independently verified.
 
 A source is represented engine-neutrally as a `PointReleaseSource` with explicit position and provenance-bearing release rate. The BioFVM adapter maps that source to `net_export_rates`, because this preserves amount-per-time semantics without introducing a saturation target that the current evidence does not justify.
 
-Normalized samples carry mean/min/max concentration plus integrated field amount. Integrated amount is derived using the explicit physical slice volume, so source mass balance can be checked independently of x/y mesh resolution.
+An uptake sink is represented engine-neutrally as a `PointUptakeSink` with explicit position, effective physical volume, and provenance-bearing `1/min` coefficient. The BioFVM adapter maps these inputs to `Basic_Agent.uptake_rates` and `set_total_volume`, preserving the volume dependence that exists in the pinned solver rather than hiding it.
+
+Normalized samples carry mean/min/max concentration, the extracellular integrated field quantity `∫c dV`, and cumulative internalized quantity where uptake is enabled. Both integrated quantities carry explicit derived units.
+
+Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Point-sink uptake is deliberately not claimed to be spatial-resolution invariant because BioFVM's discrete sink contains `V_agent / V_voxel`.
 
 Full spatial-field serialization is deferred until an actual downstream analysis or viewer requires it.
