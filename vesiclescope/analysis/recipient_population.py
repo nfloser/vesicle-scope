@@ -216,6 +216,31 @@ def analyze_recipient_population(
         experiment.uptake_sinks,
         result.recipient_uptake_series,
     ):
+        for observed_value, expected_value, field_name in (
+            (series.x_micron, sink.x_micron, "x_micron"),
+            (series.y_micron, sink.y_micron, "y_micron"),
+            (
+                series.effective_volume_micron3,
+                sink.effective_volume_micron3,
+                "effective_volume_micron3",
+            ),
+            (
+                series.uptake_rate_per_min,
+                sink.uptake_rate.value,
+                "uptake_rate_per_min",
+            ),
+        ):
+            if not math.isclose(
+                observed_value,
+                expected_value,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            ):
+                raise ValueError(
+                    f"result recipient {sink.identifier!r} {field_name} "
+                    "does not match experiment"
+                )
+
         if len(series.samples) != len(result.samples):
             raise ValueError(
                 f"recipient {sink.identifier!r} sample count does not match result"
