@@ -186,7 +186,12 @@ def render_recipient_count_figure(
 
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    with matplotlib.rc_context(\n        {\n            "svg.hashsalt": "vesiclescope-population-figure",\n            "svg.fonttype": "none",\n        }\n    ):
+    with matplotlib.rc_context(
+        {
+            "svg.hashsalt": "vesiclescope-population-figure",
+            "svg.fonttype": "none",
+        }
+    ):
         figure, axes = plt.subplots(1, 2, figsize=(11.5, 5.0))
         heatmap_axis, count_axis = axes
 
