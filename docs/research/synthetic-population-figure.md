@@ -7,19 +7,21 @@ Status: headless synthetic fixed-grid figure workflow
 
 VesicleScope now has enough verified primary output to produce a scientific figure without reading BioFVM internals or reproducing its equations.
 
-The first figure is intentionally narrow. It visualizes the already reviewed synthetic recipient-count benchmark and demonstrates that normalized fields and engine-independent population analysis can feed a reproducible scientific output.
+The first figure is intentionally narrow. It now visualizes the reviewed finite-recipient 2/4/8 count benchmark and demonstrates that normalized fields, declared recipient geometry and engine-independent population analysis can feed a reproducible scientific output.
 
 It is **not** an experimental figure and it does not define a biological communication range.
 
 ## Shared scenario
 
-The reviewed 2/4/8 recipient sweep is defined once in:
+The default figure uses the reviewed finite 2/4/8 recipient sweep defined in:
 
 ```text
-vesiclescope.scenarios.recipient_count_sweep_experiment
+vesiclescope.scenarios.finite_recipient_count_sweep_experiment
 ```
 
-Native integration tests and figure generation both call this factory.
+The historical point-sink factory remains available as `recipient_count_sweep_experiment` for reproducibility, but the primary SVG no longer uses it.
+
+Native integration tests and figure generation call the finite factory.
 
 Across all three scenarios the following remain fixed:
 
@@ -36,7 +38,9 @@ Across all three scenarios the following remain fixed:
 - 0.1 min timestep;
 - 20 min duration.
 
-Only the reviewed recipient population changes from 2 to 4 to 8 point recipients.
+Only the reviewed recipient population changes from 2 to 4 to 8 finite circular recipients.
+
+Each displayed recipient has a declared 15 micron footprint radius. That radius is a synthetic verification input and is drawn directly from the experiment contract; it is not inferred from effective uptake volume or numerical grid spacing.
 
 ## Figure data boundary
 
@@ -48,7 +52,9 @@ Only the reviewed recipient population changes from 2 to 4 to 8 point recipients
 
 It cross-checks scenario/result identity, recipient counts and ordering, final-time summaries, quantity units, aggregate uptake and spatial-field dimensions before rendering.
 
-The heatmap uses the final normalized field of the 8-recipient scenario. Protocol ordering is `x_fastest_then_y`, so each y row is reconstructed from one contiguous `nx` span.
+The heatmap uses the final normalized field of the finite 8-recipient scenario. Protocol ordering is `x_fastest_then_y`, so each y row is reconstructed from one contiguous `nx` span.
+
+Figure data also carries the declared center and footprint radius for every displayed recipient. Point or mixed recipient geometry is rejected rather than silently rendered as finite geometry.
 
 The count-sensitivity panel obtains both axes from analysis outputs:
 
@@ -63,8 +69,8 @@ No uptake value is duplicated as a plotting constant.
 
 The SVG contains:
 
-1. the final extracellular concentration field for the 8-recipient scenario, with donor and recipient positions overlaid;
-2. total cumulative uptake versus planar recipient density for the 2/4/8 scenarios.
+1. the final extracellular concentration field for the finite 8-recipient scenario, with the donor point and eight circular recipient footprints overlaid;
+2. total cumulative uptake versus planar recipient density for the finite 2/4/8 scenarios.
 
 The figure carries the explicit title:
 
@@ -104,7 +110,9 @@ python -m scripts.generate_population_figure \
   --output build/figures/recipient-count.svg
 ```
 
-The generator runs the same 2/4/8 scenarios, analyzes each final sample through the public analysis layer and then renders the SVG.
+The generator runs the finite 2/4/8 scenarios at the reviewed 10 micron x/y grid, analyzes each final sample through the public analysis layer and then renders the SVG.
+
+Issue #33 independently ran the same finite count sweep at 5 micron x/y resolution and preserved the qualitative `2 < 4 < 8` total-uptake ordering. The figure remains a 10 micron visualization; it does not hide or replace the refinement check.
 
 It fails clearly if the native runner is missing.
 
@@ -124,10 +132,10 @@ A dedicated `population-figure` job:
 
 ## Interpretation limit
 
-The right-hand curve is the result of one deterministic synthetic spatial arrangement at one numerical resolution.
+The right-hand curve is the result of one deterministic synthetic finite-recipient arrangement at the displayed 10 micron numerical resolution.
 
 Although recipient count and planar recipient density increase together in the fixed domain, angular occupancy around the donor also changes. The curve must therefore not be presented as an experimentally calibrated or arrangement-independent biological density-response relationship.
 
-Point-recipient uptake also retains the documented `V_agent / V_voxel` dependence.
+Finite-footprint uptake has separate rasterization and grid-refinement verification, but the displayed geometry and uptake parameters remain synthetic rather than experimentally calibrated.
 
 The figure demonstrates a reproducible software/scientific-analysis pipeline, not biological validation.
