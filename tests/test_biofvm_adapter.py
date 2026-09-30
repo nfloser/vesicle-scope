@@ -243,7 +243,8 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
         self.assertEqual(result.engine, pinned_engine_metadata())
         self.assertEqual(len(result.samples), 6)
         self.assertEqual(result.samples[0].time_min, 0.0)
-        self.assertAlmostEqual(result.samples[0].total_amount, 1_000_000.0)
+        self.assertAlmostEqual(result.samples[0].integrated_field_quantity, 1_000_000.0)
+        self.assertEqual(result.integrated_quantity_unit, "particle_equivalent")
         self.assertAlmostEqual(result.samples[-1].mean_concentration, 0.735758882343)
 
     def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
