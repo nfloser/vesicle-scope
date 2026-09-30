@@ -48,9 +48,10 @@ The adapter currently accepts only the existing v0.1 contract:
 - diffusion in `micron^2/min`;
 - first-order decay in `1/min`;
 - explicit initial-concentration unit;
-- duration and output interval in minutes.
+- duration and output interval in minutes;
+- zero or one localized synthetic release source in `particle_equivalent/min`.
 
-There is no implicit unit conversion.
+There is no implicit unit conversion. Localized release additionally requires concentration unit `particle_equivalent/micron^3` so amount and concentration semantics stay explicit.
 
 The numerical configuration is separate from physical geometry and biological/model parameters:
 
@@ -91,7 +92,10 @@ Each sample contains:
 - time;
 - mean concentration;
 - minimum concentration;
-- maximum concentration.
+- maximum concentration;
+- integrated field amount, calculated from mean concentration and the explicit physical domain volume.
+
+The integrated amount is especially important for source/sink verification. Because the domain carries a physical slice thickness, this quantity is not tied to the x/y mesh spacing.
 
 The parser rejects:
 
@@ -119,6 +123,24 @@ CI verifies:
 - changing spatial resolution does not change the uniform solution within the asserted numerical tolerance.
 
 All values used by these tests are labelled synthetic verification inputs. They are not EV diffusivity, clearance or concentration estimates.
+
+## Localized-release verification
+
+The source-capable runner links BioFVM's `Basic_Agent` and minimal `Agent_Container` implementation only for this executable. A single synthetic `PointReleaseSource` is mapped to BioFVM `net_export_rates`.
+
+With zero initial concentration, zero decay, no uptake and no-flux boundaries, CI checks:
+
+```text
+total amount(t) = release rate * t
+```
+
+at every requested sample.
+
+The same experiment is run at two x/y grid spacings with fixed physical slice thickness. Integrated amount must remain unchanged under refinement.
+
+The adapter currently rejects more than one source. That is an intentional capability boundary, not a claim that biological systems have only one donor.
+
+Scientific rationale and evidence limits are documented in [localized release model baseline](research/localized-release-model.md).
 
 ## What this validates
 
