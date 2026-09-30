@@ -68,7 +68,7 @@ Key references:
 - Project: https://physicell.org/
 - Source: https://github.com/MathCancer/PhysiCell
 
-Current source carries a BSD 3-Clause license and explicit citation guidance.
+The upstream tree reviewed on 2026-09-30 reports PhysiCell version **1.14.2**. Current BioFVM/PhysiCell source carries a BSD 3-Clause license and explicit citation guidance. The implementation must pin an exact release or commit rather than consume a floating branch.
 
 **Fit for v0.1:** strong. It already provides diffusion/decay fields and agent source/sink behavior, which maps closely to the narrow transport baseline.
 
@@ -131,6 +131,8 @@ This is an engineering/modeling decision, not a claim that BioFVM is biologicall
 ### MIASE
 
 MIASE defines the minimum information needed to reproduce a simulation experiment. VesicleScope should use it as a design checklist even where the exact model type does not map cleanly to existing exchange formats.
+
+- Waltemath D et al. *Minimum Information About a Simulation Experiment (MIASE).* PLoS Computational Biology. 2011;7:e1001122. DOI: https://doi.org/10.1371/journal.pcbi.1001122; PMID: 21552546
 
 ### SED-ML
 
