@@ -116,7 +116,7 @@ Issue #29 introduces the first finite recipient geometry to address this numeric
 
 A `CircularUptakeSink` declares a 2D footprint radius separately from the effective uptake volume. The radius determines which voxel centers participate; the effective volume still determines the total BioFVM uptake coupling and is distributed across the selected components.
 
-The first native refinement benchmark compares 10 and 5 micron grids and requires final uptake to agree within 10% while global mass accounting closes at both resolutions. This is evidence of numerical convergence for that synthetic setup, not biological validation.
+The native refinement benchmark evaluates 10, 5 and 2.5 micron grids. It requires the 10→5 micron final-uptake change to remain within 10%, requires the 5→2.5 micron change to be smaller than the preceding refinement change, and closes global mass accounting at every resolution. The reviewed synthetic run observed 8.97% followed by 4.94% relative change. This is numerical convergence evidence for that setup, not biological validation.
 
 See [finite circular recipient footprint](finite-recipient-footprint.md) for the discretization and interpretation contract.
 
