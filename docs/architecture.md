@@ -170,7 +170,7 @@ validation + provenance checks
 BioFVM adapter / headless runner
         |
         v
-raw result + run metadata
+normalized summaries + spatial field snapshots + run metadata
         |
         +--> validation metrics
         |
@@ -224,10 +224,10 @@ A source is represented engine-neutrally as a `PointReleaseSource` with explicit
 
 An uptake sink is represented engine-neutrally as a `PointUptakeSink` with explicit position, effective physical volume, and provenance-bearing `1/min` coefficient. The BioFVM adapter maps these inputs to `Basic_Agent.uptake_rates` and `set_total_volume`, preserving the volume dependence that exists in the pinned solver rather than hiding it.
 
-Normalized samples carry mean/min/max concentration, the extracellular integrated field quantity `∫c dV`, and cumulative internalized quantity where uptake is enabled. Both integrated quantities carry explicit derived units.
+Normalized results carry mean/min/max concentration summaries, the extracellular integrated field quantity `∫c dV`, cumulative internalized quantity where uptake is enabled, one explicit 2D grid descriptor, and one complete extracellular concentration-field snapshot per requested sample. Both integrated quantities carry explicit derived units.
 
 Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Point-sink uptake is deliberately not claimed to be spatial-resolution invariant because BioFVM's discrete sink contains `V_agent / V_voxel`.
 
 For coupled runs the numerical operator order is source net export → uptake → diffusion/decay for each timestep. This ordering is explicit reproducibility metadata/behavior, not a biological sequence. Combined verification checks released = extracellular + internalized quantity and confirms a reproducible synthetic near-versus-far uptake difference.
 
-Full spatial-field serialization is deferred until the first recipient-population/distance analysis requires it.
+Spatial fields are now available in the normalized in-memory result contract, so analysis and visualization no longer need BioFVM internals. Persistent field serialization remains deferred until the first recipient-population/distance analysis defines a concrete storage need.
