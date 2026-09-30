@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issues: #8, #11, #13, #15
+Issues: #8, #11, #13, #15, #17
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -52,7 +52,7 @@ The adapter currently accepts only the existing v0.1 contract:
 - zero or one localized synthetic release source in `particle_equivalent/min`;
 - zero or one localized synthetic uptake sink with explicit effective volume in `micron^3` and uptake coefficient in `1/min`.
 
-The current adapter intentionally rejects an experiment that combines a localized source and uptake sink. Those mechanisms are verified independently before a coupled donor-recipient experiment is introduced.
+The current adapter supports at most one localized release source and at most one uptake sink, either independently or together in the first synthetic donor-recipient benchmark.
 
 There is no implicit unit conversion. Localized release additionally requires concentration unit `particle_equivalent/micron^3` so amount and concentration semantics stay explicit.
 
@@ -77,8 +77,9 @@ The runner:
 4. initializes a spatially uniform field;
 5. uses the pinned BioFVM 2D constant-coefficient LOD solver;
 6. samples the field at every requested output time and at the final time;
-7. optionally applies one explicit-volume BioFVM uptake agent and tracks its internalized substrate;
-8. returns mean/min/max concentration summaries, integrated extracellular/internalized quantities, and exact engine metadata.
+7. optionally applies one BioFVM net-export source agent;
+8. optionally applies one explicit-volume BioFVM uptake agent and tracks its internalized substrate;
+9. returns mean/min/max concentration summaries, integrated extracellular/internalized quantities, and exact engine metadata.
 
 The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
@@ -172,20 +173,45 @@ The point-sink kinetics are **not** asserted to be spatial-resolution invariant.
 
 Scientific rationale and evidence limits are documented in [recipient uptake model baseline](research/recipient-uptake-model.md).
 
+## Combined donor-recipient verification
+
+Issue #17 combines the already verified source and sink primitives without changing their parameter semantics.
+
+For every numerical timestep, the native runner applies:
+
+```text
+source net export -> recipient uptake -> diffusion / extracellular decay
+```
+
+This ordering is an operator-splitting choice of the numerical runner, not a biological timing claim.
+
+With zero initial amount, zero extracellular decay and no-flux boundaries, CI verifies at every sample:
+
+```text
+extracellular integrated quantity + internalized quantity
+= cumulative released quantity
+```
+
+The benchmark also runs two otherwise identical synthetic scenarios that differ only in donor-recipient separation. The selected verification regime requires the nearer recipient to internalize more by the final sample than the farther recipient. Repeated identical runs must reproduce the same normalized quantities within numerical tolerance.
+
+These checks establish numerical coupling and distance sensitivity only. They are not calibrated to measured EV communication distances.
+
+Scientific motivation, published distance observations and limitations are documented in [donor-recipient distance model baseline](research/donor-recipient-distance-model.md).
+
 ## Result protocol
 
 Adding cumulative internalized quantity changes the native TSV sample contract. The runner/parser therefore use `VESICLESCOPE_BIOFVM_RESULT\t2` rather than silently extending result protocol v1.
 
 ## What this validates
 
-Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport, synthetic localized-release, and synthetic explicit-volume uptake cases, and that result/metadata mapping is reproducible.
+Passing this integration suite demonstrates that the current VesicleScope contract is mapped consistently into the pinned BioFVM solver for the tested transport, synthetic localized-release, synthetic explicit-volume uptake, and combined donor-recipient cases, and that result/metadata mapping is reproducible.
 
 It does **not** validate:
 
 - a biological EV decay rate;
 - a biological EV secretion rate or biological uptake coefficient;
-- donor/recipient geometry;
-- communication range;
+- biologically validated donor/recipient geometry;
+- a biological communication range;
 - ECM interaction or flow;
 - any species, tissue, cell type, cell line or EV preparation.
 
