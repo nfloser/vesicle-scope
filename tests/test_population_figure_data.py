@@ -150,6 +150,33 @@ class RecipientCountFigureDataTests(unittest.TestCase):
                 summaries,
             )
 
+    def test_rejects_heatmap_grid_that_does_not_match_scenario_geometry(self) -> None:
+        experiments = tuple(
+            recipient_count_sweep_experiment(count)
+            for count in (2, 4, 8)
+        )
+        results = list(
+            synthetic_result(count, float(count))
+            for count in (2, 4, 8)
+        )
+        bad_grid = replace(results[-1].grid, grid_spacing_micron=9.0)
+        results[-1] = replace(results[-1], grid=bad_grid)
+        summaries = tuple(
+            analyze_recipient_population(
+                experiment,
+                result,
+                time_min=experiment.duration_min,
+            )
+            for experiment, result in zip(experiments, results)
+        )
+
+        with self.assertRaises(ValueError):
+            prepare_recipient_count_figure_data(
+                experiments,
+                tuple(results),
+                summaries,
+            )
+
     def test_rejects_heatmap_shape_that_does_not_match_grid(self) -> None:
         experiments = tuple(
             recipient_count_sweep_experiment(count)
