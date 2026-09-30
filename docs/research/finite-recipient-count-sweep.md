@@ -11,7 +11,9 @@ It does not introduce a new uptake equation. The existing BioFVM coupling, norma
 
 ## Controlled synthetic geometry
 
-The finite sweep reuses the reviewed recipient centers from the point-sink count sweep. Every center is 50 micron from the donor at (105, 105).
+The historical point-sink sweep remains unchanged for reproducibility, but its exact eight-center arrangement cannot be reused with 15 micron finite circles: some historical point centers are only about 14.1 micron apart, so those finite footprints would overlap.
+
+The finite sweep therefore uses a separate deterministic nested ring. Every center remains exactly 50 micron from the donor at (105, 105), every coordinate is on a 5 micron increment, and all 15 micron circular footprints remain non-overlapping. This is a correction of an internally inconsistent geometry constraint, not a biological model change.
 
 Each recipient has:
 
@@ -21,7 +23,7 @@ Each recipient has:
 
 All are synthetic verification inputs. In particular, the radius is not a measured biological cell radius and no relationship between the planar radius and the effective uptake volume is implied.
 
-The 2, 4 and 8 recipient scenarios retain the same domain, physical slice thickness, donor, release rate, diffusion coefficient, zero decay, duration and sample cadence as the historical point scenarios.
+The 2, 4 and 8 finite scenarios use stable prefixes of the finite ring and retain the same domain, physical slice thickness, donor, release rate, diffusion coefficient, zero decay, duration and sample cadence as the historical point scenarios. The historical point centers themselves are not modified.
 
 ## Why this experiment exists
 
@@ -51,6 +53,8 @@ At 10 and 5 micron x/y grids, with 0.1 min timestep, the native integration test
 
 - one public uptake series per scientific recipient;
 - all donor-recipient center distances remain 50 micron;
+- all 15 micron finite footprints remain non-overlapping;
+- the historical point-sweep geometry remains unchanged;
 - released quantity equals extracellular plus aggregate internalized quantity at every requested sample;
 - repeated runs are deterministic;
 - final total uptake increases from 2 to 4 to 8 recipients;
