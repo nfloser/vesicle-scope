@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; the synthetic transport/uptake/geometry pipeline is numerically verified, a reproducible finite-recipient figure is implemented, and the first external tumour-distance validation target is now formalized with explicit readiness blockers.**
+**Research baseline established; the synthetic transport/uptake/geometry pipeline now includes verified finite donor and recipient footprints, a reproducible finite-recipient figure is implemented, and the first external tumour-distance validation target is formalized with explicit readiness blockers.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -24,6 +24,7 @@ See:
 - [BioFVM transport adapter](docs/biofvm-adapter.md)
 - [BioFVM diffusion verification](docs/research/biofvm-diffusion-benchmark.md)
 - [localized release model baseline](docs/research/localized-release-model.md)
+- [finite circular donor footprint](docs/research/finite-donor-footprint.md)
 - [recipient uptake model baseline](docs/research/recipient-uptake-model.md)
 - [finite circular recipient footprint](docs/research/finite-recipient-footprint.md)
 - [recipient population model baseline](docs/research/recipient-population-model.md)
