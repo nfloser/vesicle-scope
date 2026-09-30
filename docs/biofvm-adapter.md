@@ -203,9 +203,10 @@ CI verifies:
 - one public uptake series per circular recipient despite multiple native components;
 - released = extracellular + internalized mass accounting;
 - deterministic execution;
-- final cumulative uptake at 10 and 5 micron x/y grids agreeing within the benchmark's declared 10% relative tolerance.
+- final cumulative uptake at 10 and 5 micron x/y grids agreeing within the benchmark's declared 10% relative tolerance;
+- the 5→2.5 micron refinement changing final uptake less than the 10→5 micron refinement, providing a self-convergence check.
 
-The 10% threshold is a numerical verification criterion for this synthetic case, not a biological uncertainty estimate.
+The reviewed synthetic CI run observed 8.97% change for 10→5 micron and 4.94% for 5→2.5 micron. These are numerical benchmark observations, not biological uncertainty estimates.
 
 The complete rasterization and interpretation boundary is documented in [finite circular recipient footprint](research/finite-recipient-footprint.md).
 
