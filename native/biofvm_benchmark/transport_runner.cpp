@@ -136,6 +136,10 @@ int main(int argc, char* argv[])
             parse_number(argument(argc, argv, "--width-micron"), "width");
         const double height =
             parse_number(argument(argc, argv, "--height-micron"), "height");
+        const double slice_thickness = parse_number(
+            argument(argc, argv, "--slice-thickness-micron"),
+            "slice thickness"
+        );
         const double duration =
             parse_number(argument(argc, argv, "--duration-min"), "duration");
         const double sample_every =
@@ -160,6 +164,7 @@ int main(int argc, char* argv[])
 
         require_positive(width, "width");
         require_positive(height, "height");
+        require_positive(slice_thickness, "slice thickness");
         require_positive(duration, "duration");
         require_positive(sample_every, "sample interval");
         require_positive(grid, "grid spacing");
@@ -199,11 +204,11 @@ int main(int argc, char* argv[])
             width,
             0.0,
             height,
-            -0.5 * grid,
-            0.5 * grid,
+            -0.5 * slice_thickness,
+            0.5 * slice_thickness,
             grid,
             grid,
-            grid
+            slice_thickness
         );
 
         microenvironment.spatial_units = "micron";
