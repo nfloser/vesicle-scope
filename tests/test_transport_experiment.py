@@ -1,0 +1,175 @@
+import math
+import unittest
+from dataclasses import FrozenInstanceError
+
+from vesiclescope.domain import EvidenceCategory, ScientificParameter
+from vesiclescope.domain.transport import (
+    BoundaryCondition,
+    RectangularDomain2D,
+    TransportExperiment,
+)
+from vesiclescope.validation.analytical import first_order_decay
+
+
+def synthetic_parameter(
+    identifier: str,
+    value: float,
+    unit: str,
+) -> ScientificParameter:
+    return ScientificParameter(
+        identifier=identifier,
+        scientific_name=identifier.replace(".", " "),
+        value=value,
+        unit=unit,
+        evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
+        limitations=("Synthetic verification input; not a biological default.",),
+    )
+
+
+class RectangularDomain2DTests(unittest.TestCase):
+    def test_requires_positive_finite_dimensions(self) -> None:
+        for width, height in (
+            (0.0, 100.0),
+            (-1.0, 100.0),
+            (100.0, 0.0),
+            (100.0, -1.0),
+            (math.inf, 100.0),
+            (100.0, math.nan),
+        ):
+            with self.subTest(width=width, height=height):
+                with self.assertRaises(ValueError):
+                    RectangularDomain2D(width_micron=width, height_micron=height)
+
+
+class TransportExperimentTests(unittest.TestCase):
+    def make_experiment(
+        self,
+        *,
+        diffusion: ScientificParameter | None = None,
+        decay: ScientificParameter | None = None,
+        duration_min: float = 60.0,
+        sample_every_min: float = 5.0,
+    ) -> TransportExperiment:
+        return TransportExperiment(
+            experiment_id="synthetic.decay",
+            domain=RectangularDomain2D(width_micron=200.0, height_micron=100.0),
+            duration_min=duration_min,
+            sample_every_min=sample_every_min,
+            boundary=BoundaryCondition.NO_FLUX,
+            diffusion=diffusion
+            or synthetic_parameter("transport.diffusion", 10.0, "micron^2/min"),
+            decay=decay or synthetic_parameter("transport.decay", 0.1, "1/min"),
+            initial_concentration=synthetic_parameter(
+                "initial.concentration",
+                2.0,
+                "particle_equivalent/micron^3",
+            ),
+        )
+
+    def test_preserves_provenance_objects(self) -> None:
+        diffusion = synthetic_parameter("transport.diffusion", 10.0, "micron^2/min")
+        decay = synthetic_parameter("transport.decay", 0.1, "1/min")
+
+        experiment = self.make_experiment(diffusion=diffusion, decay=decay)
+
+        self.assertIs(experiment.diffusion, diffusion)
+        self.assertIs(experiment.decay, decay)
+        self.assertEqual(experiment.boundary, BoundaryCondition.NO_FLUX)
+
+    def test_experiment_is_immutable(self) -> None:
+        experiment = self.make_experiment()
+
+        with self.assertRaises(FrozenInstanceError):
+            experiment.duration_min = 120.0
+
+    def test_requires_positive_finite_duration_and_sampling(self) -> None:
+        for duration, sampling in (
+            (0.0, 1.0),
+            (-1.0, 1.0),
+            (math.inf, 1.0),
+            (60.0, 0.0),
+            (60.0, -1.0),
+            (60.0, math.nan),
+            (5.0, 10.0),
+        ):
+            with self.subTest(duration=duration, sampling=sampling):
+                with self.assertRaises(ValueError):
+                    self.make_experiment(
+                        duration_min=duration,
+                        sample_every_min=sampling,
+                    )
+
+    def test_rejects_incompatible_transport_units(self) -> None:
+        cases = (
+            (
+                synthetic_parameter("transport.diffusion", 10.0, "mm^2/min"),
+                synthetic_parameter("transport.decay", 0.1, "1/min"),
+            ),
+            (
+                synthetic_parameter("transport.diffusion", 10.0, "micron^2/min"),
+                synthetic_parameter("transport.decay", 0.1, "1/sec"),
+            ),
+        )
+
+        for diffusion, decay in cases:
+            with self.subTest(diffusion=diffusion.unit, decay=decay.unit):
+                with self.assertRaises(ValueError):
+                    self.make_experiment(diffusion=diffusion, decay=decay)
+
+    def test_rejects_negative_diffusion_and_decay(self) -> None:
+        cases = (
+            (
+                synthetic_parameter("transport.diffusion", -1.0, "micron^2/min"),
+                synthetic_parameter("transport.decay", 0.1, "1/min"),
+            ),
+            (
+                synthetic_parameter("transport.diffusion", 10.0, "micron^2/min"),
+                synthetic_parameter("transport.decay", -0.1, "1/min"),
+            ),
+        )
+
+        for diffusion, decay in cases:
+            with self.subTest(diffusion=diffusion.value, decay=decay.value):
+                with self.assertRaises(ValueError):
+                    self.make_experiment(diffusion=diffusion, decay=decay)
+
+    def test_zero_diffusion_and_decay_are_valid_limiting_cases(self) -> None:
+        experiment = self.make_experiment(
+            diffusion=synthetic_parameter("transport.diffusion", 0.0, "micron^2/min"),
+            decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        )
+
+        self.assertEqual(experiment.diffusion.value, 0.0)
+        self.assertEqual(experiment.decay.value, 0.0)
+
+
+class FirstOrderDecayTests(unittest.TestCase):
+    def test_returns_initial_value_at_time_zero(self) -> None:
+        self.assertEqual(first_order_decay(2.5, 0.3, 0.0), 2.5)
+
+    def test_matches_closed_form_solution(self) -> None:
+        result = first_order_decay(initial_value=2.0, rate_per_min=0.1, time_min=10.0)
+
+        self.assertAlmostEqual(result, 2.0 * math.exp(-1.0), places=12)
+
+    def test_zero_decay_preserves_initial_value(self) -> None:
+        self.assertEqual(first_order_decay(2.5, 0.0, 60.0), 2.5)
+
+    def test_rejects_negative_or_non_finite_inputs(self) -> None:
+        invalid_calls = (
+            (-1.0, 0.1, 1.0),
+            (1.0, -0.1, 1.0),
+            (1.0, 0.1, -1.0),
+            (math.nan, 0.1, 1.0),
+            (1.0, math.inf, 1.0),
+            (1.0, 0.1, math.nan),
+        )
+
+        for initial, rate, time in invalid_calls:
+            with self.subTest(initial=initial, rate=rate, time=time):
+                with self.assertRaises(ValueError):
+                    first_order_decay(initial, rate, time)
+
+
+if __name__ == "__main__":
+    unittest.main()

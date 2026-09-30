@@ -37,9 +37,16 @@ There is no justification yet for microservices, a database, message queue, dist
 
 ## Canonical units
 
-The exact canonical unit system is an implementation decision that must match the engine boundary cleanly.
+The first executable transport contract now fixes the v0.1 transport units to match the reviewed BioFVM/PhysiCell convention:
 
-For the v0.1 design, spatial and temporal dimensions must be explicit in every external parameter. The adapter must canonicalize inputs before a numerical run. A value with missing or ambiguous units is invalid.
+- length: `micron`;
+- time: `min`;
+- diffusion coefficient: `micron^2/min`;
+- first-order rate: `1/min`.
+
+Spatial and temporal dimensions remain explicit. The current boundary validates these unit strings and performs no implicit conversion. A different unit must be converted deliberately by a future unit-aware boundary before numerical execution.
+
+Concentration units remain parameter-specific until an EV-specific amount/concentration model is defined; they must still be explicit on the corresponding `ScientificParameter`.
 
 No conversion may occur implicitly in analysis or visualization.
 
@@ -180,7 +187,7 @@ A run must fail clearly rather than silently continue when:
 - the engine version cannot be recorded;
 - a stochastic run omits a required seed.
 
-The exact validation schema will be implemented only when the first experiment format is introduced.
+The first Python transport contract now enforces geometry, timing, transport-unit, provenance and non-negativity checks. A serialized experiment schema remains deferred until a reproducible runner needs one.
 
 ## Deferred work
 
