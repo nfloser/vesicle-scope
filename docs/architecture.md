@@ -218,7 +218,7 @@ The first executable engine boundary is a process adapter in `vesiclescope.engin
 
 The Python scientific contract does not import or embed BioFVM. It validates the `TransportExperiment`, constructs an explicit argument vector for a pinned native runner, and parses a small normalized result stream. This keeps BioFVM-specific build and runtime details behind the adapter while avoiding a binding framework that the current research question does not require.
 
-The native runner currently exposes only the behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, at most one localized synthetic amount-per-time release source, or at most one explicit-volume synthetic uptake sink. The current adapter rejects combined source-and-sink runs so the two mechanisms remain independently verified.
+The native runner currently exposes only the behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, at most one localized synthetic amount-per-time release source, and at most one explicit-volume synthetic uptake sink. Source and sink may now be run independently or together in the first synthetic donor-recipient experiment.
 
 A source is represented engine-neutrally as a `PointReleaseSource` with explicit position and provenance-bearing release rate. The BioFVM adapter maps that source to `net_export_rates`, because this preserves amount-per-time semantics without introducing a saturation target that the current evidence does not justify.
 
@@ -228,4 +228,6 @@ Normalized samples carry mean/min/max concentration, the extracellular integrate
 
 Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Point-sink uptake is deliberately not claimed to be spatial-resolution invariant because BioFVM's discrete sink contains `V_agent / V_voxel`.
 
-Full spatial-field serialization is deferred until an actual downstream analysis or viewer requires it.
+For coupled runs the numerical operator order is source net export → uptake → diffusion/decay for each timestep. This ordering is explicit reproducibility metadata/behavior, not a biological sequence. Combined verification checks released = extracellular + internalized quantity and confirms a reproducible synthetic near-versus-far uptake difference.
+
+Full spatial-field serialization is deferred until the first recipient-population/distance analysis requires it.
