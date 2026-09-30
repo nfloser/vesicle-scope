@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issues: #8, #11, #13, #15, #17, #19, #21
+Issues: #8, #11, #13, #15, #17, #19, #21, #29
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -52,7 +52,9 @@ The adapter currently accepts only the existing v0.1 contract:
 - zero or one localized synthetic release source in `particle_equivalent/min`;
 - zero or more localized synthetic uptake sinks with explicit effective volume in `micron^3` and uptake coefficient in `1/min`.
 
-The current adapter supports at most one localized release source and any number of point uptake sinks that map to distinct numerical x/y voxels. Recipient sinks may run independently or together with the source.
+The current adapter supports at most one localized release source and point or circular uptake recipients whose native components map to distinct numerical x/y voxels. Recipient sinks may run independently or together with the source.
+
+A `PointUptakeSink` remains one native BioFVM component at the declared position. A `CircularUptakeSink` is rasterized onto voxel centers inside its declared radius. Its explicit effective volume is distributed across those components while preserving the declared total volume exactly within floating-point tolerance.
 
 There is no implicit unit conversion. Localized release additionally requires concentration unit `particle_equivalent/micron^3` so amount and concentration semantics stay explicit.
 
@@ -78,8 +80,9 @@ The runner:
 5. uses the pinned BioFVM 2D constant-coefficient LOD solver;
 6. samples the field at every requested output time and at the final time;
 7. optionally applies one BioFVM net-export source agent;
-8. optionally applies indexed explicit-volume BioFVM uptake agents and tracks each agent's internalized substrate separately;
-9. returns mean/min/max concentration summaries, aggregate and per-recipient internalized quantities, one complete sampled 2D concentration field per requested output time, and exact engine metadata.
+8. optionally applies one or more BioFVM uptake components per recipient and tracks component internalization;
+9. aggregates native component uptake back to one identifier-stable series per scientific recipient;
+10. returns mean/min/max concentration summaries, aggregate and per-recipient internalized quantities, one complete sampled 2D concentration field per requested output time, and exact engine metadata.
 
 The runner links BioFVM's transport core plus `Basic_Agent` and the minimal `Agent_Container` required for net-export source semantics. MultiCellDS, PhysiCell cell behaviours, XML configuration and other unused framework components are not part of this executable.
 
@@ -125,7 +128,7 @@ The parser rejects:
 
 The aggregate internalized value on every summary sample is cross-checked against the sum of all recipient-specific uptake series. Recipient metadata echoed by the native runner is also checked against the configured engine-neutral sink geometry, effective volume and uptake coefficient.
 
-Two point recipients that map to the same numerical voxel are rejected before native execution because sequential same-voxel sinks would make per-recipient attribution order-dependent. The runner independently enforces the same constraint.
+Native uptake components belonging to different recipients may not share a numerical voxel because sequential same-voxel sinks would make per-recipient attribution order-dependent. The adapter rejects such collisions during discretization and the runner independently checks actual BioFVM voxel assignment.
 
 The full field protocol, ordering and current stdout-size limitation are documented in [spatial field result contract](spatial-field-results.md). Population-specific semantics are documented in [recipient population model baseline](research/recipient-population-model.md).
 
@@ -187,6 +190,25 @@ The point-sink kinetics are **not** asserted to be spatial-resolution invariant.
 
 Scientific rationale and evidence limits are documented in [recipient uptake model baseline](research/recipient-uptake-model.md).
 
+## Finite circular recipient verification
+
+Issue #29 adds a synthetic `CircularUptakeSink` without changing the pinned BioFVM uptake equation.
+
+The footprint radius and effective uptake volume are independent engine-neutral inputs. At each requested grid spacing the adapter selects voxel centers inside the circular footprint and divides the declared effective volume across those native uptake components.
+
+CI verifies:
+
+- deterministic footprint rasterization;
+- exact preservation of total configured effective volume under refinement;
+- one public uptake series per circular recipient despite multiple native components;
+- released = extracellular + internalized mass accounting;
+- deterministic execution;
+- final cumulative uptake at 10 and 5 micron x/y grids agreeing within the benchmark's declared 10% relative tolerance.
+
+The 10% threshold is a numerical verification criterion for this synthetic case, not a biological uncertainty estimate.
+
+The complete rasterization and interpretation boundary is documented in [finite circular recipient footprint](research/finite-recipient-footprint.md).
+
 ## Combined donor-recipient verification
 
 Issue #17 combines the already verified source and sink primitives without changing their parameter semantics.
@@ -235,9 +257,10 @@ The result stream is versioned instead of being silently extended:
 - v1 introduced transport summary samples;
 - v2 added cumulative internalized quantity;
 - v3 adds explicit 2D grid metadata and one complete extracellular field snapshot per sample;
-- v4 adds indexed recipient metadata and one cumulative uptake value per recipient and sample.
+- v4 adds indexed recipient metadata and one cumulative uptake value per recipient and sample;
+- v5 adds explicit recipient geometry kind, footprint radius and native component count so finite geometry can be round-tripped.
 
-The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t4`.
+The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t5`.
 
 ## What this validates
 
