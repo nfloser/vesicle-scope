@@ -1,20 +1,45 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly repo_root="$(cd "${script_dir}/.." && pwd)"
+readonly pin_file="${repo_root}/vesiclescope/engines/physicell.env"
+
+# This file is repository-controlled metadata, not user input.
+# shellcheck source=/dev/null
+source "${pin_file}"
+
+: "${PHYSICELL_RELEASE:?missing PHYSICELL_RELEASE in pin metadata}"
+: "${PHYSICELL_COMMIT:?missing PHYSICELL_COMMIT in pin metadata}"
+: "${BIOFVM_VERSION:?missing BIOFVM_VERSION in pin metadata}"
+
 readonly upstream="https://github.com/MathCancer/PhysiCell.git"
-readonly tag="1.14.2"
-readonly expected_sha="dbd3499250141b27600e91e501c54c46f68f2763"
 readonly target="${1:-.deps/physicell}"
 
-if [[ -d "${target}/.git" ]]; then
-  actual_sha="$(git -C "${target}" rev-parse HEAD)"
-  if [[ "${actual_sha}" == "${expected_sha}" ]]; then
-    printf 'PhysiCell already pinned at %s\n' "${expected_sha}"
-    exit 0
+verify_checkout() {
+  local checkout="$1"
+  local actual_sha
+  local actual_biofvm_version
+
+  actual_sha="$(git -C "${checkout}" rev-parse HEAD)"
+  if [[ "${actual_sha}" != "${PHYSICELL_COMMIT}" ]]; then
+    printf 'PhysiCell checkout is %s, expected %s\n'       "${actual_sha}" "${PHYSICELL_COMMIT}" >&2
+    return 1
   fi
 
-  printf 'Refusing to reuse %s at unexpected commit %s\n' "${target}" "${actual_sha}" >&2
-  exit 1
+  actual_biofvm_version="$(
+    sed -n 's/.*BioFVM_Version = "\([^"]*\)".*/\1/p'       "${checkout}/BioFVM/BioFVM_MultiCellDS.cpp" | head -n 1
+  )"
+  if [[ "${actual_biofvm_version}" != "${BIOFVM_VERSION}" ]]; then
+    printf 'BioFVM source reports version %s, expected %s\n'       "${actual_biofvm_version:-<missing>}" "${BIOFVM_VERSION}" >&2
+    return 1
+  fi
+}
+
+if [[ -d "${target}/.git" ]]; then
+  verify_checkout "${target}"
+  printf 'PhysiCell already pinned at %s (BioFVM %s)\n'     "${PHYSICELL_COMMIT}" "${BIOFVM_VERSION}"
+  exit 0
 fi
 
 if [[ -e "${target}" ]]; then
@@ -23,12 +48,7 @@ if [[ -e "${target}" ]]; then
 fi
 
 mkdir -p "$(dirname "${target}")"
-git clone --quiet --depth 1 --branch "${tag}" "${upstream}" "${target}"
+git clone --quiet --depth 1 --branch "${PHYSICELL_RELEASE}" "${upstream}" "${target}"
+verify_checkout "${target}"
 
-actual_sha="$(git -C "${target}" rev-parse HEAD)"
-if [[ "${actual_sha}" != "${expected_sha}" ]]; then
-  printf 'PhysiCell tag %s resolved to %s, expected %s\n'     "${tag}" "${actual_sha}" "${expected_sha}" >&2
-  exit 1
-fi
-
-printf 'Fetched PhysiCell %s at %s\n' "${tag}" "${actual_sha}"
+printf 'Fetched PhysiCell %s at %s (BioFVM %s)\n'   "${PHYSICELL_RELEASE}" "${PHYSICELL_COMMIT}" "${BIOFVM_VERSION}"
