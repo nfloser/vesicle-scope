@@ -8,12 +8,14 @@ from .parameters import (
 )
 from .transport import (
     BoundaryCondition,
+    CircularReleaseSource,
     CircularUptakeSink,
     DIFFUSION_UNIT,
     PointReleaseSource,
     PointUptakeSink,
     RATE_UNIT,
     RELEASE_RATE_UNIT,
+    ReleaseSource,
     RectangularDomain2D,
     TransportExperiment,
     UptakeSink,
@@ -21,6 +23,7 @@ from .transport import (
 
 __all__ = [
     "BoundaryCondition",
+    "CircularReleaseSource",
     "CircularUptakeSink",
     "DIFFUSION_UNIT",
     "EvidenceCategory",
@@ -30,6 +33,7 @@ __all__ = [
     "PointUptakeSink",
     "RATE_UNIT",
     "RELEASE_RATE_UNIT",
+    "ReleaseSource",
     "RectangularDomain2D",
     "ScientificParameter",
     "TransportExperiment",
