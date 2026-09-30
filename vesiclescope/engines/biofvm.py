@@ -212,18 +212,16 @@ class DiscretizedUptakeRecipient:
             raise TypeError("components must contain BioFVMUptakeComponent objects")
 
 
-def discretize_uptake_sinks(
+def _discretize_uptake_sinks_for_grid(
     experiment: TransportExperiment,
-    numerics: BioFVMNumerics,
+    grid_spacing_micron: float,
 ) -> tuple[DiscretizedUptakeRecipient, ...]:
-    """Rasterize finite recipient footprints without changing declared total volume."""
+    """Rasterize finite recipient footprints for one explicit x/y grid."""
 
     if not isinstance(experiment, TransportExperiment):
         raise TypeError("experiment must be a TransportExperiment")
-    if not isinstance(numerics, BioFVMNumerics):
-        raise TypeError("numerics must be BioFVMNumerics")
 
-    grid = numerics.grid_spacing_micron
+    grid = _positive_finite(grid_spacing_micron, "grid_spacing_micron")
     if not _is_integer_multiple(experiment.domain.width_micron, grid):
         raise ValueError("grid spacing must tile domain width exactly")
     if not _is_integer_multiple(experiment.domain.height_micron, grid):
@@ -308,6 +306,20 @@ def discretize_uptake_sinks(
         )
 
     return tuple(recipients)
+
+
+def discretize_uptake_sinks(
+    experiment: TransportExperiment,
+    numerics: BioFVMNumerics,
+) -> tuple[DiscretizedUptakeRecipient, ...]:
+    """Rasterize finite recipient footprints without changing declared total volume."""
+
+    if not isinstance(numerics, BioFVMNumerics):
+        raise TypeError("numerics must be BioFVMNumerics")
+    return _discretize_uptake_sinks_for_grid(
+        experiment,
+        numerics.grid_spacing_micron,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -827,12 +839,9 @@ def parse_result(
             "BioFVM recipient metadata does not match configured uptake sinks"
         )
 
-    expected_discretized = discretize_uptake_sinks(
+    expected_discretized = _discretize_uptake_sinks_for_grid(
         experiment,
-        BioFVMNumerics(
-            grid_spacing_micron=grid.grid_spacing_micron,
-            time_step_min=1.0,
-        ),
+        grid.grid_spacing_micron,
     )
 
     recipient_series: list[RecipientUptakeSeries] = []
