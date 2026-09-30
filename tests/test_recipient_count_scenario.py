@@ -114,6 +114,26 @@ class RecipientCountScenarioTests(unittest.TestCase):
                     30.0,
                 )
 
+    def test_finite_sweep_non_count_inputs_are_identical(self) -> None:
+        scenarios = tuple(
+            finite_recipient_count_sweep_experiment(count)
+            for count in (2, 4, 8)
+        )
+        reference = scenarios[0]
+
+        for scenario in scenarios[1:]:
+            self.assertEqual(scenario.domain, reference.domain)
+            self.assertEqual(scenario.duration_min, reference.duration_min)
+            self.assertEqual(scenario.sample_every_min, reference.sample_every_min)
+            self.assertEqual(scenario.boundary, reference.boundary)
+            self.assertEqual(scenario.diffusion, reference.diffusion)
+            self.assertEqual(scenario.decay, reference.decay)
+            self.assertEqual(
+                scenario.initial_concentration,
+                reference.initial_concentration,
+            )
+            self.assertEqual(scenario.release_sources, reference.release_sources)
+
     def test_finite_sweep_preserves_controlled_geometry_and_inputs(self) -> None:
         for count in (2, 4, 8):
             scenario = finite_recipient_count_sweep_experiment(count)
