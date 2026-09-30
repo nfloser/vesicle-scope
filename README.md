@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; transport, localized release, point and finite-footprint uptake, donor-recipient distance, sampled 2D fields, multi-recipient uptake, point and finite-footprint recipient-count analysis, and a reproducible synthetic scientific-figure pipeline implemented.**
+**Research baseline established; the synthetic transport/uptake/geometry pipeline is numerically verified, a reproducible finite-recipient figure is implemented, and the first external tumour-distance validation target is now formalized with explicit readiness blockers.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -31,6 +31,7 @@ See:
 - [finite recipient count and planar-density sweep](docs/research/finite-recipient-count-sweep.md)
 - [first reproducible synthetic population figure](docs/research/synthetic-population-figure.md)
 - [donor-recipient distance model baseline](docs/research/donor-recipient-distance-model.md)
+- [Colombo 2025 tumour-distance validation target](docs/research/colombo-2025-validation-target.md)
 - [spatial field result contract](docs/spatial-field-results.md)
 - [third-party software record](THIRD_PARTY.md)
 

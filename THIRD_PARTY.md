@@ -33,3 +33,16 @@ The canonical reviewed pin used by the fetch script, native build and Python ada
 Matplotlib is confined to the visualization layer. Numerical engines, scientific domain contracts, result parsing and engine-independent analysis do not import or depend on Matplotlib.
 
 The figure workflow pins the reviewed version in `requirements-figures.txt` so CI and local figure generation use the same renderer version.
+
+
+## CocucciLab spatial-limits-of-extracellular-vesicles
+
+- Purpose in VesicleScope: external analysis-method reference for the Colombo et al. 2025 tumour-distance validation target; not a runtime dependency and not vendored.
+- Repository: `CocucciLab/spatial-limits-of-extracellular-vesicles`
+- Reviewed commit: `ed9e28173929c9f896d16658781d7a4b9cc2297c`
+- Reviewed analysis file: `in vivo/distTraAnalysis.py`
+- Reviewed file/blob SHA: `16744cd7d0eb0271ce5a8c3949b84e7cb86d8933`
+- License: MIT
+- Publication: Colombo et al. 2025, DOI `10.1002/jev2.70169`
+
+VesicleScope records this pin to identify the public analysis semantics reviewed for external validation. No upstream source code is copied into the VesicleScope runtime.

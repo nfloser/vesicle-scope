@@ -181,10 +181,19 @@ Before implementation, separate evidence notes are still required for any propos
 
 Synthetic benchmark values may be used for solver verification only when clearly labeled as synthetic and dimensionally consistent.
 
+## First selected external validation context
+
+The Colombo et al. 2025 HeLa tumour-distance experiment is now the first formalized external validation target.
+
+This selection does **not** mean the current synthetic model is calibrated or biologically validated. Direct quantitative comparison remains blocked by unavailable public raw tumour measurements, a donor-boundary versus point-source geometry mismatch, a paper/public-code binning discrepancy, and synthetic model parameters.
+
+See [Colombo 2025 tumour-distance validation target](colombo-2025-validation-target.md).
+
 ## Open research questions
 
-1. Which experimentally tractable context should anchor the first biologically parameterized demonstration after the synthetic verification benchmark?
-2. Is linear uptake sufficient for the first identified dataset, or does the evidence require saturation/other kinetics?
-3. Which observable best defines "communication range" for v0.1: concentration threshold, cumulative exposure, uptake, or a family of metrics?
-4. Which parts of the v0.1 experiment contract can be represented directly in SED-ML/OMEX without inventing VesicleScope-specific semantics?
-5. Which exact Smoldyn release/license combination is appropriate if the particle comparison proceeds?
+1. What finite donor geometry is sufficient to reproduce the donor-boundary distance observable without implying more cell morphology than the evidence supports?
+2. Can the source measurements / exact published analysis workflow be obtained from the authors to resolve the 10-micron versus 5-micron binning discrepancy?
+3. Is linear uptake sufficient for the first identified dataset, or does the evidence require saturation/other kinetics?
+4. Which observable should be the first quantitative comparison once data are available: radial signal frequency, cumulative retention, exposure, or uptake?
+5. Which parts of the v0.1 experiment contract can be represented directly in SED-ML/OMEX without inventing VesicleScope-specific semantics?
+6. Which exact Smoldyn release/license combination is appropriate if the particle comparison proceeds?
