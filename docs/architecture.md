@@ -20,7 +20,7 @@ VesicleScope should integrate it through a narrow headless runner/adapter rather
 
 A complete experiment must run without a dashboard or notebook.
 
-Visualization consumes stored result data. It must not contain model equations, parameter interpretation or simulation state transitions.
+Visualization consumes normalized result and analysis data. It must not contain model equations, parameter interpretation or simulation state transitions. Durable result serialization remains a separate concern and is not required for in-memory reproducible figure generation.
 
 ### Initial conceptual components
 
@@ -234,4 +234,8 @@ Spatial fields are now available in the normalized in-memory result contract, so
 
 Planar recipient density is explicitly a 2D quantity in `recipient/mm^2`; it must not be presented as volumetric tissue cell density. The current controlled count sweep runs at one fixed numerical resolution because point-sink uptake retains `V_agent / V_voxel` dependence.
 
-Persistent field serialization remains deferred until a concrete figure/analysis workflow needs a durable result artifact.
+The first figure boundary lives in `vesiclescope.figures`. It validates normalized result/analysis inputs, reconstructs the documented x-fastest 2D field layout, and delegates rendering only to the optional pinned Matplotlib dependency. The reusable 2/4/8 count-sweep definition lives in `vesiclescope.scenarios`, so native verification and figure generation cannot silently drift onto different synthetic geometries.
+
+The headless generator runs the pinned BioFVM adapter, derives public population summaries, and renders an SVG labelled as synthetic fixed-grid verification. Numerical/core analysis CI remains independent of Matplotlib; a dedicated figure CI job installs the optional renderer and uploads the generated SVG as an artifact.
+
+Persistent field serialization remains deferred until a workflow needs durable simulation results independently of immediate figure generation.
