@@ -376,6 +376,28 @@ class BioFVMCommandTests(unittest.TestCase):
                 Path("runner"),
             )
 
+    def test_recipient_voxel_mapping_matches_biofvm_at_grid_boundary(self) -> None:
+        command = build_command(
+            experiment(
+                uptake_sinks=(
+                    point_sink(
+                        "sink.left-of-boundary",
+                        x_micron=19.999999,
+                        y_micron=50.0,
+                    ),
+                    point_sink(
+                        "sink.on-boundary",
+                        x_micron=20.0,
+                        y_micron=50.0,
+                    ),
+                )
+            ),
+            BioFVMNumerics(grid_spacing_micron=20.0, time_step_min=0.1),
+            Path("runner"),
+        )
+
+        self.assertEqual(command[command.index("--uptake-count") + 1], "2")
+
     def test_maps_combined_release_and_uptake(self) -> None:
         command = build_command(
             experiment(
