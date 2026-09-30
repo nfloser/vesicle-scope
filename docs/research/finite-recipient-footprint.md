@@ -110,7 +110,7 @@ The public recipient uptake time-series contract remains unchanged.
 
 ## Grid-refinement verification
 
-The first native finite-footprint benchmark uses one synthetic circular recipient and compares x/y grids of 10 and 5 micron while holding fixed:
+The native finite-footprint benchmark uses one synthetic circular recipient at x/y grid spacings of 10, 5 and 2.5 micron while holding fixed:
 
 - donor/source geometry;
 - recipient center;
@@ -122,18 +122,30 @@ The first native finite-footprint benchmark uses one synthetic circular recipien
 - timestep;
 - duration.
 
-At both resolutions CI verifies:
+At every resolution CI verifies:
 
 ```text
 extracellular quantity + recipient internalized quantity
 = cumulative released quantity
 ```
 
-The final cumulative uptake at 10 and 5 micron must agree within a relative difference of 10%.
+The 10→5 micron step also has a conservative acceptance bound of at most 10% relative change in final cumulative uptake.
 
-That 10% value is a numerical verification tolerance for this deliberately chosen synthetic benchmark. It is **not** a biological uncertainty bound or a universal convergence criterion.
+On the reviewed CI run from 2026-09-30, the synthetic circular recipient produced:
 
-The finite model should be refined further before any experimental calibration relies on its spatial discretization.
+| x/y grid | final cumulative uptake |
+| --- | ---: |
+| 10 micron | 7.835781387759313 |
+| 5 micron | 7.133133462229800 |
+| 2.5 micron | 6.780417875749444 |
+
+The relative change decreased from **8.97%** for 10→5 micron to **4.94%** for 5→2.5 micron. CI therefore also requires the finer refinement step to change the finite-footprint result less than the preceding step.
+
+For diagnostic context, the comparable historical point sink changed by 8.56% and then 19.92% over the same grid sequence. That comparison illustrates the unresolved one-voxel sensitivity of the point model, but it is not used as a universal claim that every finite-footprint parameterization must outperform every point-sink parameterization.
+
+The 10% acceptance bound and the observed refinement changes are numerical properties of this deliberately chosen synthetic benchmark. They are **not** biological uncertainty bounds or universal convergence criteria.
+
+Further refinement remains appropriate before experimental calibration relies on this spatial discretization.
 
 ## Backwards compatibility
 
