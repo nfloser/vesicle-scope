@@ -243,13 +243,6 @@ int main(int argc, char* argv[])
                 "localized uptake requires x, y, effective volume and uptake-rate arguments"
             );
         }
-        if (has_source && has_uptake)
-        {
-            throw std::invalid_argument(
-                "combined localized release and uptake is outside this runner contract"
-            );
-        }
-
         double uptake_x = 0.0;
         double uptake_y = 0.0;
         double uptake_volume = 0.0;
