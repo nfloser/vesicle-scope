@@ -222,11 +222,15 @@ The native runner currently exposes only the behavior needed for verification: a
 
 A source is represented engine-neutrally as a `PointReleaseSource` with explicit position and provenance-bearing release rate. The BioFVM adapter maps that source to `net_export_rates`, because this preserves amount-per-time semantics without introducing a saturation target that the current evidence does not justify.
 
-An uptake sink is represented engine-neutrally as a `PointUptakeSink` with explicit position, effective physical volume, and provenance-bearing `1/min` coefficient. The BioFVM adapter maps every configured sink to its own `Basic_Agent.uptake_rates` and `set_total_volume`, preserving the volume dependence that exists in the pinned solver rather than hiding it. Point recipients must occupy distinct numerical voxels so per-recipient uptake attribution is not order-dependent.
+Uptake recipients have two engine-neutral geometry forms.
+
+A `PointUptakeSink` keeps the original one-voxel reference semantics. A `CircularUptakeSink` adds an explicit 2D footprint radius while keeping effective uptake volume as a separate quantity. The adapter rasterizes circular footprints onto voxel centers, divides the declared effective volume across the selected BioFVM `Basic_Agent` components, and aggregates component internalization back to one scientific recipient identifier.
+
+Different recipients may not share native uptake voxels in the current model so per-recipient attribution cannot become update-order dependent.
 
 Normalized results carry mean/min/max concentration summaries, the extracellular integrated field quantity `∫c dV`, aggregate cumulative internalized quantity, one explicit 2D grid descriptor, one complete extracellular concentration-field snapshot per requested sample, and identifier-stable per-recipient uptake series. Integrated quantities carry explicit derived units.
 
-Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Point-sink uptake is deliberately not claimed to be spatial-resolution invariant because BioFVM's discrete sink contains `V_agent / V_voxel`.
+Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Point-sink uptake remains a documented resolution-dependent reference. Finite circular recipients preserve total configured effective volume under grid refinement and are explicitly verified across 10 and 5 micron x/y grids before being used for stronger density studies.
 
 For coupled runs the numerical operator order is source net export → uptake → diffusion/decay for each timestep. This ordering is explicit reproducibility metadata/behavior, not a biological sequence. Combined verification checks released = extracellular + internalized quantity and confirms a reproducible synthetic near-versus-far uptake difference.
 
