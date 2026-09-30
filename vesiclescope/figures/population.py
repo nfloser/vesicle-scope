@@ -234,13 +234,18 @@ def render_recipient_count_figure(
             (donor_y,),
             marker="*",
             s=130,
+            facecolors="white",
+            edgecolors="black",
+            linewidths=0.9,
             label="Donor",
         )
         heatmap_axis.scatter(
             recipient_x,
             recipient_y,
             marker="o",
-            facecolors="none",
+            facecolors="white",
+            edgecolors="black",
+            linewidths=1.0,
             s=55,
             label="Recipients",
         )
