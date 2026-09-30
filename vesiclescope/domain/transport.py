@@ -132,6 +132,50 @@ class PointReleaseSource:
 
 
 @dataclass(frozen=True, slots=True)
+class CircularReleaseSource:
+    """A finite circular amount-per-time source footprint in the 2D slice."""
+
+    identifier: str
+    x_micron: float
+    y_micron: float
+    footprint_radius_micron: float
+    release_rate: ScientificParameter
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "identifier",
+            _required_text(self.identifier, "identifier"),
+        )
+        object.__setattr__(
+            self,
+            "x_micron",
+            _non_negative_finite(self.x_micron, "x_micron"),
+        )
+        object.__setattr__(
+            self,
+            "y_micron",
+            _non_negative_finite(self.y_micron, "y_micron"),
+        )
+        object.__setattr__(
+            self,
+            "footprint_radius_micron",
+            _positive_finite(
+                self.footprint_radius_micron,
+                "footprint_radius_micron",
+            ),
+        )
+
+        release_rate = _require_parameter(self.release_rate, "release_rate")
+        _require_unit(release_rate, RELEASE_RATE_UNIT, "release_rate")
+        if release_rate.value < 0.0:
+            raise ValueError("release_rate must be non-negative")
+
+
+ReleaseSource = PointReleaseSource | CircularReleaseSource
+
+
+@dataclass(frozen=True, slots=True)
 class PointUptakeSink:
     """A localized synthetic first-order uptake sink with explicit volume."""
 
@@ -241,7 +285,7 @@ class TransportExperiment:
     diffusion: ScientificParameter
     decay: ScientificParameter
     initial_concentration: ScientificParameter
-    release_sources: tuple[PointReleaseSource, ...] = ()
+    release_sources: tuple[ReleaseSource, ...] = ()
     uptake_sinks: tuple[UptakeSink, ...] = ()
 
     def __post_init__(self) -> None:
@@ -285,12 +329,14 @@ class TransportExperiment:
             raise ValueError("initial_concentration must be non-negative")
 
         if not isinstance(self.release_sources, tuple):
-            raise TypeError("release_sources must be a tuple of PointReleaseSource objects")
+            raise TypeError("release_sources must be a tuple of supported release sources")
 
         seen_source_ids: set[str] = set()
         for source in self.release_sources:
-            if not isinstance(source, PointReleaseSource):
-                raise TypeError("release_sources must contain only PointReleaseSource objects")
+            if not isinstance(source, (PointReleaseSource, CircularReleaseSource)):
+                raise TypeError(
+                    "release_sources must contain only supported release source objects"
+                )
             if source.identifier in seen_source_ids:
                 raise ValueError(f"duplicate release source identifier: {source.identifier!r}")
             seen_source_ids.add(source.identifier)
@@ -302,6 +348,18 @@ class TransportExperiment:
                 raise ValueError(
                     f"release source {source.identifier!r} lies outside domain height"
                 )
+            if isinstance(source, CircularReleaseSource):
+                radius = source.footprint_radius_micron
+                if (
+                    source.x_micron - radius < 0.0
+                    or source.x_micron + radius > self.domain.width_micron
+                    or source.y_micron - radius < 0.0
+                    or source.y_micron + radius > self.domain.height_micron
+                ):
+                    raise ValueError(
+                        f"circular release source {source.identifier!r} must lie fully "
+                        "inside the rectangular domain"
+                    )
 
         if not isinstance(self.uptake_sinks, tuple):
             raise TypeError("uptake_sinks must be a tuple of supported uptake sinks")
