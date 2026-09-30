@@ -27,6 +27,15 @@ Until recipients have a finite spatial representation, VesicleScope fails clearl
 
 This is a numerical-model limitation, not a statement that biological cells cannot be close to one another.
 
+For the current rectangular domain whose lower x/y bounds are both zero, VesicleScope mirrors the pinned BioFVM Cartesian-mesh lookup exactly:
+
+```text
+ix = floor(x_micron / grid_spacing_micron)
+iy = floor(y_micron / grid_spacing_micron)
+```
+
+The pinned BioFVM implementation computes the same rule as `floor((position - bounding_box_min) / d*)`. A regression test covers an exact grid boundary so this attribution rule cannot silently drift during adapter refactors.
+
 ## Protocol v4
 
 Protocol v4 extends the v3 grid/field result stream with recipient metadata and recipient-specific cumulative uptake records.
