@@ -24,3 +24,20 @@ jobs:
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+
+
+  biofvm-diffusion-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Fetch pinned PhysiCell source
+        run: bash scripts/fetch-physicell.sh
+
+      - name: Build BioFVM benchmark
+        run: make -f native/biofvm_benchmark/Makefile benchmark
+
+      - name: Verify diffusion against analytical solution
+        run: make -f native/biofvm_benchmark/Makefile run
