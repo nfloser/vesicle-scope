@@ -25,6 +25,21 @@ RECIPIENT_RING_POSITIONS = (
     (135.0, 65.0),
 )
 
+# The historical point centers above are intentionally retained unchanged.
+# Their 8-recipient arrangement is too tightly packed for 15-micron circular
+# footprints, so the finite sweep uses a separate nested ring geometry that
+# preserves 50-micron donor distance and 5-micron coordinate increments.
+FINITE_RECIPIENT_RING_POSITIONS = (
+    (155.0, 105.0),
+    (55.0, 105.0),
+    (105.0, 155.0),
+    (105.0, 55.0),
+    (145.0, 135.0),
+    (65.0, 75.0),
+    (75.0, 145.0),
+    (135.0, 65.0),
+)
+
 
 def _synthetic_parameter(
     identifier: str,
@@ -107,14 +122,20 @@ def finite_recipient_count_sweep_experiment(recipient_count: int) -> TransportEx
     point_experiment = recipient_count_sweep_experiment(recipient_count)
     recipients = tuple(
         CircularUptakeSink(
-            identifier=sink.identifier,
-            x_micron=sink.x_micron,
-            y_micron=sink.y_micron,
+            identifier=f"sink.{index + 1}",
+            x_micron=x_micron,
+            y_micron=y_micron,
             footprint_radius_micron=15.0,
-            effective_volume_micron3=sink.effective_volume_micron3,
-            uptake_rate=sink.uptake_rate,
+            effective_volume_micron3=1000.0,
+            uptake_rate=_synthetic_parameter(
+                f"sink.{index + 1}.uptake",
+                0.5,
+                "1/min",
+            ),
         )
-        for sink in point_experiment.uptake_sinks
+        for index, (x_micron, y_micron) in enumerate(
+            FINITE_RECIPIENT_RING_POSITIONS[:recipient_count]
+        )
     )
     return TransportExperiment(
         experiment_id=f"synthetic.finite-recipient-count.{recipient_count}",
