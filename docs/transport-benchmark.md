@@ -75,6 +75,24 @@ The pinned BioFVM integration now covers two complementary synthetic checks:
 
 Both are numerical verification artefacts. Neither introduces biological EV defaults.
 
+## Localized release benchmark
+
+The first source-side extension adds a synthetic `PointReleaseSource` with amount-rate unit `particle_equivalent/min`.
+
+The source is mapped to BioFVM net export rather than the saturation-based secretion model. Under zero decay, zero uptake and no-flux boundaries, the benchmark verifies:
+
+```text
+M(t) = q * t
+```
+
+where `M` is integrated extracellular particle-equivalent amount and `q` is the declared synthetic release rate.
+
+The benchmark is run across x/y mesh refinement at fixed physical slice thickness. This checks that a numerical resolution change redistributes concentration without changing the physical amount released.
+
+See [localized release model baseline](research/localized-release-model.md) for the evidence boundary and model rationale.
+
 ## What comes next
 
-Donor release and recipient uptake should only be introduced after a dedicated evidence review defines the biological mechanism, parameter provenance, observables and validation target. Spatial result storage/export should be added when that first real consumer exists rather than pre-designing a general field format.
+Recipient uptake remains a separate model decision because BioFVM uptake semantics introduce an explicit agent/cell-volume dependence in addition to an uptake-rate parameter. That geometry and evidence must be specified before uptake is added.
+
+Spatial result storage/export should be added when the first real spatial analysis or viewer requires it rather than pre-designing a general field format.
