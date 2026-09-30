@@ -48,4 +48,4 @@ jobs:
       - name: Verify uniform decay through Python adapter
         env:
           VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
-        run: python tests/test_biofvm_integration.py -v
+        run: python -m unittest discover -s tests -p test_biofvm_integration.py -v
