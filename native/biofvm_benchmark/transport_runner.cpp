@@ -62,6 +62,23 @@ double parse_number(const std::string& text, const std::string& name)
     return value;
 }
 
+bool has_argument(int argc, char* argv[], const std::string& name)
+{
+    if ((argc - 1) % 2 != 0)
+    {
+        throw std::invalid_argument("arguments must be supplied as --name value pairs");
+    }
+
+    for (int index = 1; index < argc; index += 2)
+    {
+        if (name == argv[index])
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 std::string argument(int argc, char* argv[], const std::string& name)
 {
     if ((argc - 1) % 2 != 0)
@@ -162,6 +179,44 @@ int main(int argc, char* argv[])
         const double dt =
             parse_number(argument(argc, argv, "--time-step-min"), "time step");
 
+        const bool has_source_x = has_argument(argc, argv, "--source-x-micron");
+        const bool has_source_y = has_argument(argc, argv, "--source-y-micron");
+        const bool has_source_rate = has_argument(
+            argc,
+            argv,
+            "--source-rate-particle-equivalent-per-min"
+        );
+        const bool has_source = has_source_x || has_source_y || has_source_rate;
+        if (has_source && !(has_source_x && has_source_y && has_source_rate))
+        {
+            throw std::invalid_argument(
+                "localized source requires x, y and release-rate arguments"
+            );
+        }
+
+        double source_x = 0.0;
+        double source_y = 0.0;
+        double source_rate = 0.0;
+        if (has_source)
+        {
+            source_x = parse_number(
+                argument(argc, argv, "--source-x-micron"),
+                "source x"
+            );
+            source_y = parse_number(
+                argument(argc, argv, "--source-y-micron"),
+                "source y"
+            );
+            source_rate = parse_number(
+                argument(
+                    argc,
+                    argv,
+                    "--source-rate-particle-equivalent-per-min"
+                ),
+                "source release rate"
+            );
+        }
+
         require_positive(width, "width");
         require_positive(height, "height");
         require_positive(slice_thickness, "slice thickness");
@@ -172,6 +227,22 @@ int main(int argc, char* argv[])
         require_non_negative(diffusion, "diffusion coefficient");
         require_non_negative(decay, "decay rate");
         require_non_negative(initial, "initial concentration");
+        if (has_source)
+        {
+            require_non_negative(source_x, "source x");
+            require_non_negative(source_y, "source y");
+            require_non_negative(source_rate, "source release rate");
+            if (source_x >= width || source_y >= height)
+            {
+                throw std::invalid_argument("localized source lies outside 2D domain");
+            }
+            if (concentration_unit != "particle_equivalent/micron^3")
+            {
+                throw std::invalid_argument(
+                    "localized source requires particle_equivalent/micron^3 concentration"
+                );
+            }
+        }
 
         if (boundary != "no_flux")
         {
@@ -224,6 +295,28 @@ int main(int argc, char* argv[])
             microenvironment.density_vector(static_cast<int>(index))[0] = initial;
         }
 
+        BioFVM::Agent_Container agent_container;
+        BioFVM::Basic_Agent* source_agent = nullptr;
+        if (has_source)
+        {
+            agent_container.initialize(
+                static_cast<int>(microenvironment.number_of_voxels())
+            );
+            microenvironment.agent_container = &agent_container;
+            BioFVM::set_default_microenvironment(&microenvironment);
+
+            source_agent = BioFVM::create_basic_agent();
+            source_agent->set_total_volume(1.0);
+            if (!source_agent->assign_position(source_x, source_y, 0.0))
+            {
+                throw std::invalid_argument(
+                    "localized source position is invalid in BioFVM mesh"
+                );
+            }
+            (*source_agent->net_export_rates)[0] = source_rate;
+            source_agent->set_internal_uptake_constants(dt);
+        }
+
         const long total_steps = std::lround(duration / dt);
         const long sample_steps = std::lround(sample_every / dt);
 
@@ -238,6 +331,10 @@ int main(int argc, char* argv[])
 
         for (long step = 1; step <= total_steps; ++step)
         {
+            if (source_agent != nullptr)
+            {
+                source_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+            }
             {
                 ScopedCoutToStderr redirect_solver_output;
                 microenvironment.simulate_diffusion_decay(dt);
