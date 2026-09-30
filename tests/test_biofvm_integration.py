@@ -301,6 +301,32 @@ def circular_recipient_experiment() -> TransportExperiment:
     )
 
 
+
+def comparable_point_recipient_experiment() -> TransportExperiment:
+    circular = circular_recipient_experiment()
+    circular_sink = circular.uptake_sinks[0]
+    return TransportExperiment(
+        experiment_id="synthetic.point-recipient.refinement-comparison",
+        domain=circular.domain,
+        duration_min=circular.duration_min,
+        sample_every_min=circular.sample_every_min,
+        boundary=circular.boundary,
+        diffusion=circular.diffusion,
+        decay=circular.decay,
+        initial_concentration=circular.initial_concentration,
+        release_sources=circular.release_sources,
+        uptake_sinks=(
+            PointUptakeSink(
+                identifier="sink.point",
+                x_micron=circular_sink.x_micron,
+                y_micron=circular_sink.y_micron,
+                effective_volume_micron3=circular_sink.effective_volume_micron3,
+                uptake_rate=circular_sink.uptake_rate,
+            ),
+        ),
+    )
+
+
 @unittest.skipUnless(RUNNER, "native BioFVM runner is not built for this test job")
 class BioFVMTransportIntegrationTests(unittest.TestCase):
     @property
@@ -749,6 +775,46 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
         fine_uptake = fine.samples[-1].internalized_field_quantity
         scale = max(coarse_uptake, fine_uptake, 1.0)
         self.assertLessEqual(abs(coarse_uptake - fine_uptake) / scale, 0.10)
+
+    def test_circular_footprint_refines_more_stably_than_comparable_point_sink(self) -> None:
+        circular = circular_recipient_experiment()
+        point = comparable_point_recipient_experiment()
+
+        def final_uptake(experiment: TransportExperiment, grid: float) -> float:
+            result = run_transport(
+                experiment,
+                BioFVMNumerics(grid_spacing_micron=grid, time_step_min=0.1),
+                self.runner,
+            )
+            return result.samples[-1].internalized_field_quantity
+
+        circular_coarse = final_uptake(circular, 10.0)
+        circular_fine = final_uptake(circular, 5.0)
+        point_coarse = final_uptake(point, 10.0)
+        point_fine = final_uptake(point, 5.0)
+
+        circular_relative_change = abs(circular_coarse - circular_fine) / max(
+            circular_coarse,
+            circular_fine,
+            1.0,
+        )
+        point_relative_change = abs(point_coarse - point_fine) / max(
+            point_coarse,
+            point_fine,
+            1.0,
+        )
+
+        print(
+            "VESICLESCOPE_FINITE_RECIPIENT_REFINEMENT "
+            f"circle10={circular_coarse:.17g} "
+            f"circle5={circular_fine:.17g} "
+            f"circle_rel={circular_relative_change:.17g} "
+            f"point10={point_coarse:.17g} "
+            f"point5={point_fine:.17g} "
+            f"point_rel={point_relative_change:.17g}"
+        )
+
+        self.assertLess(circular_relative_change, point_relative_change)
 
     def test_circular_recipient_run_is_deterministic(self) -> None:
         experiment = circular_recipient_experiment()
