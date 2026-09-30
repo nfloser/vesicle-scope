@@ -127,3 +127,20 @@ This milestone does not establish:
 - a persistence or plotting format.
 
 Those require later model and evidence decisions.
+
+
+## Finite-footprint follow-up
+
+Issue #33 repeats the controlled 2/4/8 count sensitivity with non-overlapping 15 micron circular recipient footprints and the same engine-independent analysis.
+
+Unlike the historical point sweep, the finite model is evaluated at both 10 and 5 micron x/y resolution. The final total-uptake ordering remains:
+
+```text
+2 recipients < 4 recipients < 8 recipients
+```
+
+on both grids while donor distance remains fixed at 50 micron and the global released/extracellular/internalized accounting closes.
+
+The finite geometry uses a separate non-overlapping ring because the historical point-center arrangement cannot accommodate 15 micron circles without overlap. The historical point benchmark remains unchanged.
+
+Executed values and the geometry correction are documented in [finite recipient count and planar-density sweep](finite-recipient-count-sweep.md).
