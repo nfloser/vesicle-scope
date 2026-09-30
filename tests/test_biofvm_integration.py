@@ -134,6 +134,58 @@ def localized_uptake_experiment(
     )
 
 
+def donor_recipient_experiment(
+    recipient_x_micron: float,
+) -> TransportExperiment:
+    return TransportExperiment(
+        experiment_id=f"synthetic.donor-recipient.{recipient_x_micron:g}",
+        domain=RectangularDomain2D(
+            width_micron=200.0,
+            height_micron=100.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=20.0,
+        sample_every_min=5.0,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter(
+            "transport.diffusion",
+            100.0,
+            "micron^2/min",
+        ),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            0.0,
+            "particle_equivalent/micron^3",
+        ),
+        release_sources=(
+            PointReleaseSource(
+                identifier="source.donor",
+                x_micron=55.0,
+                y_micron=55.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    120.0,
+                    "particle_equivalent/min",
+                ),
+            ),
+        ),
+        uptake_sinks=(
+            PointUptakeSink(
+                identifier="sink.recipient",
+                x_micron=recipient_x_micron,
+                y_micron=55.0,
+                effective_volume_micron3=1000.0,
+                uptake_rate=synthetic_parameter(
+                    "sink.uptake",
+                    0.5,
+                    "1/min",
+                ),
+            ),
+        ),
+    )
+
+
 @unittest.skipUnless(RUNNER, "native BioFVM runner is not built for this test job")
 class BioFVMTransportIntegrationTests(unittest.TestCase):
     @property
@@ -238,6 +290,70 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             120.0 * experiment.duration_min,
             delta=1e-8,
         )
+
+    def test_combined_release_and_uptake_close_global_amount_balance(self) -> None:
+        experiment = donor_recipient_experiment(75.0)
+        result = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            self.runner,
+        )
+        release_rate = experiment.release_sources[0].release_rate.value
+
+        previous_internalized = -1.0
+        for sample in result.samples:
+            released = release_rate * sample.time_min
+            self.assertAlmostEqual(
+                sample.integrated_field_quantity
+                + sample.internalized_field_quantity,
+                released,
+                delta=max(1e-8, released * 1e-9),
+            )
+            self.assertGreaterEqual(sample.internalized_field_quantity, 0.0)
+            self.assertGreaterEqual(
+                sample.internalized_field_quantity + 1e-12,
+                previous_internalized,
+            )
+            previous_internalized = sample.internalized_field_quantity
+
+    def test_nearer_recipient_internalizes_more_than_farther_recipient(self) -> None:
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+
+        near = run_transport(
+            donor_recipient_experiment(75.0),
+            numerics,
+            self.runner,
+        )
+        far = run_transport(
+            donor_recipient_experiment(135.0),
+            numerics,
+            self.runner,
+        )
+
+        self.assertGreater(
+            near.samples[-1].internalized_field_quantity,
+            far.samples[-1].internalized_field_quantity,
+        )
+
+    def test_combined_donor_recipient_run_is_deterministic(self) -> None:
+        experiment = donor_recipient_experiment(75.0)
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+
+        first = run_transport(experiment, numerics, self.runner)
+        second = run_transport(experiment, numerics, self.runner)
+
+        self.assertEqual(len(first.samples), len(second.samples))
+        for left, right in zip(first.samples, second.samples):
+            self.assertAlmostEqual(
+                left.integrated_field_quantity,
+                right.integrated_field_quantity,
+                places=12,
+            )
+            self.assertAlmostEqual(
+                left.internalized_field_quantity,
+                right.internalized_field_quantity,
+                places=12,
+            )
 
     def test_localized_uptake_conserves_extracellular_plus_internalized_quantity(self) -> None:
         experiment = localized_uptake_experiment()

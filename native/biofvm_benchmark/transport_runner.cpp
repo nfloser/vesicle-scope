@@ -243,13 +243,6 @@ int main(int argc, char* argv[])
                 "localized uptake requires x, y, effective volume and uptake-rate arguments"
             );
         }
-        if (has_source && has_uptake)
-        {
-            throw std::invalid_argument(
-                "combined localized release and uptake is outside this runner contract"
-            );
-        }
-
         double uptake_x = 0.0;
         double uptake_y = 0.0;
         double uptake_volume = 0.0;
@@ -422,7 +415,14 @@ int main(int argc, char* argv[])
         {
             if (source_agent != nullptr)
             {
+                const bool track_internalized =
+                    BioFVM::default_microenvironment_options
+                        .track_internalized_substrates_in_each_agent;
+                BioFVM::default_microenvironment_options
+                    .track_internalized_substrates_in_each_agent = false;
                 source_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+                BioFVM::default_microenvironment_options
+                    .track_internalized_substrates_in_each_agent = track_internalized;
             }
             if (uptake_agent != nullptr)
             {

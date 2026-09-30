@@ -223,10 +223,6 @@ def _validate_mapping(
         raise ValueError("the v0.1 BioFVM adapter supports at most one release source")
     if len(experiment.uptake_sinks) > 1:
         raise ValueError("the v0.1 BioFVM adapter supports at most one uptake sink")
-    if experiment.release_sources and experiment.uptake_sinks:
-        raise ValueError(
-            "combined localized release and uptake is outside the v0.1 adapter contract"
-        )
     if experiment.release_sources and (
         experiment.initial_concentration.unit != _PARTICLE_CONCENTRATION_UNIT
     ):
@@ -419,7 +415,7 @@ def parse_result(
             < previous.internalized_field_quantity
         ):
             raise ValueError(
-                "BioFVM internalized field quantity must not decrease in uptake-only runs"
+                "BioFVM internalized field quantity must not decrease when uptake is active"
             )
 
     expected_times = _expected_sample_times(experiment)

@@ -120,8 +120,23 @@ Unlike the constant amount-per-time source benchmark, point-sink uptake is not e
 
 See [recipient uptake model baseline](research/recipient-uptake-model.md) for the evidence boundary and model rationale.
 
+## Combined donor-recipient distance benchmark
+
+The first coupled benchmark combines one synthetic `PointReleaseSource` and one explicit-volume `PointUptakeSink`.
+
+With zero initial amount, zero extracellular decay and no-flux boundaries, the global accounting invariant is:
+
+```text
+extracellular integrated quantity + internalized quantity
+= release rate * time
+```
+
+Two otherwise identical runs vary only donor-recipient separation. The verification regime requires the nearer recipient to accumulate more internalized quantity by the final sample than the farther recipient. This is a numerical distance-sensitivity check, not a biological communication-range calibration.
+
+See [donor-recipient distance model baseline](research/donor-recipient-distance-model.md) for the evidence boundary and operator-splitting semantics.
+
 ## What comes next
 
-The verified release and uptake mechanisms remain intentionally uncoupled. A later donor-recipient experiment should combine them only after defining finite donor/recipient geometry, biologically anchored parameter provenance, and the observables needed to ask a concrete communication-range question.
+The next scientific step is no longer to prove that source and uptake can interact. It is to represent recipient populations/density and finite geometry without hiding point-sink resolution effects.
 
-Spatial result storage/export should be added when the first real spatial analysis or viewer requires it rather than pre-designing a general field format.
+Spatial field storage/export should be introduced with that first real spatial/density analysis so that distance-binned exposure and reproducible figures are generated from stored primary output rather than simulator internals.
