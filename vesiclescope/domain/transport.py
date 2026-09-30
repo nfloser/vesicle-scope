@@ -56,10 +56,11 @@ def _require_unit(
 
 @dataclass(frozen=True, slots=True)
 class RectangularDomain2D:
-    """A bounded rectangular two-dimensional domain measured in microns."""
+    """A bounded two-dimensional domain with explicit physical slice thickness."""
 
     width_micron: float
     height_micron: float
+    slice_thickness_micron: float
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -71,6 +72,14 @@ class RectangularDomain2D:
             self,
             "height_micron",
             _positive_finite(self.height_micron, "height_micron"),
+        )
+        object.__setattr__(
+            self,
+            "slice_thickness_micron",
+            _positive_finite(
+                self.slice_thickness_micron,
+                "slice_thickness_micron",
+            ),
         )
 
 

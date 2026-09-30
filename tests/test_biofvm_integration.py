@@ -30,7 +30,11 @@ def synthetic_parameter(identifier: str, value: float, unit: str) -> ScientificP
 def uniform_experiment(decay_per_min: float) -> TransportExperiment:
     return TransportExperiment(
         experiment_id=f"synthetic.uniform-decay.{decay_per_min:g}",
-        domain=RectangularDomain2D(width_micron=200.0, height_micron=100.0),
+        domain=RectangularDomain2D(
+            width_micron=200.0,
+            height_micron=100.0,
+            slice_thickness_micron=25.0,
+        ),
         duration_min=20.0,
         sample_every_min=5.0,
         boundary=BoundaryCondition.NO_FLUX,

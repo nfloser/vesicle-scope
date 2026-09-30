@@ -48,6 +48,10 @@ Spatial and temporal dimensions remain explicit. The current boundary validates 
 
 Concentration units remain parameter-specific until an EV-specific amount/concentration model is defined; they must still be explicit on the corresponding `ScientificParameter`.
 
+A 2D domain is a physical slice, not a zero-thickness plane. `RectangularDomain2D` therefore carries an explicit `slice_thickness_micron`. This thickness is independent of the numerical x/y grid and must remain unchanged under spatial refinement unless the physical experiment itself changes.
+
+This prevents a future source/sink model from changing physical release or uptake merely because BioFVM voxel volume changed with numerical resolution.
+
 No conversion may occur implicitly in analysis or visualization.
 
 ## Parameter provenance contract

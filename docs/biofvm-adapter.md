@@ -43,7 +43,7 @@ License and citation information remain in [THIRD_PARTY.md](../THIRD_PARTY.md).
 
 The adapter currently accepts only the existing v0.1 contract:
 
-- rectangular 2D domain;
+- rectangular 2D domain with explicit physical slice thickness;
 - `no_flux` boundary;
 - diffusion in `micron^2/min`;
 - first-order decay in `1/min`;
@@ -52,18 +52,22 @@ The adapter currently accepts only the existing v0.1 contract:
 
 There is no implicit unit conversion.
 
-The numerical configuration is separate from biological/model parameters:
+The numerical configuration is separate from physical geometry and biological/model parameters:
 
-- grid spacing in micron;
+- x/y grid spacing in micron;
 - numerical timestep in min.
 
-Grid spacing must tile both domain dimensions exactly. The timestep must tile both the total duration and output-sampling interval exactly. This prevents silent rounding of the requested experiment.
+The physical slice thickness comes from `RectangularDomain2D.slice_thickness_micron`. The native runner creates one z layer with that declared thickness, while x/y grid spacing may be refined independently.
+
+Grid spacing must tile both x/y domain dimensions exactly. It does not need to divide the physical slice thickness. The timestep must tile both the total duration and output-sampling interval exactly. This prevents silent rounding of the requested experiment.
+
+Keeping z thickness independent from x/y resolution is a prerequisite for future release/uptake work because BioFVM source/sink coupling uses voxel volume. Numerical refinement must not silently change the represented physical volume.
 
 ## Native runner
 
 The runner:
 
-1. constructs a BioFVM microenvironment;
+1. constructs a BioFVM microenvironment with one z layer at the declared physical slice thickness;
 2. explicitly sets spatial units to `micron` and time units to `min`;
 3. maps diffusion and decay from the experiment contract;
 4. initializes a spatially uniform field;

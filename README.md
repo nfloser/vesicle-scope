@@ -42,6 +42,7 @@ VesicleScope is designed around a few non-negotiable rules:
 
 The first implementation milestone is a verified continuum transport baseline in a bounded 2D tissue-scale domain with:
 
+- explicit physical slice thickness independent from numerical x/y resolution;
 - donor and recipient cells;
 - EV release represented as a model source term;
 - diffusion;

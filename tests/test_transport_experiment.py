@@ -28,17 +28,25 @@ def synthetic_parameter(
 
 class RectangularDomain2DTests(unittest.TestCase):
     def test_requires_positive_finite_dimensions(self) -> None:
-        for width, height in (
-            (0.0, 100.0),
-            (-1.0, 100.0),
-            (100.0, 0.0),
-            (100.0, -1.0),
-            (math.inf, 100.0),
-            (100.0, math.nan),
+        for width, height, thickness in (
+            (0.0, 100.0, 20.0),
+            (-1.0, 100.0, 20.0),
+            (100.0, 0.0, 20.0),
+            (100.0, -1.0, 20.0),
+            (math.inf, 100.0, 20.0),
+            (100.0, math.nan, 20.0),
+            (100.0, 100.0, 0.0),
+            (100.0, 100.0, -1.0),
+            (100.0, 100.0, math.inf),
+            (100.0, 100.0, math.nan),
         ):
-            with self.subTest(width=width, height=height):
+            with self.subTest(width=width, height=height, thickness=thickness):
                 with self.assertRaises(ValueError):
-                    RectangularDomain2D(width_micron=width, height_micron=height)
+                    RectangularDomain2D(
+                        width_micron=width,
+                        height_micron=height,
+                        slice_thickness_micron=thickness,
+                    )
 
 
 class TransportExperimentTests(unittest.TestCase):
@@ -52,7 +60,11 @@ class TransportExperimentTests(unittest.TestCase):
     ) -> TransportExperiment:
         return TransportExperiment(
             experiment_id="synthetic.decay",
-            domain=RectangularDomain2D(width_micron=200.0, height_micron=100.0),
+            domain=RectangularDomain2D(
+                width_micron=200.0,
+                height_micron=100.0,
+                slice_thickness_micron=20.0,
+            ),
             duration_min=duration_min,
             sample_every_min=sample_every_min,
             boundary=BoundaryCondition.NO_FLUX,
