@@ -95,7 +95,7 @@ def localized_release_experiment(rate_per_min: float = 120.0) -> TransportExperi
 
 
 @unittest.skipUnless(RUNNER, "native BioFVM runner is not built for this test job")
-class BioFVMUniformDecayIntegrationTests(unittest.TestCase):
+class BioFVMTransportIntegrationTests(unittest.TestCase):
     @property
     def runner(self) -> Path:
         assert RUNNER is not None
@@ -169,7 +169,7 @@ class BioFVMUniformDecayIntegrationTests(unittest.TestCase):
         for sample in result.samples:
             expected_amount = rate * sample.time_min
             self.assertAlmostEqual(
-                sample.total_amount,
+                sample.integrated_field_quantity,
                 expected_amount,
                 delta=max(1e-9, expected_amount * 1e-10),
             )
@@ -189,12 +189,12 @@ class BioFVMUniformDecayIntegrationTests(unittest.TestCase):
         )
 
         self.assertAlmostEqual(
-            coarse.samples[-1].total_amount,
-            fine.samples[-1].total_amount,
+            coarse.samples[-1].integrated_field_quantity,
+            fine.samples[-1].integrated_field_quantity,
             delta=1e-8,
         )
         self.assertAlmostEqual(
-            coarse.samples[-1].total_amount,
+            coarse.samples[-1].integrated_field_quantity,
             120.0 * experiment.duration_min,
             delta=1e-8,
         )
