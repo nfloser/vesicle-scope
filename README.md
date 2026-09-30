@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; transport, localized release, explicit-volume uptake, donor-recipient distance, sampled 2D fields, multi-recipient uptake, and fixed-grid recipient-count analysis implemented.**
+**Research baseline established; transport, localized release, explicit-volume uptake, donor-recipient distance, sampled 2D fields, multi-recipient uptake, fixed-grid recipient-count analysis, and a reproducible synthetic scientific-figure pipeline implemented.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -27,6 +27,7 @@ See:
 - [recipient uptake model baseline](docs/research/recipient-uptake-model.md)
 - [recipient population model baseline](docs/research/recipient-population-model.md)
 - [recipient count and planar-density analysis](docs/research/recipient-density-analysis.md)
+- [first reproducible synthetic population figure](docs/research/synthetic-population-figure.md)
 - [donor-recipient distance model baseline](docs/research/donor-recipient-distance-model.md)
 - [spatial field result contract](docs/spatial-field-results.md)
 - [third-party software record](THIRD_PARTY.md)
@@ -61,6 +62,21 @@ The first implementation milestone is a verified continuum transport baseline in
 - basic scientific figures generated from stored results.
 
 No cargo-mediated phenotype effects, receptor-level biology, ECM binding, interstitial flow, 3D tissue or particle model will be added merely for realism. Those mechanisms are later research questions.
+
+## Generate the synthetic population figure
+
+The first figure is deliberately a **synthetic fixed-grid verification**, not experimental evidence. It combines the final 8-recipient extracellular concentration field with the controlled 2/4/8 recipient-count sensitivity.
+
+```bash
+python -m pip install -r requirements-figures.txt
+bash scripts/fetch-physicell.sh
+make -f native/biofvm_benchmark/Makefile runner
+python -m scripts.generate_population_figure \
+  --runner build/native/biofvm_transport_runner \
+  --output build/figures/recipient-count.svg
+```
+
+Matplotlib is an optional visualization dependency; the numerical engine and core analysis layer do not depend on it. CI independently regenerates and validates the SVG.
 
 ## Model-comparison direction
 
