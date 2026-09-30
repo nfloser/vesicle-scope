@@ -1,7 +1,7 @@
 # Spatial field result contract
 
 Issue: #19  
-Status: field surface introduced in protocol v3; retained in current protocol v4
+Status: field surface introduced in protocol v3; retained in current protocol v5
 
 ## Purpose
 
@@ -11,12 +11,12 @@ Distance-binned exposure, recipient-density experiments, heatmaps, and later rep
 
 Protocol v3 introduced sampled 2D fields to the normalized BioFVM result contract without introducing a persistence layer or visualization dependency.
 
-## Spatial field records in current protocol v4
+## Spatial field records in current protocol v5
 
 The native stdout stream starts with:
 
 ```text
-VESICLESCOPE_BIOFVM_RESULT<TAB>4
+VESICLESCOPE_BIOFVM_RESULT<TAB>5
 ```
 
 It then includes one grid descriptor:

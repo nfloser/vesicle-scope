@@ -112,7 +112,13 @@ VesicleScope therefore does **not** claim spatial-resolution-independent point-s
 
 This is different from the amount-per-time source benchmark, whose integrated release was intentionally resolution invariant.
 
-A later biologically meaningful recipient model should represent finite recipient geometry or otherwise define how cell volume/footprint couples to the continuum mesh before spatial-refinement invariance is expected.
+Issue #29 introduces the first finite recipient geometry to address this numerical limitation without deleting the point-sink reference.
+
+A `CircularUptakeSink` declares a 2D footprint radius separately from the effective uptake volume. The radius determines which voxel centers participate; the effective volume still determines the total BioFVM uptake coupling and is distributed across the selected components.
+
+The native refinement benchmark evaluates 10, 5 and 2.5 micron grids. It requires the 10→5 micron final-uptake change to remain within 10%, requires the 5→2.5 micron change to be smaller than the preceding refinement change, and closes global mass accounting at every resolution. The reviewed synthetic run observed 8.97% followed by 4.94% relative change. This is numerical convergence evidence for that setup, not biological validation.
+
+See [finite circular recipient footprint](finite-recipient-footprint.md) for the discretization and interpretation contract.
 
 ## Population extension
 

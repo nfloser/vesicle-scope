@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; transport, localized release, explicit-volume uptake, donor-recipient distance, sampled 2D fields, multi-recipient uptake, fixed-grid recipient-count analysis, and a reproducible synthetic scientific-figure pipeline implemented.**
+**Research baseline established; transport, localized release, point and finite-footprint uptake, donor-recipient distance, sampled 2D fields, multi-recipient uptake, fixed-grid recipient-count analysis, and a reproducible synthetic scientific-figure pipeline implemented.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -25,6 +25,7 @@ See:
 - [BioFVM diffusion verification](docs/research/biofvm-diffusion-benchmark.md)
 - [localized release model baseline](docs/research/localized-release-model.md)
 - [recipient uptake model baseline](docs/research/recipient-uptake-model.md)
+- [finite circular recipient footprint](docs/research/finite-recipient-footprint.md)
 - [recipient population model baseline](docs/research/recipient-population-model.md)
 - [recipient count and planar-density analysis](docs/research/recipient-density-analysis.md)
 - [first reproducible synthetic population figure](docs/research/synthetic-population-figure.md)

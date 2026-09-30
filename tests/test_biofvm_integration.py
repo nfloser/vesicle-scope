@@ -6,6 +6,7 @@ from pathlib import Path
 from vesiclescope.analysis import analyze_recipient_population
 from vesiclescope.domain import (
     BoundaryCondition,
+    CircularUptakeSink,
     EvidenceCategory,
     PointReleaseSource,
     PointUptakeSink,
@@ -244,6 +245,83 @@ def symmetric_recipient_population_experiment() -> TransportExperiment:
                     0.5,
                     "1/min",
                 ),
+            ),
+        ),
+    )
+
+
+def circular_recipient_experiment() -> TransportExperiment:
+    return TransportExperiment(
+        experiment_id="synthetic.circular-recipient",
+        domain=RectangularDomain2D(
+            width_micron=200.0,
+            height_micron=100.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=20.0,
+        sample_every_min=5.0,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter(
+            "transport.diffusion",
+            100.0,
+            "micron^2/min",
+        ),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            0.0,
+            "particle_equivalent/micron^3",
+        ),
+        release_sources=(
+            PointReleaseSource(
+                identifier="source.donor",
+                x_micron=40.0,
+                y_micron=50.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    120.0,
+                    "particle_equivalent/min",
+                ),
+            ),
+        ),
+        uptake_sinks=(
+            CircularUptakeSink(
+                identifier="sink.circular",
+                x_micron=120.0,
+                y_micron=50.0,
+                footprint_radius_micron=20.0,
+                effective_volume_micron3=1200.0,
+                uptake_rate=synthetic_parameter(
+                    "sink.circular.uptake",
+                    0.5,
+                    "1/min",
+                ),
+            ),
+        ),
+    )
+
+
+
+def comparable_point_recipient_experiment() -> TransportExperiment:
+    circular = circular_recipient_experiment()
+    circular_sink = circular.uptake_sinks[0]
+    return TransportExperiment(
+        experiment_id="synthetic.point-recipient.refinement-comparison",
+        domain=circular.domain,
+        duration_min=circular.duration_min,
+        sample_every_min=circular.sample_every_min,
+        boundary=circular.boundary,
+        diffusion=circular.diffusion,
+        decay=circular.decay,
+        initial_concentration=circular.initial_concentration,
+        release_sources=circular.release_sources,
+        uptake_sinks=(
+            PointUptakeSink(
+                identifier="sink.point",
+                x_micron=circular_sink.x_micron,
+                y_micron=circular_sink.y_micron,
+                effective_volume_micron3=circular_sink.effective_volume_micron3,
+                uptake_rate=circular_sink.uptake_rate,
             ),
         ),
     )
@@ -652,6 +730,125 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
                 expected_internalized,
                 delta=1e-8,
             )
+
+    def test_circular_recipient_closes_mass_balance_at_two_resolutions(self) -> None:
+        experiment = circular_recipient_experiment()
+
+        for grid in (10.0, 5.0):
+            with self.subTest(grid=grid):
+                result = run_transport(
+                    experiment,
+                    BioFVMNumerics(grid_spacing_micron=grid, time_step_min=0.1),
+                    self.runner,
+                )
+                self.assertEqual(len(result.recipient_uptake_series), 1)
+                self.assertEqual(
+                    result.recipient_uptake_series[0].identifier,
+                    "sink.circular",
+                )
+
+                release_rate = experiment.release_sources[0].release_rate.value
+                for sample in result.samples:
+                    released = release_rate * sample.time_min
+                    self.assertAlmostEqual(
+                        sample.integrated_field_quantity
+                        + sample.internalized_field_quantity,
+                        released,
+                        delta=max(1e-8, released * 1e-9),
+                    )
+
+    def test_circular_recipient_uptake_converges_under_grid_refinement(self) -> None:
+        experiment = circular_recipient_experiment()
+
+        coarse = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            self.runner,
+        )
+        fine = run_transport(
+            experiment,
+            BioFVMNumerics(grid_spacing_micron=5.0, time_step_min=0.1),
+            self.runner,
+        )
+
+        coarse_uptake = coarse.samples[-1].internalized_field_quantity
+        fine_uptake = fine.samples[-1].internalized_field_quantity
+        scale = max(coarse_uptake, fine_uptake, 1.0)
+        self.assertLessEqual(abs(coarse_uptake - fine_uptake) / scale, 0.10)
+
+    def test_circular_footprint_shows_self_convergence_under_refinement(self) -> None:
+        circular = circular_recipient_experiment()
+        point = comparable_point_recipient_experiment()
+
+        def final_uptake(experiment: TransportExperiment, grid: float) -> float:
+            result = run_transport(
+                experiment,
+                BioFVMNumerics(grid_spacing_micron=grid, time_step_min=0.1),
+                self.runner,
+            )
+            return result.samples[-1].internalized_field_quantity
+
+        circle_10 = final_uptake(circular, 10.0)
+        circle_5 = final_uptake(circular, 5.0)
+        circle_2_5 = final_uptake(circular, 2.5)
+        point_10 = final_uptake(point, 10.0)
+        point_5 = final_uptake(point, 5.0)
+        point_2_5 = final_uptake(point, 2.5)
+
+        circle_change_10_to_5 = abs(circle_10 - circle_5) / max(
+            circle_10,
+            circle_5,
+            1.0,
+        )
+        circle_change_5_to_2_5 = abs(circle_5 - circle_2_5) / max(
+            circle_5,
+            circle_2_5,
+            1.0,
+        )
+        point_change_10_to_5 = abs(point_10 - point_5) / max(
+            point_10,
+            point_5,
+            1.0,
+        )
+        point_change_5_to_2_5 = abs(point_5 - point_2_5) / max(
+            point_5,
+            point_2_5,
+            1.0,
+        )
+
+        print(
+            "VESICLESCOPE_FINITE_RECIPIENT_REFINEMENT "
+            f"circle10={circle_10:.17g} "
+            f"circle5={circle_5:.17g} "
+            f"circle2_5={circle_2_5:.17g} "
+            f"circle_rel_10_5={circle_change_10_to_5:.17g} "
+            f"circle_rel_5_2_5={circle_change_5_to_2_5:.17g} "
+            f"point10={point_10:.17g} "
+            f"point5={point_5:.17g} "
+            f"point2_5={point_2_5:.17g} "
+            f"point_rel_10_5={point_change_10_to_5:.17g} "
+            f"point_rel_5_2_5={point_change_5_to_2_5:.17g}"
+        )
+
+        self.assertLess(circle_change_5_to_2_5, circle_change_10_to_5)
+
+    def test_circular_recipient_run_is_deterministic(self) -> None:
+        experiment = circular_recipient_experiment()
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+
+        first = run_transport(experiment, numerics, self.runner)
+        second = run_transport(experiment, numerics, self.runner)
+
+        self.assertAlmostEqual(
+            first.samples[-1].internalized_field_quantity,
+            second.samples[-1].internalized_field_quantity,
+            places=12,
+        )
+        self.assertAlmostEqual(
+            first.recipient_uptake_series[0].samples[-1].internalized_field_quantity,
+            second.recipient_uptake_series[0].samples[-1].internalized_field_quantity,
+            places=12,
+        )
 
     def test_uptake_timestep_refinement_converges_toward_continuous_limit(self) -> None:
         experiment = localized_uptake_experiment()

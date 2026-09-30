@@ -8,6 +8,7 @@ from .parameters import (
 )
 from .transport import (
     BoundaryCondition,
+    CircularUptakeSink,
     DIFFUSION_UNIT,
     PointReleaseSource,
     PointUptakeSink,
@@ -15,10 +16,12 @@ from .transport import (
     RELEASE_RATE_UNIT,
     RectangularDomain2D,
     TransportExperiment,
+    UptakeSink,
 )
 
 __all__ = [
     "BoundaryCondition",
+    "CircularUptakeSink",
     "DIFFUSION_UNIT",
     "EvidenceCategory",
     "EvidenceSource",
@@ -30,4 +33,5 @@ __all__ = [
     "RectangularDomain2D",
     "ScientificParameter",
     "TransportExperiment",
+    "UptakeSink",
 ]

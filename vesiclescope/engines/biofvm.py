@@ -7,12 +7,17 @@ import math
 from pathlib import Path
 import subprocess
 
-from vesiclescope.domain import BoundaryCondition, TransportExperiment
+from vesiclescope.domain import (
+    BoundaryCondition,
+    CircularUptakeSink,
+    PointUptakeSink,
+    TransportExperiment,
+)
 
 
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
-_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t4"
+_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t5"
 _PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
 _FIELD_ORDERING = "x_fastest_then_y"
 
@@ -151,6 +156,170 @@ class BioFVMNumerics:
             "time_step_min",
             _positive_finite(self.time_step_min, "time_step_min"),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class BioFVMUptakeComponent:
+    """One native uptake agent component after recipient rasterization."""
+
+    x_micron: float
+    y_micron: float
+    effective_volume_micron3: float
+
+    def __post_init__(self) -> None:
+        for value, field_name in (
+            (self.x_micron, "x_micron"),
+            (self.y_micron, "y_micron"),
+        ):
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise TypeError(f"{field_name} must be a real number")
+            numeric = float(value)
+            if not math.isfinite(numeric) or numeric < 0.0:
+                raise ValueError(f"{field_name} must be finite and non-negative")
+            object.__setattr__(self, field_name, numeric)
+        object.__setattr__(
+            self,
+            "effective_volume_micron3",
+            _positive_finite(
+                self.effective_volume_micron3,
+                "effective_volume_micron3",
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class DiscretizedUptakeRecipient:
+    """One engine-neutral recipient mapped to one or more native components."""
+
+    identifier: str
+    geometry_kind: str
+    x_micron: float
+    y_micron: float
+    footprint_radius_micron: float
+    effective_volume_micron3: float
+    uptake_rate_per_min: float
+    components: tuple[BioFVMUptakeComponent, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.identifier, str) or not self.identifier.strip():
+            raise ValueError("recipient identifier must be non-blank")
+        object.__setattr__(self, "identifier", self.identifier.strip())
+        if self.geometry_kind not in {"point", "circle"}:
+            raise ValueError("geometry_kind must be 'point' or 'circle'")
+        if not isinstance(self.components, tuple) or not self.components:
+            raise ValueError("recipient must contain at least one uptake component")
+        if not all(isinstance(item, BioFVMUptakeComponent) for item in self.components):
+            raise TypeError("components must contain BioFVMUptakeComponent objects")
+
+
+def _discretize_uptake_sinks_for_grid(
+    experiment: TransportExperiment,
+    grid_spacing_micron: float,
+) -> tuple[DiscretizedUptakeRecipient, ...]:
+    """Rasterize finite recipient footprints for one explicit x/y grid."""
+
+    if not isinstance(experiment, TransportExperiment):
+        raise TypeError("experiment must be a TransportExperiment")
+
+    grid = _positive_finite(grid_spacing_micron, "grid_spacing_micron")
+    if not _is_integer_multiple(experiment.domain.width_micron, grid):
+        raise ValueError("grid spacing must tile domain width exactly")
+    if not _is_integer_multiple(experiment.domain.height_micron, grid):
+        raise ValueError("grid spacing must tile domain height exactly")
+
+    nx = round(experiment.domain.width_micron / grid)
+    ny = round(experiment.domain.height_micron / grid)
+    occupied: dict[tuple[int, int], str] = {}
+    recipients: list[DiscretizedUptakeRecipient] = []
+
+    for sink in experiment.uptake_sinks:
+        if isinstance(sink, PointUptakeSink):
+            component_positions = ((sink.x_micron, sink.y_micron),)
+            geometry_kind = "point"
+            radius = 0.0
+        elif isinstance(sink, CircularUptakeSink):
+            selected: list[tuple[float, float]] = []
+            radius = sink.footprint_radius_micron
+            tolerance = max(1e-12, radius * 1e-12)
+            for y_index in range(ny):
+                y = (y_index + 0.5) * grid
+                for x_index in range(nx):
+                    x = (x_index + 0.5) * grid
+                    if math.hypot(x - sink.x_micron, y - sink.y_micron) <= (
+                        radius + tolerance
+                    ):
+                        selected.append((x, y))
+            if not selected:
+                raise ValueError(
+                    f"circular uptake sink {sink.identifier!r} does not cover "
+                    "any voxel centers at the selected grid spacing"
+                )
+            component_positions = tuple(selected)
+            geometry_kind = "circle"
+        else:
+            raise TypeError("unsupported uptake sink type")
+
+        component_count = len(component_positions)
+        volume_share = sink.effective_volume_micron3 / component_count
+        components: list[BioFVMUptakeComponent] = []
+
+        for component_index, (x, y) in enumerate(component_positions):
+            voxel = (math.floor(x / grid), math.floor(y / grid))
+            previous = occupied.get(voxel)
+            if previous is not None and previous != sink.identifier:
+                raise ValueError(
+                    "uptake recipients must not share numerical voxels; "
+                    f"{previous!r} and {sink.identifier!r} collide at {voxel}"
+                )
+            if previous == sink.identifier:
+                raise ValueError(
+                    f"recipient {sink.identifier!r} maps multiple components "
+                    f"to numerical voxel {voxel}"
+                )
+            occupied[voxel] = sink.identifier
+
+            component_volume = (
+                sink.effective_volume_micron3
+                - volume_share * (component_count - 1)
+                if component_index == component_count - 1
+                else volume_share
+            )
+            components.append(
+                BioFVMUptakeComponent(
+                    x_micron=x,
+                    y_micron=y,
+                    effective_volume_micron3=component_volume,
+                )
+            )
+
+        recipients.append(
+            DiscretizedUptakeRecipient(
+                identifier=sink.identifier,
+                geometry_kind=geometry_kind,
+                x_micron=sink.x_micron,
+                y_micron=sink.y_micron,
+                footprint_radius_micron=radius,
+                effective_volume_micron3=sink.effective_volume_micron3,
+                uptake_rate_per_min=sink.uptake_rate.value,
+                components=tuple(components),
+            )
+        )
+
+    return tuple(recipients)
+
+
+def discretize_uptake_sinks(
+    experiment: TransportExperiment,
+    numerics: BioFVMNumerics,
+) -> tuple[DiscretizedUptakeRecipient, ...]:
+    """Rasterize finite recipient footprints without changing declared total volume."""
+
+    if not isinstance(numerics, BioFVMNumerics):
+        raise TypeError("numerics must be BioFVMNumerics")
+    return _discretize_uptake_sinks_for_grid(
+        experiment,
+        numerics.grid_spacing_micron,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -380,19 +549,7 @@ def _validate_mapping(
     if not _is_integer_multiple(experiment.domain.height_micron, grid):
         raise ValueError("grid spacing must tile domain height exactly")
 
-    occupied_recipient_voxels: dict[tuple[int, int], str] = {}
-    for sink in experiment.uptake_sinks:
-        voxel = (
-            math.floor(sink.x_micron / grid),
-            math.floor(sink.y_micron / grid),
-        )
-        previous = occupied_recipient_voxels.get(voxel)
-        if previous is not None:
-            raise ValueError(
-                "uptake sinks must map to distinct numerical voxels; "
-                f"{previous!r} and {sink.identifier!r} collide at {voxel}"
-            )
-        occupied_recipient_voxels[voxel] = sink.identifier
+    discretize_uptake_sinks(experiment, numerics)
 
     dt = numerics.time_step_min
     if not _is_integer_multiple(experiment.duration_min, dt):
@@ -454,21 +611,40 @@ def build_command(
             )
         )
 
-    command.extend(("--uptake-count", str(len(experiment.uptake_sinks))))
-    for index, sink in enumerate(experiment.uptake_sinks):
+    recipients = discretize_uptake_sinks(experiment, numerics)
+    command.extend(("--uptake-count", str(len(recipients))))
+    for index, recipient in enumerate(recipients):
         prefix = f"--uptake-{index}"
         command.extend(
             (
+                f"{prefix}-kind",
+                recipient.geometry_kind,
                 f"{prefix}-x-micron",
-                _format_number(sink.x_micron),
+                _format_number(recipient.x_micron),
                 f"{prefix}-y-micron",
-                _format_number(sink.y_micron),
+                _format_number(recipient.y_micron),
+                f"{prefix}-radius-micron",
+                _format_number(recipient.footprint_radius_micron),
                 f"{prefix}-volume-micron3",
-                _format_number(sink.effective_volume_micron3),
+                _format_number(recipient.effective_volume_micron3),
                 f"{prefix}-rate-per-min",
-                _format_number(sink.uptake_rate.value),
+                _format_number(recipient.uptake_rate_per_min),
+                f"{prefix}-component-count",
+                str(len(recipient.components)),
             )
         )
+        for component_index, component in enumerate(recipient.components):
+            component_prefix = f"{prefix}-component-{component_index}"
+            command.extend(
+                (
+                    f"{component_prefix}-x-micron",
+                    _format_number(component.x_micron),
+                    f"{component_prefix}-y-micron",
+                    _format_number(component.y_micron),
+                    f"{component_prefix}-volume-micron3",
+                    _format_number(component.effective_volume_micron3),
+                )
+            )
 
     return tuple(command)
 
@@ -478,7 +654,7 @@ def parse_result(
     experiment: TransportExperiment,
     stdout: str,
 ) -> BioFVMRunResult:
-    """Parse and cross-check the native runner's TSV v4 result contract."""
+    """Parse and cross-check the native runner's TSV v5 result contract."""
 
     if not isinstance(experiment, TransportExperiment):
         raise TypeError("experiment must be a TransportExperiment")
@@ -493,7 +669,10 @@ def parse_result(
     grid: BioFVMGrid2D | None = None
     samples: list[TransportSample] = []
     field_snapshots: list[SpatialFieldSnapshot2D] = []
-    recipient_metadata: dict[int, tuple[float, float, float, float]] = {}
+    recipient_metadata: dict[
+        int,
+        tuple[str, float, float, float, float, float, int],
+    ] = {}
     recipient_samples: dict[int, list[RecipientUptakeSample]] = {}
 
     for line in lines[1:]:
@@ -514,7 +693,7 @@ def parse_result(
             continue
 
         if fields[0] == "recipient":
-            if len(fields) != 6:
+            if len(fields) != 9:
                 raise ValueError(f"invalid BioFVM recipient line: {line!r}")
             try:
                 index = int(fields[1])
@@ -524,11 +703,23 @@ def parse_result(
                 raise ValueError("recipient index must be non-negative")
             if index in recipient_metadata:
                 raise ValueError(f"duplicate BioFVM recipient index: {index}")
+            geometry_kind = fields[2]
+            if geometry_kind not in {"point", "circle"}:
+                raise ValueError(
+                    f"unsupported BioFVM recipient geometry: {geometry_kind!r}"
+                )
+            component_count = _positive_int_text(
+                fields[8],
+                "recipient component count",
+            )
             recipient_metadata[index] = (
-                _finite(fields[2], "recipient x"),
-                _finite(fields[3], "recipient y"),
-                _finite(fields[4], "recipient effective volume"),
-                _finite(fields[5], "recipient uptake rate"),
+                geometry_kind,
+                _finite(fields[3], "recipient x"),
+                _finite(fields[4], "recipient y"),
+                _finite(fields[5], "recipient footprint radius"),
+                _finite(fields[6], "recipient effective volume"),
+                _finite(fields[7], "recipient uptake rate"),
+                component_count,
             )
             recipient_samples[index] = []
             continue
@@ -648,21 +839,40 @@ def parse_result(
             "BioFVM recipient metadata does not match configured uptake sinks"
         )
 
+    expected_discretized = _discretize_uptake_sinks_for_grid(
+        experiment,
+        grid.grid_spacing_micron,
+    )
+
     recipient_series: list[RecipientUptakeSeries] = []
     for index, sink in enumerate(experiment.uptake_sinks):
         observed_recipient = recipient_metadata[index]
+        expected_recipient = expected_discretized[index]
+
+        if observed_recipient[0] != expected_recipient.geometry_kind:
+            raise ValueError(
+                f"BioFVM recipient geometry does not match sink {sink.identifier!r}"
+            )
         expected_values = (
-            sink.x_micron,
-            sink.y_micron,
-            sink.effective_volume_micron3,
-            sink.uptake_rate.value,
+            expected_recipient.x_micron,
+            expected_recipient.y_micron,
+            expected_recipient.footprint_radius_micron,
+            expected_recipient.effective_volume_micron3,
+            expected_recipient.uptake_rate_per_min,
         )
         if any(
             not math.isclose(observed_value, expected_value, rel_tol=0.0, abs_tol=1e-12)
-            for observed_value, expected_value in zip(observed_recipient, expected_values)
+            for observed_value, expected_value in zip(
+                observed_recipient[1:6],
+                expected_values,
+            )
         ):
             raise ValueError(
                 f"BioFVM recipient metadata does not match sink {sink.identifier!r}"
+            )
+        if observed_recipient[6] != len(expected_recipient.components):
+            raise ValueError(
+                f"BioFVM recipient component count does not match sink {sink.identifier!r}"
             )
 
         series_samples = tuple(recipient_samples[index])

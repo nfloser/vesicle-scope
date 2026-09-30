@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -84,12 +85,22 @@ int parse_non_negative_integer(const std::string& text, const std::string& name)
     return value;
 }
 
-struct UptakeConfig
+struct UptakeComponentConfig
 {
     double x;
     double y;
     double volume;
+};
+
+struct UptakeConfig
+{
+    std::string kind;
+    double x;
+    double y;
+    double radius;
+    double volume;
     double rate;
+    std::vector<UptakeComponentConfig> components;
 };
 
 bool has_argument(int argc, char* argv[], const std::string& name)
@@ -151,7 +162,7 @@ void require_non_negative(double value, const std::string& name)
 void print_sample(
     BioFVM::Microenvironment& microenvironment,
     double time_min,
-    const std::vector<BioFVM::Basic_Agent*>& uptake_agents
+    const std::vector<std::vector<BioFVM::Basic_Agent*>>& uptake_recipients
 )
 {
     double sum = 0.0;
@@ -171,9 +182,12 @@ void print_sample(
         sum / static_cast<double>(microenvironment.number_of_voxels());
 
     double total_internalized = 0.0;
-    for (BioFVM::Basic_Agent* uptake_agent : uptake_agents)
+    for (const auto& recipient_agents : uptake_recipients)
     {
-        total_internalized += (*(uptake_agent->internalized_substrates))[0];
+        for (BioFVM::Basic_Agent* uptake_agent : recipient_agents)
+        {
+            total_internalized += (*(uptake_agent->internalized_substrates))[0];
+        }
     }
 
     std::cout
@@ -193,13 +207,18 @@ void print_sample(
     }
     std::cout << '\n';
 
-    for (std::size_t index = 0; index < uptake_agents.size(); ++index)
+    for (std::size_t index = 0; index < uptake_recipients.size(); ++index)
     {
+        double recipient_internalized = 0.0;
+        for (BioFVM::Basic_Agent* uptake_agent : uptake_recipients[index])
+        {
+            recipient_internalized += (*(uptake_agent->internalized_substrates))[0];
+        }
         std::cout
             << "recipient_uptake\t"
             << std::setprecision(17) << time_min << '\t'
             << index << '\t'
-            << (*(uptake_agents[index]->internalized_substrates))[0]
+            << recipient_internalized
             << '\n';
     }
 
@@ -289,6 +308,7 @@ int main(int argc, char* argv[])
         {
             const std::string prefix = "--uptake-" + std::to_string(index);
             UptakeConfig config;
+            config.kind = argument(argc, argv, prefix + "-kind");
             config.x = parse_number(
                 argument(argc, argv, prefix + "-x-micron"),
                 "uptake x"
@@ -296,6 +316,10 @@ int main(int argc, char* argv[])
             config.y = parse_number(
                 argument(argc, argv, prefix + "-y-micron"),
                 "uptake y"
+            );
+            config.radius = parse_number(
+                argument(argc, argv, prefix + "-radius-micron"),
+                "uptake footprint radius"
             );
             config.volume = parse_number(
                 argument(argc, argv, prefix + "-volume-micron3"),
@@ -305,6 +329,38 @@ int main(int argc, char* argv[])
                 argument(argc, argv, prefix + "-rate-per-min"),
                 "uptake rate"
             );
+            const int component_count = parse_non_negative_integer(
+                argument(argc, argv, prefix + "-component-count"),
+                "uptake component count"
+            );
+            if (component_count <= 0)
+            {
+                throw std::invalid_argument(
+                    "uptake component count must be greater than zero"
+                );
+            }
+            config.components.reserve(static_cast<std::size_t>(component_count));
+            for (int component_index = 0;
+                 component_index < component_count;
+                 ++component_index)
+            {
+                const std::string component_prefix =
+                    prefix + "-component-" + std::to_string(component_index);
+                UptakeComponentConfig component;
+                component.x = parse_number(
+                    argument(argc, argv, component_prefix + "-x-micron"),
+                    "uptake component x"
+                );
+                component.y = parse_number(
+                    argument(argc, argv, component_prefix + "-y-micron"),
+                    "uptake component y"
+                );
+                component.volume = parse_number(
+                    argument(argc, argv, component_prefix + "-volume-micron3"),
+                    "uptake component volume"
+                );
+                config.components.push_back(component);
+            }
             uptake_configs.push_back(config);
         }
 
@@ -334,15 +390,155 @@ int main(int argc, char* argv[])
                 );
             }
         }
+        if (!integer_multiple(width, grid) || !integer_multiple(height, grid))
+        {
+            throw std::invalid_argument("grid spacing must tile the 2D domain exactly");
+        }
+
         for (const UptakeConfig& uptake : uptake_configs)
         {
+            if (uptake.kind != "point" && uptake.kind != "circle")
+            {
+                throw std::invalid_argument("unsupported uptake geometry kind");
+            }
             require_non_negative(uptake.x, "uptake x");
             require_non_negative(uptake.y, "uptake y");
+            require_non_negative(uptake.radius, "uptake footprint radius");
             require_positive(uptake.volume, "uptake effective volume");
             require_non_negative(uptake.rate, "uptake rate");
             if (uptake.x >= width || uptake.y >= height)
             {
                 throw std::invalid_argument("localized uptake lies outside 2D domain");
+            }
+
+            if (uptake.kind == "point")
+            {
+                if (uptake.radius != 0.0 || uptake.components.size() != 1)
+                {
+                    throw std::invalid_argument(
+                        "point uptake requires zero radius and one component"
+                    );
+                }
+            }
+            else
+            {
+                require_positive(uptake.radius, "circular uptake footprint radius");
+                if (
+                    uptake.x - uptake.radius < 0.0
+                    || uptake.x + uptake.radius > width
+                    || uptake.y - uptake.radius < 0.0
+                    || uptake.y + uptake.radius > height
+                )
+                {
+                    throw std::invalid_argument(
+                        "circular uptake footprint must lie fully inside domain"
+                    );
+                }
+
+                const int nx = static_cast<int>(std::lround(width / grid));
+                const int ny = static_cast<int>(std::lround(height / grid));
+                std::size_t expected_component_count = 0;
+                const double radius_tolerance =
+                    std::max(1e-12, uptake.radius * 1e-12);
+                for (int y_index = 0; y_index < ny; ++y_index)
+                {
+                    const double y = (static_cast<double>(y_index) + 0.5) * grid;
+                    for (int x_index = 0; x_index < nx; ++x_index)
+                    {
+                        const double x =
+                            (static_cast<double>(x_index) + 0.5) * grid;
+                        if (
+                            std::hypot(x - uptake.x, y - uptake.y)
+                            <= uptake.radius + radius_tolerance
+                        )
+                        {
+                            ++expected_component_count;
+                        }
+                    }
+                }
+                if (uptake.components.size() != expected_component_count)
+                {
+                    throw std::invalid_argument(
+                        "circular uptake component count does not match footprint"
+                    );
+                }
+            }
+
+            const double expected_component_volume =
+                uptake.volume / static_cast<double>(uptake.components.size());
+            double component_volume_sum = 0.0;
+            for (const UptakeComponentConfig& component : uptake.components)
+            {
+                require_non_negative(component.x, "uptake component x");
+                require_non_negative(component.y, "uptake component y");
+                require_positive(component.volume, "uptake component volume");
+                if (component.x >= width || component.y >= height)
+                {
+                    throw std::invalid_argument(
+                        "uptake component lies outside 2D domain"
+                    );
+                }
+
+                if (uptake.kind == "point")
+                {
+                    if (
+                        std::abs(component.x - uptake.x) > 1e-12
+                        || std::abs(component.y - uptake.y) > 1e-12
+                    )
+                    {
+                        throw std::invalid_argument(
+                            "point uptake component must match recipient position"
+                        );
+                    }
+                }
+                else
+                {
+                    const double distance = std::hypot(
+                        component.x - uptake.x,
+                        component.y - uptake.y
+                    );
+                    if (distance > uptake.radius + std::max(1e-12, uptake.radius * 1e-12))
+                    {
+                        throw std::invalid_argument(
+                            "circular uptake component lies outside footprint"
+                        );
+                    }
+                    const double voxel_center_x =
+                        (std::floor(component.x / grid) + 0.5) * grid;
+                    const double voxel_center_y =
+                        (std::floor(component.y / grid) + 0.5) * grid;
+                    if (
+                        std::abs(component.x - voxel_center_x) > 1e-12
+                        || std::abs(component.y - voxel_center_y) > 1e-12
+                    )
+                    {
+                        throw std::invalid_argument(
+                            "circular uptake components must lie on voxel centers"
+                        );
+                    }
+                }
+                const double component_volume_tolerance =
+                    std::max(1e-12, uptake.volume * 1e-12);
+                if (
+                    std::abs(component.volume - expected_component_volume)
+                    > component_volume_tolerance
+                )
+                {
+                    throw std::invalid_argument(
+                        "uptake component volume must match equal recipient share"
+                    );
+                }
+                component_volume_sum += component.volume;
+            }
+
+            if (
+                std::abs(component_volume_sum - uptake.volume)
+                > std::max(1e-9, uptake.volume * 1e-12)
+            )
+            {
+                throw std::invalid_argument(
+                    "uptake component volumes must sum to recipient effective volume"
+                );
             }
         }
 
@@ -357,10 +553,6 @@ int main(int argc, char* argv[])
         if (sample_every > duration)
         {
             throw std::invalid_argument("sample interval cannot exceed duration");
-        }
-        if (!integer_multiple(width, grid) || !integer_multiple(height, grid))
-        {
-            throw std::invalid_argument("grid spacing must tile the 2D domain exactly");
         }
         if (!integer_multiple(duration, dt) || !integer_multiple(sample_every, dt))
         {
@@ -399,7 +591,7 @@ int main(int argc, char* argv[])
 
         BioFVM::Agent_Container agent_container;
         BioFVM::Basic_Agent* source_agent = nullptr;
-        std::vector<BioFVM::Basic_Agent*> uptake_agents;
+        std::vector<std::vector<BioFVM::Basic_Agent*>> uptake_recipients;
         if (has_source || !uptake_configs.empty())
         {
             agent_container.initialize(
@@ -426,35 +618,60 @@ int main(int argc, char* argv[])
             source_agent->set_internal_uptake_constants(dt);
         }
 
-        std::set<int> uptake_voxel_indices;
-        for (const UptakeConfig& uptake : uptake_configs)
+        std::map<int, std::size_t> uptake_voxel_owner;
+        uptake_recipients.reserve(uptake_configs.size());
+        for (std::size_t recipient_index = 0;
+             recipient_index < uptake_configs.size();
+             ++recipient_index)
         {
-            BioFVM::Basic_Agent* uptake_agent = BioFVM::create_basic_agent();
-            uptake_agent->set_total_volume(uptake.volume);
-            if (!uptake_agent->assign_position(uptake.x, uptake.y, 0.0))
+            const UptakeConfig& uptake = uptake_configs[recipient_index];
+            std::set<int> recipient_voxel_indices;
+            std::vector<BioFVM::Basic_Agent*> recipient_agents;
+            recipient_agents.reserve(uptake.components.size());
+
+            for (const UptakeComponentConfig& component : uptake.components)
             {
-                throw std::invalid_argument(
-                    "localized uptake position is invalid in BioFVM mesh"
-                );
+                BioFVM::Basic_Agent* uptake_agent = BioFVM::create_basic_agent();
+                uptake_agent->set_total_volume(component.volume);
+                if (!uptake_agent->assign_position(component.x, component.y, 0.0))
+                {
+                    throw std::invalid_argument(
+                        "uptake component position is invalid in BioFVM mesh"
+                    );
+                }
+
+                const int voxel_index = uptake_agent->get_current_voxel_index();
+                if (!recipient_voxel_indices.insert(voxel_index).second)
+                {
+                    throw std::invalid_argument(
+                        "one recipient maps multiple uptake components to one BioFVM voxel"
+                    );
+                }
+                const auto existing = uptake_voxel_owner.find(voxel_index);
+                if (
+                    existing != uptake_voxel_owner.end()
+                    && existing->second != recipient_index
+                )
+                {
+                    throw std::invalid_argument(
+                        "multiple uptake recipients map to the same BioFVM voxel"
+                    );
+                }
+                uptake_voxel_owner[voxel_index] = recipient_index;
+
+                (*uptake_agent->uptake_rates)[0] = uptake.rate;
+                uptake_agent->set_internal_uptake_constants(dt);
+                recipient_agents.push_back(uptake_agent);
             }
-            if (!uptake_voxel_indices.insert(
-                uptake_agent->get_current_voxel_index()
-            ).second)
-            {
-                throw std::invalid_argument(
-                    "multiple uptake recipients map to the same BioFVM voxel"
-                );
-            }
-            (*uptake_agent->uptake_rates)[0] = uptake.rate;
-            uptake_agent->set_internal_uptake_constants(dt);
-            uptake_agents.push_back(uptake_agent);
+
+            uptake_recipients.push_back(recipient_agents);
         }
 
         const long total_steps = std::lround(duration / dt);
         const long sample_steps = std::lround(sample_every / dt);
 
         std::cout
-            << "VESICLESCOPE_BIOFVM_RESULT\t4\n"
+            << "VESICLESCOPE_BIOFVM_RESULT\t5\n"
             << "engine\tBioFVM\n"
             << "physicell_release\t" << VESICLESCOPE_PHYSICELL_RELEASE << '\n'
             << "physicell_commit\t" << VESICLESCOPE_PHYSICELL_COMMIT << '\n'
@@ -471,13 +688,16 @@ int main(int argc, char* argv[])
             const UptakeConfig& uptake = uptake_configs[index];
             std::cout
                 << "recipient\t" << index << '\t'
+                << uptake.kind << '\t'
                 << std::setprecision(17) << uptake.x << '\t'
                 << uptake.y << '\t'
+                << uptake.radius << '\t'
                 << uptake.volume << '\t'
-                << uptake.rate << '\n';
+                << uptake.rate << '\t'
+                << uptake.components.size() << '\n';
         }
 
-        print_sample(microenvironment, 0.0, uptake_agents);
+        print_sample(microenvironment, 0.0, uptake_recipients);
 
         for (long step = 1; step <= total_steps; ++step)
         {
@@ -492,9 +712,12 @@ int main(int argc, char* argv[])
                 BioFVM::default_microenvironment_options
                     .track_internalized_substrates_in_each_agent = track_internalized;
             }
-            for (BioFVM::Basic_Agent* uptake_agent : uptake_agents)
+            for (const auto& recipient_agents : uptake_recipients)
             {
-                uptake_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+                for (BioFVM::Basic_Agent* uptake_agent : recipient_agents)
+                {
+                    uptake_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+                }
             }
             {
                 ScopedCoutToStderr redirect_solver_output;
@@ -505,7 +728,7 @@ int main(int argc, char* argv[])
                 print_sample(
                     microenvironment,
                     static_cast<double>(step) * dt,
-                    uptake_agents
+                    uptake_recipients
                 );
             }
         }
