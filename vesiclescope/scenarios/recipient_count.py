@@ -5,6 +5,7 @@ from __future__ import annotations
 from vesiclescope.domain import (
     BoundaryCondition,
     EvidenceCategory,
+    CircularUptakeSink,
     PointReleaseSource,
     PointUptakeSink,
     RectangularDomain2D,
@@ -96,5 +97,34 @@ def recipient_count_sweep_experiment(recipient_count: int) -> TransportExperimen
                 ),
             ),
         ),
+        uptake_sinks=recipients,
+    )
+
+
+def finite_recipient_count_sweep_experiment(recipient_count: int) -> TransportExperiment:
+    """Build the finite-footprint counterpart of the reviewed count sweep."""
+
+    point_experiment = recipient_count_sweep_experiment(recipient_count)
+    recipients = tuple(
+        CircularUptakeSink(
+            identifier=sink.identifier,
+            x_micron=sink.x_micron,
+            y_micron=sink.y_micron,
+            footprint_radius_micron=15.0,
+            effective_volume_micron3=sink.effective_volume_micron3,
+            uptake_rate=sink.uptake_rate,
+        )
+        for sink in point_experiment.uptake_sinks
+    )
+    return TransportExperiment(
+        experiment_id=f"synthetic.finite-recipient-count.{recipient_count}",
+        domain=point_experiment.domain,
+        duration_min=point_experiment.duration_min,
+        sample_every_min=point_experiment.sample_every_min,
+        boundary=point_experiment.boundary,
+        diffusion=point_experiment.diffusion,
+        decay=point_experiment.decay,
+        initial_concentration=point_experiment.initial_concentration,
+        release_sources=point_experiment.release_sources,
         uptake_sinks=recipients,
     )
