@@ -16,7 +16,7 @@ The benchmark exists so that a future BioFVM adapter can be checked against engi
 `TransportExperiment` contains:
 
 - a stable experiment identifier;
-- a bounded rectangular 2D domain;
+- a bounded rectangular 2D domain with explicit physical slice thickness;
 - duration and output sampling interval in minutes;
 - an explicit boundary condition;
 - a provenance-bearing diffusion coefficient;
@@ -35,6 +35,12 @@ The first transport contract uses:
 | time | `min` |
 | diffusion coefficient | `micron^2/min` |
 | first-order rate | `1/min` |
+
+A 2D experiment also declares `slice_thickness_micron`. This is physical geometry, not numerical resolution. The x/y mesh may be refined while the slice thickness stays fixed.
+
+That distinction is required before amount-based sources or sinks can be modeled: BioFVM source/sink coupling uses voxel volume, so silently setting z thickness equal to x/y grid spacing would make physical release or uptake change when the numerical mesh is refined.
+
+Synthetic verification cases choose their slice thickness explicitly. VesicleScope does not provide a biological default.
 
 These names intentionally match the reviewed BioFVM/PhysiCell convention. Current PhysiCell configuration examples express diffusion as `micron^2/min`, decay as `1/min`, spatial units as `micron`, and time units as `min`.
 
