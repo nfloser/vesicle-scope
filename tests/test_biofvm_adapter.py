@@ -151,6 +151,25 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
         self.assertEqual(result.samples[0].time_min, 0.0)
         self.assertAlmostEqual(result.samples[-1].mean_concentration, 0.735758882343)
 
+    def test_accepts_roundoff_sized_mean_outside_uniform_min_max(self) -> None:
+        output = """VESICLESCOPE_BIOFVM_RESULT\t1
+engine\tBioFVM
+physicell_release\t1.14.2
+physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
+biofvm_version\t1.1.7
+sample\t0\t2.0000000000000004\t2\t2
+sample\t2\t1.6374615061600002\t1.63746150616\t1.63746150616
+sample\t4\t1.3406400920700002\t1.34064009207\t1.34064009207
+sample\t6\t1.0976232721900001\t1.09762327219\t1.09762327219
+sample\t8\t0.8986579282340001\t0.898657928234\t0.898657928234
+sample\t10\t0.7357588823430001\t0.735758882343\t0.735758882343
+"""
+
+        result = parse_result(experiment(), output)
+
+        self.assertEqual(len(result.samples), 6)
+        self.assertAlmostEqual(result.samples[0].mean_concentration, 2.0)
+
     def test_rejects_engine_metadata_that_does_not_match_pin(self) -> None:
         output = """VESICLESCOPE_BIOFVM_RESULT\t1
 engine\tBioFVM
