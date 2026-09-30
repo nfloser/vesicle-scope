@@ -1,7 +1,7 @@
 # Finite recipient count and planar-density sweep
 
 Issue: #33  
-Status: synthetic numerical verification in progress
+Status: synthetic numerical verification completed
 
 ## Purpose
 
@@ -60,7 +60,23 @@ At 10 and 5 micron x/y grids, with 0.1 min timestep, the native integration test
 - final total uptake increases from 2 to 4 to 8 recipients;
 - the ordering is identical at both grid resolutions.
 
-Observed numerical values are intentionally not pre-filled. They must be copied from an executed native CI run rather than inferred or fabricated.
+Observed native CI values from the reviewed 20 min synthetic runs are:
+
+| Recipients | Planar density (recipient/mm^2) | Final uptake @ 10 µm grid | Final uptake @ 5 µm grid |
+| ---: | ---: | ---: | ---: |
+| 2 | 45.3514739229 | 32.1785024274 | 32.1663684343 |
+| 4 | 90.7029478458 | 64.1671186996 | 64.1429054128 |
+| 8 | 181.4058956916 | 124.2457586250 | 124.9621302193 |
+
+The monotonic ordering `2 < 4 < 8` is preserved on both grids.
+
+The 10→5 micron relative change in final total uptake is approximately:
+
+- 2 recipients: 0.038%;
+- 4 recipients: 0.038%;
+- 8 recipients: 0.573%.
+
+These are synthetic numerical outputs, not biological uptake measurements.
 
 ## Interpretation boundary
 
