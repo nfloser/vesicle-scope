@@ -17,7 +17,7 @@ from vesiclescope.domain import (
 
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
-_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t4"
+_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t5"
 _PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
 _FIELD_ORDERING = "x_fastest_then_y"
 
@@ -642,7 +642,7 @@ def parse_result(
     experiment: TransportExperiment,
     stdout: str,
 ) -> BioFVMRunResult:
-    """Parse and cross-check the native runner's TSV v4 result contract."""
+    """Parse and cross-check the native runner's TSV v5 result contract."""
 
     if not isinstance(experiment, TransportExperiment):
         raise TypeError("experiment must be a TransportExperiment")
@@ -657,7 +657,10 @@ def parse_result(
     grid: BioFVMGrid2D | None = None
     samples: list[TransportSample] = []
     field_snapshots: list[SpatialFieldSnapshot2D] = []
-    recipient_metadata: dict[int, tuple[float, float, float, float]] = {}
+    recipient_metadata: dict[
+        int,
+        tuple[str, float, float, float, float, float, int],
+    ] = {}
     recipient_samples: dict[int, list[RecipientUptakeSample]] = {}
 
     for line in lines[1:]:
@@ -678,7 +681,7 @@ def parse_result(
             continue
 
         if fields[0] == "recipient":
-            if len(fields) != 6:
+            if len(fields) != 9:
                 raise ValueError(f"invalid BioFVM recipient line: {line!r}")
             try:
                 index = int(fields[1])
@@ -688,11 +691,23 @@ def parse_result(
                 raise ValueError("recipient index must be non-negative")
             if index in recipient_metadata:
                 raise ValueError(f"duplicate BioFVM recipient index: {index}")
+            geometry_kind = fields[2]
+            if geometry_kind not in {"point", "circle"}:
+                raise ValueError(
+                    f"unsupported BioFVM recipient geometry: {geometry_kind!r}"
+                )
+            component_count = _positive_int_text(
+                fields[8],
+                "recipient component count",
+            )
             recipient_metadata[index] = (
-                _finite(fields[2], "recipient x"),
-                _finite(fields[3], "recipient y"),
-                _finite(fields[4], "recipient effective volume"),
-                _finite(fields[5], "recipient uptake rate"),
+                geometry_kind,
+                _finite(fields[3], "recipient x"),
+                _finite(fields[4], "recipient y"),
+                _finite(fields[5], "recipient footprint radius"),
+                _finite(fields[6], "recipient effective volume"),
+                _finite(fields[7], "recipient uptake rate"),
+                component_count,
             )
             recipient_samples[index] = []
             continue
@@ -812,21 +827,43 @@ def parse_result(
             "BioFVM recipient metadata does not match configured uptake sinks"
         )
 
+    expected_discretized = discretize_uptake_sinks(
+        experiment,
+        BioFVMNumerics(
+            grid_spacing_micron=grid.grid_spacing_micron,
+            time_step_min=1.0,
+        ),
+    )
+
     recipient_series: list[RecipientUptakeSeries] = []
     for index, sink in enumerate(experiment.uptake_sinks):
         observed_recipient = recipient_metadata[index]
+        expected_recipient = expected_discretized[index]
+
+        if observed_recipient[0] != expected_recipient.geometry_kind:
+            raise ValueError(
+                f"BioFVM recipient geometry does not match sink {sink.identifier!r}"
+            )
         expected_values = (
-            sink.x_micron,
-            sink.y_micron,
-            sink.effective_volume_micron3,
-            sink.uptake_rate.value,
+            expected_recipient.x_micron,
+            expected_recipient.y_micron,
+            expected_recipient.footprint_radius_micron,
+            expected_recipient.effective_volume_micron3,
+            expected_recipient.uptake_rate_per_min,
         )
         if any(
             not math.isclose(observed_value, expected_value, rel_tol=0.0, abs_tol=1e-12)
-            for observed_value, expected_value in zip(observed_recipient, expected_values)
+            for observed_value, expected_value in zip(
+                observed_recipient[1:6],
+                expected_values,
+            )
         ):
             raise ValueError(
                 f"BioFVM recipient metadata does not match sink {sink.identifier!r}"
+            )
+        if observed_recipient[6] != len(expected_recipient.components):
+            raise ValueError(
+                f"BioFVM recipient component count does not match sink {sink.identifier!r}"
             )
 
         series_samples = tuple(recipient_samples[index])
