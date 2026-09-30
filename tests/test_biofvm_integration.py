@@ -212,8 +212,16 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
         )
 
         self.assert_uniform(result)
-        for sample in result.samples:
+        self.assertEqual(len(result.field_snapshots), len(result.samples))
+        for sample, field in zip(result.samples, result.field_snapshots):
             self.assertAlmostEqual(sample.mean_concentration, 2.0, places=12)
+            self.assertEqual(field.time_min, sample.time_min)
+            self.assertTrue(
+                all(
+                    math.isclose(value, 2.0, rel_tol=0.0, abs_tol=1e-12)
+                    for value in field.values
+                )
+            )
 
     def test_decay_matches_closed_form_at_every_requested_sample(self) -> None:
         rate = 0.05
@@ -265,6 +273,24 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
                 expected_amount,
                 delta=max(1e-9, expected_amount * 1e-10),
             )
+
+    def test_localized_release_exposes_nonuniform_spatial_field(self) -> None:
+        result = run_transport(
+            localized_release_experiment(),
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            self.runner,
+        )
+
+        final_field = result.field_snapshots[-1]
+        self.assertEqual(final_field.time_min, result.samples[-1].time_min)
+        self.assertGreater(max(final_field.values), min(final_field.values))
+
+        derived_mean = sum(final_field.values) / len(final_field.values)
+        self.assertAlmostEqual(
+            derived_mean,
+            result.samples[-1].mean_concentration,
+            places=12,
+        )
 
     def test_localized_release_amount_is_resolution_invariant(self) -> None:
         experiment = localized_release_experiment()
@@ -333,6 +359,19 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
         self.assertGreater(
             near.samples[-1].internalized_field_quantity,
             far.samples[-1].internalized_field_quantity,
+        )
+
+    def test_combined_run_has_one_spatial_field_per_requested_sample(self) -> None:
+        result = run_transport(
+            donor_recipient_experiment(75.0),
+            BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+            self.runner,
+        )
+
+        self.assertEqual(len(result.field_snapshots), len(result.samples))
+        self.assertEqual(
+            tuple(field.time_min for field in result.field_snapshots),
+            tuple(sample.time_min for sample in result.samples),
         )
 
     def test_combined_donor_recipient_run_is_deterministic(self) -> None:
