@@ -230,4 +230,8 @@ Release mass balance is checked independently of x/y mesh resolution because net
 
 For coupled runs the numerical operator order is source net export → uptake → diffusion/decay for each timestep. This ordering is explicit reproducibility metadata/behavior, not a biological sequence. Combined verification checks released = extracellular + internalized quantity and confirms a reproducible synthetic near-versus-far uptake difference.
 
-Spatial fields are now available in the normalized in-memory result contract, so analysis and visualization no longer need BioFVM internals. Persistent field serialization remains deferred until the first recipient-population/distance analysis defines a concrete storage need.
+Spatial fields are now available in the normalized in-memory result contract, so analysis and visualization no longer need BioFVM internals. The first engine-independent analysis module consumes only `TransportExperiment` plus normalized result objects to derive planar recipient density, donor distance and distance-binned uptake.
+
+Planar recipient density is explicitly a 2D quantity in `recipient/mm^2`; it must not be presented as volumetric tissue cell density. The current controlled count sweep runs at one fixed numerical resolution because point-sink uptake retains `V_agent / V_voxel` dependence.
+
+Persistent field serialization remains deferred until a concrete figure/analysis workflow needs a durable result artifact.

@@ -153,8 +153,18 @@ Recipients that map to the same numerical voxel are rejected because per-recipie
 
 See [recipient population model baseline](research/recipient-population-model.md).
 
+## Controlled recipient-count analysis
+
+The first population analysis runs 2, 4 and 8 deterministic point recipients at a fixed 50 micron donor radius on one fixed 10 micron grid.
+
+It derives explicit planar density in `recipient/mm^2`, donor distance, total/mean uptake and exhaustive half-open distance bins from normalized result objects only.
+
+In the chosen synthetic regime, CI observes increasing total uptake from 2 to 4 to 8 recipients while every scenario preserves global mass balance. This is documented as a synthetic count sensitivity, not a biological density-response law.
+
+See [recipient count and planar-density analysis](research/recipient-density-analysis.md).
+
 ## What comes next
 
-The next scientific step is a controlled recipient-count/density sweep on fixed numerical resolution, followed by finite recipient geometry before any spatial-refinement-independent density claim is made.
+The next useful output is the first reproducible scientific population/distance figure generated from normalized results, followed by finite recipient geometry before any spatial-refinement-independent density claim is made.
 
-The v4 per-recipient series and v3 spatial fields now provide the primary data needed for distance-binned exposure, uptake distributions and reproducible figures. A persistent file format should be introduced only when that analysis defines concrete storage requirements.
+A persistent file format should be introduced only when that figure/analysis workflow defines concrete storage requirements.

@@ -3,6 +3,7 @@ import os
 import unittest
 from pathlib import Path
 
+from vesiclescope.analysis import analyze_recipient_population
 from vesiclescope.domain import (
     BoundaryCondition,
     EvidenceCategory,
@@ -247,6 +248,76 @@ def symmetric_recipient_population_experiment() -> TransportExperiment:
     )
 
 
+RECIPIENT_RING_POSITIONS = (
+    (65.0, 75.0),
+    (145.0, 135.0),
+    (65.0, 135.0),
+    (145.0, 75.0),
+    (75.0, 65.0),
+    (135.0, 145.0),
+    (75.0, 145.0),
+    (135.0, 65.0),
+)
+
+
+def recipient_count_sweep_experiment(recipient_count: int) -> TransportExperiment:
+    if recipient_count not in (2, 4, 8):
+        raise ValueError("synthetic count sweep supports 2, 4 or 8 recipients")
+
+    recipients = tuple(
+        PointUptakeSink(
+            identifier=f"sink.{index + 1}",
+            x_micron=x_micron,
+            y_micron=y_micron,
+            effective_volume_micron3=1000.0,
+            uptake_rate=synthetic_parameter(
+                f"sink.{index + 1}.uptake",
+                0.5,
+                "1/min",
+            ),
+        )
+        for index, (x_micron, y_micron) in enumerate(
+            RECIPIENT_RING_POSITIONS[:recipient_count]
+        )
+    )
+
+    return TransportExperiment(
+        experiment_id=f"synthetic.recipient-count.{recipient_count}",
+        domain=RectangularDomain2D(
+            width_micron=210.0,
+            height_micron=210.0,
+            slice_thickness_micron=25.0,
+        ),
+        duration_min=20.0,
+        sample_every_min=5.0,
+        boundary=BoundaryCondition.NO_FLUX,
+        diffusion=synthetic_parameter(
+            "transport.diffusion",
+            100.0,
+            "micron^2/min",
+        ),
+        decay=synthetic_parameter("transport.decay", 0.0, "1/min"),
+        initial_concentration=synthetic_parameter(
+            "initial.concentration",
+            0.0,
+            "particle_equivalent/micron^3",
+        ),
+        release_sources=(
+            PointReleaseSource(
+                identifier="source.center",
+                x_micron=105.0,
+                y_micron=105.0,
+                release_rate=synthetic_parameter(
+                    "source.release",
+                    120.0,
+                    "particle_equivalent/min",
+                ),
+            ),
+        ),
+        uptake_sinks=recipients,
+    )
+
+
 @unittest.skipUnless(RUNNER, "native BioFVM runner is not built for this test job")
 class BioFVMTransportIntegrationTests(unittest.TestCase):
     @property
@@ -468,6 +539,83 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
                 + sample.internalized_field_quantity,
                 released,
                 delta=max(1e-8, released * 1e-9),
+            )
+
+    def test_controlled_recipient_count_sweep_reports_density_sensitivity(self) -> None:
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+        summaries = []
+
+        for recipient_count in (2, 4, 8):
+            experiment = recipient_count_sweep_experiment(recipient_count)
+            result = run_transport(experiment, numerics, self.runner)
+            summary = analyze_recipient_population(
+                experiment,
+                result,
+                time_min=experiment.duration_min,
+            )
+            summaries.append(summary)
+
+            self.assertEqual(summary.recipient_count, recipient_count)
+            for recipient in summary.recipients:
+                self.assertAlmostEqual(
+                    recipient.donor_distance_micron,
+                    50.0,
+                    delta=1e-12,
+                )
+
+            final_sample = result.samples[-1]
+            released = (
+                experiment.release_sources[0].release_rate.value
+                * experiment.duration_min
+            )
+            self.assertAlmostEqual(
+                final_sample.integrated_field_quantity
+                + summary.total_internalized_quantity,
+                released,
+                delta=max(1e-8, released * 1e-9),
+            )
+
+        self.assertLess(
+            summaries[0].planar_density,
+            summaries[1].planar_density,
+        )
+        self.assertLess(
+            summaries[1].planar_density,
+            summaries[2].planar_density,
+        )
+        self.assertLess(
+            summaries[0].total_internalized_quantity,
+            summaries[1].total_internalized_quantity,
+        )
+        self.assertLess(
+            summaries[1].total_internalized_quantity,
+            summaries[2].total_internalized_quantity,
+        )
+
+    def test_recipient_count_sweep_high_count_scenario_is_deterministic(self) -> None:
+        experiment = recipient_count_sweep_experiment(8)
+        numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
+
+        first = run_transport(experiment, numerics, self.runner)
+        second = run_transport(experiment, numerics, self.runner)
+
+        self.assertAlmostEqual(
+            first.samples[-1].internalized_field_quantity,
+            second.samples[-1].internalized_field_quantity,
+            places=12,
+        )
+        self.assertEqual(
+            tuple(series.identifier for series in first.recipient_uptake_series),
+            tuple(series.identifier for series in second.recipient_uptake_series),
+        )
+        for first_series, second_series in zip(
+            first.recipient_uptake_series,
+            second.recipient_uptake_series,
+        ):
+            self.assertAlmostEqual(
+                first_series.samples[-1].internalized_field_quantity,
+                second_series.samples[-1].internalized_field_quantity,
+                places=12,
             )
 
     def test_population_run_is_deterministic_per_recipient(self) -> None:
