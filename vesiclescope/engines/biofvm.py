@@ -386,6 +386,30 @@ def parse_result(
 
     if not samples:
         raise ValueError("BioFVM result contains no samples")
+
+    if not experiment.uptake_sinks:
+        if any(
+            not math.isclose(
+                sample.internalized_field_quantity,
+                0.0,
+                rel_tol=0.0,
+                abs_tol=1e-12,
+            )
+            for sample in samples
+        ):
+            raise ValueError(
+                "BioFVM result reports internalized quantity without an uptake sink"
+            )
+    elif not math.isclose(
+        samples[0].internalized_field_quantity,
+        0.0,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise ValueError(
+            "BioFVM uptake result must start with zero internalized quantity"
+        )
+
     for previous, current in zip(samples, samples[1:]):
         if current.time_min <= previous.time_min:
             raise ValueError("BioFVM sample times must be strictly increasing")
