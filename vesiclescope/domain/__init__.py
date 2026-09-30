@@ -9,7 +9,9 @@ from .parameters import (
 from .transport import (
     BoundaryCondition,
     DIFFUSION_UNIT,
+    PointReleaseSource,
     RATE_UNIT,
+    RELEASE_RATE_UNIT,
     RectangularDomain2D,
     TransportExperiment,
 )
@@ -20,7 +22,9 @@ __all__ = [
     "EvidenceCategory",
     "EvidenceSource",
     "ParameterContext",
+    "PointReleaseSource",
     "RATE_UNIT",
+    "RELEASE_RATE_UNIT",
     "RectangularDomain2D",
     "ScientificParameter",
     "TransportExperiment",
