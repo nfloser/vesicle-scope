@@ -415,7 +415,14 @@ int main(int argc, char* argv[])
         {
             if (source_agent != nullptr)
             {
+                const bool track_internalized =
+                    BioFVM::default_microenvironment_options
+                        .track_internalized_substrates_in_each_agent;
+                BioFVM::default_microenvironment_options
+                    .track_internalized_substrates_in_each_agent = false;
                 source_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+                BioFVM::default_microenvironment_options
+                    .track_internalized_substrates_in_each_agent = track_internalized;
             }
             if (uptake_agent != nullptr)
             {
