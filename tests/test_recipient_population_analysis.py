@@ -1,3 +1,4 @@
+from dataclasses import replace
 import math
 import unittest
 
@@ -177,6 +178,26 @@ class RecipientPopulationAnalysisTests(unittest.TestCase):
             analyze_recipient_population(
                 experiment(),
                 result(identifiers=("sink.wrong", "sink.right")),
+                time_min=10.0,
+            )
+
+    def test_rejects_recipient_total_that_disagrees_with_normalized_aggregate(self) -> None:
+        normalized = result()
+        inconsistent = replace(
+            normalized,
+            samples=(
+                normalized.samples[0],
+                replace(
+                    normalized.samples[1],
+                    internalized_field_quantity=61.0,
+                ),
+            ),
+        )
+
+        with self.assertRaises(ValueError):
+            analyze_recipient_population(
+                experiment(),
+                inconsistent,
                 time_min=10.0,
             )
 
