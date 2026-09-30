@@ -137,6 +137,9 @@ physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
 sample\t0\t2\t2\t2
 sample\t2\t1.63746150616\t1.63746150616\t1.63746150616
+sample\t4\t1.34064009207\t1.34064009207\t1.34064009207
+sample\t6\t1.09762327219\t1.09762327219\t1.09762327219
+sample\t8\t0.898657928234\t0.898657928234\t0.898657928234
 sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
 """
         result = parse_result(experiment(), output)
@@ -144,7 +147,7 @@ sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
         self.assertEqual(result.experiment_id, "synthetic.uniform-decay")
         self.assertEqual(result.concentration_unit, "particle_equivalent/micron^3")
         self.assertEqual(result.engine, pinned_engine_metadata())
-        self.assertEqual(len(result.samples), 3)
+        self.assertEqual(len(result.samples), 6)
         self.assertEqual(result.samples[0].time_min, 0.0)
         self.assertAlmostEqual(result.samples[-1].mean_concentration, 0.735758882343)
 
@@ -194,6 +197,10 @@ physicell_release\t1.14.2
 physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763
 biofvm_version\t1.1.7
 sample\t0\t2\t2\t2
+sample\t2\t1.63746150616\t1.63746150616\t1.63746150616
+sample\t4\t1.34064009207\t1.34064009207\t1.34064009207
+sample\t6\t1.09762327219\t1.09762327219\t1.09762327219
+sample\t8\t0.898657928234\t0.898657928234\t0.898657928234
 sample\t10\t0.735758882343\t0.735758882343\t0.735758882343
 """,
             stderr="",
