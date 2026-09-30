@@ -20,3 +20,16 @@ The upstream copyright and license text must be preserved if BioFVM source or bi
 
 
 The canonical reviewed pin used by the fetch script, native build and Python adapter is stored in `vesiclescope/engines/physicell.env`. The fetch step verifies both the Git commit and the BioFVM version declared by the pinned source before compilation.
+
+
+## Matplotlib
+
+**Use:** headless rendering of reproducible scientific figures from normalized VesicleScope results  
+**Distribution:** installed as an optional figure-generation dependency; not vendored into this repository  
+**Pinned version:** 3.11.2  
+**Upstream:** https://matplotlib.org/ and https://pypi.org/project/matplotlib/  
+**License:** Matplotlib License / Python Software Foundation based, BSD-compatible
+
+Matplotlib is confined to the visualization layer. Numerical engines, scientific domain contracts, result parsing and engine-independent analysis do not import or depend on Matplotlib.
+
+The figure workflow pins the reviewed version in `requirements-figures.txt` so CI and local figure generation use the same renderer version.
