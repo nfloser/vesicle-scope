@@ -335,3 +335,23 @@ class TransportExperiment:
                         f"circular uptake sink {sink.identifier!r} must lie fully "
                         "inside the rectangular domain"
                     )
+
+        circular_sinks = tuple(
+            sink
+            for sink in self.uptake_sinks
+            if isinstance(sink, CircularUptakeSink)
+        )
+        for index, left in enumerate(circular_sinks):
+            for right in circular_sinks[index + 1 :]:
+                center_distance = math.hypot(
+                    left.x_micron - right.x_micron,
+                    left.y_micron - right.y_micron,
+                )
+                if center_distance < (
+                    left.footprint_radius_micron
+                    + right.footprint_radius_micron
+                ):
+                    raise ValueError(
+                        "circular uptake sink footprints must not overlap; "
+                        f"{left.identifier!r} overlaps {right.identifier!r}"
+                    )
