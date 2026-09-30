@@ -67,7 +67,7 @@ No cargo-mediated phenotype effects, receptor-level biology, ECM binding, inters
 
 ## Generate the synthetic population figure
 
-The first figure is deliberately a **synthetic fixed-grid verification**, not experimental evidence. It combines the final 8-recipient extracellular concentration field with the controlled 2/4/8 recipient-count sensitivity.
+The first figure is deliberately a **synthetic fixed-grid verification**, not experimental evidence. It now uses the verified finite circular recipient scenarios: the final 8-recipient extracellular concentration field plus the controlled finite 2/4/8 recipient-count sensitivity at the reviewed 10 micron grid. Issue #33 independently confirmed the same qualitative count ordering at 5 micron resolution.
 
 ```bash
 python -m pip install -r requirements-figures.txt
@@ -77,6 +77,8 @@ python -m scripts.generate_population_figure \
   --runner build/native/biofvm_transport_runner \
   --output build/figures/recipient-count.svg
 ```
+
+Recipient circles are rendered from each scenario's declared 15 micron footprint radius in physical x/y coordinates; the renderer does not infer geometry from voxel size or effective uptake volume.
 
 Matplotlib is an optional visualization dependency; the numerical engine and core analysis layer do not depend on it. CI independently regenerates and validates the SVG.
 
