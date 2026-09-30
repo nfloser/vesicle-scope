@@ -658,4 +658,14 @@ def run_transport(
         detail = str(stderr).strip() if stderr else str(exc)
         raise BioFVMRunError(f"BioFVM transport run failed: {detail}") from exc
 
-    return parse_result(experiment, completed.stdout)
+    result = parse_result(experiment, completed.stdout)
+    if not math.isclose(
+        result.grid.grid_spacing_micron,
+        numerics.grid_spacing_micron,
+        rel_tol=0.0,
+        abs_tol=1e-9,
+    ):
+        raise ValueError(
+            "BioFVM result grid spacing does not match requested numerical configuration"
+        )
+    return result
