@@ -17,3 +17,6 @@ Scientific citation:
 Ghaffarizadeh A, Friedman SH, Macklin P. *BioFVM: an efficient parallelized diffusive transport solver for 3-D biological simulations.* Bioinformatics. 2016;32(8):1256-1258. DOI: https://doi.org/10.1093/bioinformatics/btv730
 
 The upstream copyright and license text must be preserved if BioFVM source or binaries are redistributed in a way that triggers those conditions. VesicleScope's current verification workflow downloads upstream source for CI compilation and does not copy it into this repository.
+
+
+The canonical reviewed pin used by the fetch script, native build and Python adapter is stored in `vesiclescope/engines/physicell.env`. The fetch step verifies both the Git commit and the BioFVM version declared by the pinned source before compilation.
