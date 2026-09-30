@@ -1,7 +1,11 @@
 import math
 import unittest
 
-from vesiclescope.scenarios import recipient_count_sweep_experiment
+from vesiclescope.domain import CircularUptakeSink
+from vesiclescope.scenarios import (
+    finite_recipient_count_sweep_experiment,
+    recipient_count_sweep_experiment,
+)
 
 
 class RecipientCountScenarioTests(unittest.TestCase):
@@ -63,6 +67,62 @@ class RecipientCountScenarioTests(unittest.TestCase):
                         abs_tol=1e-12,
                     )
                 )
+
+    def test_finite_sweep_uses_reviewed_circular_geometry(self) -> None:
+        for count in (2, 4, 8):
+            scenario = finite_recipient_count_sweep_experiment(count)
+            donor = scenario.release_sources[0]
+
+            self.assertEqual(
+                scenario.experiment_id,
+                f"synthetic.finite-recipient-count.{count}",
+            )
+            self.assertEqual(len(scenario.uptake_sinks), count)
+            self.assertTrue(
+                all(isinstance(sink, CircularUptakeSink) for sink in scenario.uptake_sinks)
+            )
+
+            for sink in scenario.uptake_sinks:
+                self.assertEqual(sink.footprint_radius_micron, 15.0)
+                self.assertEqual(sink.effective_volume_micron3, 1000.0)
+                self.assertEqual(sink.uptake_rate.value, 0.5)
+                self.assertTrue(
+                    math.isclose(
+                        math.hypot(
+                            sink.x_micron - donor.x_micron,
+                            sink.y_micron - donor.y_micron,
+                        ),
+                        50.0,
+                        rel_tol=0.0,
+                        abs_tol=1e-12,
+                    )
+                )
+
+    def test_finite_sweep_supports_only_reviewed_counts(self) -> None:
+        for invalid in (0, 1, 3, 16):
+            with self.subTest(recipient_count=invalid):
+                with self.assertRaises(ValueError):
+                    finite_recipient_count_sweep_experiment(invalid)
+
+    def test_finite_sweep_keeps_non_count_inputs_identical(self) -> None:
+        scenarios = tuple(
+            finite_recipient_count_sweep_experiment(count)
+            for count in (2, 4, 8)
+        )
+        reference = scenarios[0]
+
+        for scenario in scenarios[1:]:
+            self.assertEqual(scenario.domain, reference.domain)
+            self.assertEqual(scenario.duration_min, reference.duration_min)
+            self.assertEqual(scenario.sample_every_min, reference.sample_every_min)
+            self.assertEqual(scenario.boundary, reference.boundary)
+            self.assertEqual(scenario.diffusion, reference.diffusion)
+            self.assertEqual(scenario.decay, reference.decay)
+            self.assertEqual(
+                scenario.initial_concentration,
+                reference.initial_concentration,
+            )
+            self.assertEqual(scenario.release_sources, reference.release_sources)
 
 
 if __name__ == "__main__":
