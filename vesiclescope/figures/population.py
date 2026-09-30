@@ -265,7 +265,7 @@ def render_recipient_count_figure(
             footprint = Circle(
                 position,
                 radius=radius,
-                facecolor="white",
+                facecolor="none",
                 edgecolor="black",
                 linewidth=1.0,
                 label="Finite recipients" if index == 1 else None,
