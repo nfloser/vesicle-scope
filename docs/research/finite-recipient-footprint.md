@@ -77,13 +77,13 @@ The normalized result therefore still contains **one `RecipientUptakeSeries` per
 
 Components belonging to one circular recipient must occupy distinct BioFVM voxels by construction.
 
-Components belonging to different recipients may not share a voxel in this milestone.
+Circular recipient footprints are not allowed to overlap geometrically in this milestone. The domain contract rejects two circles whose center distance is smaller than the sum of their radii.
 
-The Python adapter rejects collisions during deterministic rasterization and the native runner independently verifies actual BioFVM voxel assignment before simulation.
+After rasterization, components belonging to different recipients may not share a voxel either.
 
-This avoids order-dependent per-recipient attribution.
+The Python adapter rejects numerical collisions during deterministic rasterization and the native runner independently verifies actual BioFVM voxel assignment before simulation.
 
-Overlapping biological footprints are not modeled yet.
+This avoids both unsupported footprint overlap and order-dependent per-recipient attribution.
 
 ## Protocol v5
 
