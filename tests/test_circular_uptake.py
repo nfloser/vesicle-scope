@@ -119,6 +119,36 @@ class CircularUptakeSinkDomainTests(unittest.TestCase):
                     experiment(sink)
 
 
+    def test_rejects_overlapping_circular_recipient_footprints(self) -> None:
+        first = circular_sink(
+            identifier="sink.first",
+            x_micron=80.0,
+            y_micron=50.0,
+            radius_micron=20.0,
+        )
+        second = circular_sink(
+            identifier="sink.second",
+            x_micron=110.0,
+            y_micron=50.0,
+            radius_micron=20.0,
+        )
+        base = experiment(first)
+
+        with self.assertRaises(ValueError):
+            TransportExperiment(
+                experiment_id=base.experiment_id,
+                domain=base.domain,
+                duration_min=base.duration_min,
+                sample_every_min=base.sample_every_min,
+                boundary=base.boundary,
+                diffusion=base.diffusion,
+                decay=base.decay,
+                initial_concentration=base.initial_concentration,
+                release_sources=base.release_sources,
+                uptake_sinks=(first, second),
+            )
+
+
 class CircularUptakeDiscretizationTests(unittest.TestCase):
     def test_selects_voxel_centers_deterministically(self) -> None:
         components = discretize_uptake_sinks(
