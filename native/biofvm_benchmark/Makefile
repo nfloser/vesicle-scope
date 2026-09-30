@@ -2,13 +2,23 @@ CXX ?= g++
 CXXFLAGS ?= -O2 -std=c++11 -fopenmp -Wall -Wextra -Wpedantic -ffunction-sections -fdata-sections
 LDFLAGS ?= -Wl,--gc-sections
 
+PIN_FILE := vesiclescope/engines/physicell.env
+include $(PIN_FILE)
+
 PHYSICELL_DIR ?= .deps/physicell
 BIOFVM_DIR := $(PHYSICELL_DIR)/BioFVM
 BUILD_DIR := build/native
-TARGET := $(BUILD_DIR)/biofvm_diffusion_benchmark
+BENCHMARK_TARGET := $(BUILD_DIR)/biofvm_diffusion_benchmark
+RUNNER_TARGET := $(BUILD_DIR)/biofvm_transport_runner
 BENCHMARK_SOURCE := native/biofvm_benchmark/benchmark.cpp
+RUNNER_SOURCE := native/biofvm_benchmark/transport_runner.cpp
 
-# Keep the verification target limited to the transport implementation it exercises.
+PIN_DEFINES := \
+	-DVESICLESCOPE_PHYSICELL_RELEASE=\"$(PHYSICELL_RELEASE)\" \
+	-DVESICLESCOPE_PHYSICELL_COMMIT=\"$(PHYSICELL_COMMIT)\" \
+	-DVESICLESCOPE_BIOFVM_VERSION=\"$(BIOFVM_VERSION)\"
+
+# Keep the verification targets limited to the transport implementation they exercise.
 # Unused BioFVM I/O, MultiCellDS, agent-container, and XML code are not linked.
 BIOFVM_SOURCES := \
 	$(BIOFVM_DIR)/BioFVM_vector.cpp \
@@ -17,16 +27,22 @@ BIOFVM_SOURCES := \
 	$(BIOFVM_DIR)/BioFVM_solvers.cpp \
 	$(BIOFVM_DIR)/BioFVM_utilities.cpp
 
-.PHONY: benchmark run clean
+.PHONY: benchmark runner run clean
 
-benchmark: $(TARGET)
+benchmark: $(BENCHMARK_TARGET)
 
-$(TARGET): $(BENCHMARK_SOURCE) $(BIOFVM_SOURCES)
+runner: $(RUNNER_TARGET)
+
+$(BENCHMARK_TARGET): $(BENCHMARK_SOURCE) $(BIOFVM_SOURCES)
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -I$(BIOFVM_DIR) $(BENCHMARK_SOURCE) $(BIOFVM_SOURCES) $(LDFLAGS) -o $(TARGET)
+	$(CXX) $(CXXFLAGS) -I$(BIOFVM_DIR) $(BENCHMARK_SOURCE) $(BIOFVM_SOURCES) $(LDFLAGS) -o $(BENCHMARK_TARGET)
+
+$(RUNNER_TARGET): $(RUNNER_SOURCE) $(BIOFVM_SOURCES) $(PIN_FILE)
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) $(PIN_DEFINES) -I$(BIOFVM_DIR) $(RUNNER_SOURCE) $(BIOFVM_SOURCES) $(LDFLAGS) -o $(RUNNER_TARGET)
 
 run: benchmark
-	OMP_NUM_THREADS=1 $(TARGET)
+	OMP_NUM_THREADS=1 $(BENCHMARK_TARGET)
 
 clean:
 	rm -rf $(BUILD_DIR)
