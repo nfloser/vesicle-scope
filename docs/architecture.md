@@ -220,7 +220,11 @@ The Python scientific contract does not import or embed BioFVM. It validates the
 
 The native runner currently exposes only the behavior needed for verification: a bounded 2D no-flux field with diffusion, first-order decay, a uniform initial condition, explicit numerical grid/timestep settings, at most one localized synthetic amount-per-time release source, and multiple explicit-volume synthetic uptake sinks in distinct numerical voxels. Source and recipient populations may run independently or together.
 
-A source is represented engine-neutrally as a `PointReleaseSource` with explicit position and provenance-bearing release rate. The BioFVM adapter maps that source to `net_export_rates`, because this preserves amount-per-time semantics without introducing a saturation target that the current evidence does not justify.
+Release sources now have two engine-neutral geometry forms.
+
+A `PointReleaseSource` keeps the original one-voxel reference semantics. A `CircularReleaseSource` adds an explicit physical 2D donor footprint radius while retaining one aggregate provenance-bearing amount-per-time release rate. The adapter rasterizes circular donors onto voxel centers and divides the declared aggregate release rate across the selected BioFVM `Basic_Agent.net_export_rates` components. Grid refinement may change component count and local concentration shape, but not the total amount released.
+
+The donor radius and aggregate release rate remain independent inputs; VesicleScope does not infer secretion from source area or perimeter.
 
 Uptake recipients have two engine-neutral geometry forms.
 
@@ -230,7 +234,7 @@ Different recipients may not share native uptake voxels in the current model so 
 
 Normalized results carry mean/min/max concentration summaries, the extracellular integrated field quantity `∫c dV`, aggregate cumulative internalized quantity, one explicit 2D grid descriptor, one complete extracellular concentration-field snapshot per requested sample, and identifier-stable per-recipient uptake series. Integrated quantities carry explicit derived units.
 
-Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Point-sink uptake remains a documented resolution-dependent reference. Finite circular recipients preserve total configured effective volume under grid refinement and are explicitly verified across 10 and 5 micron x/y grids before being used for stronger density studies.
+Release mass balance is checked independently of x/y mesh resolution because net export is amount-per-time. Both point and finite circular donors preserve the declared aggregate release under rasterization. Point-sink uptake remains a documented resolution-dependent reference. Finite circular recipients preserve total configured effective volume under grid refinement and are explicitly verified across multiple x/y grids before being used for stronger density studies.
 
 For coupled runs the numerical operator order is source net export → uptake → diffusion/decay for each timestep. This ordering is explicit reproducibility metadata/behavior, not a biological sequence. Combined verification checks released = extracellular + internalized quantity and confirms a reproducible synthetic near-versus-far uptake difference.
 
