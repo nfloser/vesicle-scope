@@ -15,7 +15,10 @@ from vesiclescope.domain import (
     TransportExperiment,
 )
 from vesiclescope.engines.biofvm import BioFVMNumerics, run_transport
-from vesiclescope.scenarios import recipient_count_sweep_experiment
+from vesiclescope.scenarios import (
+    finite_recipient_count_sweep_experiment,
+    recipient_count_sweep_experiment,
+)
 from vesiclescope.validation import first_order_decay
 
 
@@ -600,6 +603,115 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             summaries[1].total_internalized_quantity,
             summaries[2].total_internalized_quantity,
         )
+
+    def test_finite_recipient_count_sweep_is_resolution_stable_in_order(self) -> None:
+        sweep_results = {}
+
+        for grid in (10.0, 5.0):
+            summaries = []
+            for recipient_count in (2, 4, 8):
+                experiment = finite_recipient_count_sweep_experiment(recipient_count)
+                result = run_transport(
+                    experiment,
+                    BioFVMNumerics(
+                        grid_spacing_micron=grid,
+                        time_step_min=0.1,
+                    ),
+                    self.runner,
+                )
+                summary = analyze_recipient_population(
+                    experiment,
+                    result,
+                    time_min=experiment.duration_min,
+                )
+                summaries.append(summary)
+
+                self.assertEqual(summary.recipient_count, recipient_count)
+                self.assertEqual(len(result.recipient_uptake_series), recipient_count)
+                self.assertTrue(
+                    all(
+                        math.isclose(
+                            recipient.donor_distance_micron,
+                            50.0,
+                            rel_tol=0.0,
+                            abs_tol=1e-12,
+                        )
+                        for recipient in summary.recipients
+                    )
+                )
+
+                release_rate = experiment.release_sources[0].release_rate.value
+                for sample in result.samples:
+                    released = release_rate * sample.time_min
+                    self.assertAlmostEqual(
+                        sample.integrated_field_quantity
+                        + sample.internalized_field_quantity,
+                        released,
+                        delta=max(1e-8, released * 1e-9),
+                    )
+
+            totals = tuple(
+                summary.total_internalized_quantity for summary in summaries
+            )
+            means = tuple(
+                summary.mean_internalized_quantity for summary in summaries
+            )
+            densities = tuple(summary.planar_density for summary in summaries)
+            self.assertLess(totals[0], totals[1])
+            self.assertLess(totals[1], totals[2])
+            self.assertLess(densities[0], densities[1])
+            self.assertLess(densities[1], densities[2])
+            sweep_results[grid] = (totals, means, densities)
+
+        self.assertEqual(
+            tuple(sorted(range(3), key=sweep_results[10.0][0].__getitem__)),
+            tuple(sorted(range(3), key=sweep_results[5.0][0].__getitem__)),
+        )
+
+        print(
+            "VESICLESCOPE_FINITE_COUNT_SWEEP "
+            + " ".join(
+                (
+                    f"grid={grid:g}",
+                    f"total2={sweep_results[grid][0][0]:.17g}",
+                    f"total4={sweep_results[grid][0][1]:.17g}",
+                    f"total8={sweep_results[grid][0][2]:.17g}",
+                    f"mean2={sweep_results[grid][1][0]:.17g}",
+                    f"mean4={sweep_results[grid][1][1]:.17g}",
+                    f"mean8={sweep_results[grid][1][2]:.17g}",
+                    f"density2={sweep_results[grid][2][0]:.17g}",
+                    f"density4={sweep_results[grid][2][1]:.17g}",
+                    f"density8={sweep_results[grid][2][2]:.17g}",
+                )
+            )
+            for grid in (10.0, 5.0)
+        )
+
+    def test_finite_recipient_count_high_count_run_is_deterministic(self) -> None:
+        experiment = finite_recipient_count_sweep_experiment(8)
+        numerics = BioFVMNumerics(grid_spacing_micron=5.0, time_step_min=0.1)
+
+        first = run_transport(experiment, numerics, self.runner)
+        second = run_transport(experiment, numerics, self.runner)
+
+        self.assertAlmostEqual(
+            first.samples[-1].internalized_field_quantity,
+            second.samples[-1].internalized_field_quantity,
+            places=12,
+        )
+        self.assertEqual(
+            tuple(series.identifier for series in first.recipient_uptake_series),
+            tuple(series.identifier for series in second.recipient_uptake_series),
+        )
+        for first_series, second_series in zip(
+            first.recipient_uptake_series,
+            second.recipient_uptake_series,
+        ):
+            self.assertAlmostEqual(
+                first_series.samples[-1].internalized_field_quantity,
+                second_series.samples[-1].internalized_field_quantity,
+                places=12,
+            )
 
     def test_recipient_count_sweep_high_count_scenario_is_deterministic(self) -> None:
         experiment = recipient_count_sweep_experiment(8)
