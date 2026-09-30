@@ -39,7 +39,11 @@ def _finite(value: str, field_name: str) -> float:
 
 
 def _format_number(value: float) -> str:
-    return format(float(value), ".17g")
+    numeric = float(value)
+    if numeric == 0.0:
+        return "0"
+    text_value = repr(numeric)
+    return text_value[:-2] if text_value.endswith(".0") else text_value
 
 
 def _is_integer_multiple(total: float, step: float) -> bool:
