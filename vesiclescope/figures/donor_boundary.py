@@ -19,6 +19,12 @@ _FIVE_MICRON_LABEL = "5 micron public-code bins"
 _TEN_MICRON_LABEL = "10 micron paper-described zones"
 
 
+def _display_concentration_unit(unit: str) -> str:
+    if unit == "particle_equivalent/micron^3":
+        return "particle equiv. / µm³"
+    return unit
+
+
 @dataclass(frozen=True, slots=True)
 class DonorBoundaryFigureData:
     """Validated renderer-neutral data derived from one normalized simulation field."""
@@ -261,8 +267,9 @@ def render_donor_boundary_figure(
             f"Simulated extracellular field at {data.heatmap_time_min:g} min"
         )
         field_axis.legend(loc="upper right")
+        display_unit = _display_concentration_unit(data.concentration_unit)
         colorbar = figure.colorbar(image, ax=field_axis)
-        colorbar.set_label(f"simulated concentration [{data.concentration_unit}]")
+        colorbar.set_label(f"Simulated concentration [{display_unit}]")
 
         radial_axis.plot(
             data.five_micron_bin_centers,
@@ -280,7 +287,7 @@ def render_donor_boundary_figure(
         )
         radial_axis.set_xlabel("Distance from finite donor boundary [micron]")
         radial_axis.set_ylabel(
-            f"Mean simulated concentration [{data.concentration_unit}]"
+            f"Mean simulated concentration [{display_unit}]"
         )
         radial_axis.set_title("Same field, two explicit radial binnings")
         radial_axis.set_xlim(0.0, data.max_distance_micron)
@@ -292,7 +299,8 @@ def render_donor_boundary_figure(
             0.5,
             0.012,
             "Synthetic parameters and voxel-center boundary classification; "
-            "simulated concentration, not experimental evidence.",
+            "simulated concentration, not experimental evidence. "
+            f"Normalized unit: {data.concentration_unit}.",
             ha="center",
         )
         figure.tight_layout(rect=(0.0, 0.055, 1.0, 0.94))
