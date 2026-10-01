@@ -249,6 +249,28 @@ class DonorBoundaryProfileTests(unittest.TestCase):
         self.assertEqual(profile.concentration_unit, "particle_equivalent/micron^3")
         self.assertEqual(profile.quantity_unit, "particle_equivalent")
 
+    def test_outside_extent_voxels_remain_explicitly_accounted_for(self) -> None:
+        run = result()
+        profile = analyze_donor_boundary_profile(
+            circular_experiment(),
+            run,
+            time_min=1.0,
+            edges_micron=(0.0, 10.0),
+        )
+
+        far_values = (1.0, 4.0, 13.0, 16.0)
+        self.assertEqual(profile.outside_extent_voxel_count, 4)
+        self.assertAlmostEqual(
+            profile.outside_extent_integrated_quantity,
+            sum(far_values) * 200.0,
+        )
+        self.assertAlmostEqual(
+            profile.analyzed_extracellular_integrated_quantity
+            + profile.excluded_donor_integrated_quantity
+            + profile.outside_extent_integrated_quantity,
+            run.samples[0].integrated_field_quantity,
+        )
+
     def test_five_and_ten_micron_bins_produce_different_deterministic_groupings(self) -> None:
         five = analyze_donor_boundary_profile(
             circular_experiment(),
