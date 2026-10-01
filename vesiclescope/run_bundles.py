@@ -149,6 +149,11 @@ def _validate_run_contracts(
         raise TypeError(
             "result field_snapshots must contain SpatialFieldSnapshot2D objects"
         )
+    if not result.samples:
+        raise ValueError("result must contain at least one transport sample")
+    if not result.field_snapshots:
+        raise ValueError("result must contain at least one field snapshot")
+
     sample_times = tuple(item.time_min for item in result.samples)
     if len(set(sample_times)) != len(sample_times):
         raise ValueError("result sample times must be unique")
@@ -260,8 +265,8 @@ def _decode_parameter(value: Any) -> ScientificParameter:
         evidence=evidence,
         source=_decode_source(value.get("source")),
         context=_decode_context(value.get("context")),
-        assumptions=tuple(value.get("assumptions", ())),
-        limitations=tuple(value.get("limitations", ())),
+        assumptions=tuple(value["assumptions"]),
+        limitations=tuple(value["limitations"]),
     )
 
 
@@ -395,11 +400,11 @@ def _decode_experiment(value: Any) -> TransportExperiment:
         initial_concentration=_decode_parameter(value["initial_concentration"]),
         release_sources=tuple(
             _decode_release_source(item)
-            for item in value.get("release_sources", ())
+            for item in value["release_sources"]
         ),
         uptake_sinks=tuple(
             _decode_uptake_sink(item)
-            for item in value.get("uptake_sinks", ())
+            for item in value["uptake_sinks"]
         ),
     )
 
@@ -517,14 +522,14 @@ def _decode_result(value: Any) -> BioFVMRunResult:
                 integrated_field_quantity=item["integrated_field_quantity"],
                 internalized_field_quantity=item["internalized_field_quantity"],
             )
-            for item in value.get("samples", ())
+            for item in value["samples"]
         ),
         field_snapshots=tuple(
             SpatialFieldSnapshot2D(
                 time_min=item["time_min"],
                 values=tuple(item["values"]),
             )
-            for item in value.get("field_snapshots", ())
+            for item in value["field_snapshots"]
         ),
         recipient_uptake_series=tuple(
             RecipientUptakeSeries(
@@ -540,10 +545,10 @@ def _decode_result(value: Any) -> BioFVMRunResult:
                             sample["internalized_field_quantity"]
                         ),
                     )
-                    for sample in item.get("samples", ())
+                    for sample in item["samples"]
                 ),
             )
-            for item in value.get("recipient_uptake_series", ())
+            for item in value["recipient_uptake_series"]
         ),
     )
 
