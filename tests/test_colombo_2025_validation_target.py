@@ -98,7 +98,8 @@ class Colombo2025TumourDistanceTargetTests(unittest.TestCase):
 
         blockers = " ".join(self.target.comparison_blockers).lower()
         self.assertIn("raw", blockers)
-        self.assertIn("point source", blockers)
+        self.assertIn("synthetic", blockers)
+        self.assertIn("thresholded", blockers)
         self.assertIn("bin", blockers)
         self.assertIn("calibrated", blockers)
 
