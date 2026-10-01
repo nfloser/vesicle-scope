@@ -156,10 +156,17 @@ def prepare_donor_boundary_figure_data(
     )
 
     donor = experiment.release_sources[0]
-    ring_edges = fixed_width_distance_edges(
-        max_distance_micron=max_distance_micron,
-        bin_width_micron=20.0,
+    ring_distances = tuple(
+        20.0 * index
+        for index in range(1, int(five_edges[-1] // 20.0) + 1)
     )
+    if not ring_distances or not math.isclose(
+        ring_distances[-1],
+        five_edges[-1],
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        ring_distances = (*ring_distances, five_edges[-1])
 
     return DonorBoundaryFigureData(
         heatmap_rows=rows,
@@ -169,7 +176,7 @@ def prepare_donor_boundary_figure_data(
         donor_position_micron=(donor.x_micron, donor.y_micron),
         donor_radius_micron=donor.footprint_radius_micron,
         max_distance_micron=five_edges[-1],
-        ring_boundary_distances_micron=ring_edges[1:],
+        ring_boundary_distances_micron=ring_distances,
         concentration_unit=five_profile.concentration_unit,
         quantity_unit=five_profile.quantity_unit,
         five_micron_bin_width=5.0,
