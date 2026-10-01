@@ -85,6 +85,23 @@ int parse_non_negative_integer(const std::string& text, const std::string& name)
     return value;
 }
 
+struct SourceComponentConfig
+{
+    double x;
+    double y;
+    double rate;
+};
+
+struct SourceConfig
+{
+    std::string kind;
+    double x;
+    double y;
+    double radius;
+    double rate;
+    std::vector<SourceComponentConfig> components;
+};
+
 struct UptakeComponentConfig
 {
     double x;
@@ -259,35 +276,24 @@ int main(int argc, char* argv[])
         const double dt =
             parse_number(argument(argc, argv, "--time-step-min"), "time step");
 
-        const bool has_source_x = has_argument(argc, argv, "--source-x-micron");
-        const bool has_source_y = has_argument(argc, argv, "--source-y-micron");
-        const bool has_source_rate = has_argument(
-            argc,
-            argv,
-            "--source-rate-particle-equivalent-per-min"
-        );
-        const bool has_source = has_source_x || has_source_y || has_source_rate;
-        if (has_source && !(has_source_x && has_source_y && has_source_rate))
-        {
-            throw std::invalid_argument(
-                "localized source requires x, y and release-rate arguments"
-            );
-        }
-
-        double source_x = 0.0;
-        double source_y = 0.0;
-        double source_rate = 0.0;
+        const bool has_source = has_argument(argc, argv, "--source-kind");
+        SourceConfig source_config;
         if (has_source)
         {
-            source_x = parse_number(
+            source_config.kind = argument(argc, argv, "--source-kind");
+            source_config.x = parse_number(
                 argument(argc, argv, "--source-x-micron"),
                 "source x"
             );
-            source_y = parse_number(
+            source_config.y = parse_number(
                 argument(argc, argv, "--source-y-micron"),
                 "source y"
             );
-            source_rate = parse_number(
+            source_config.radius = parse_number(
+                argument(argc, argv, "--source-radius-micron"),
+                "source footprint radius"
+            );
+            source_config.rate = parse_number(
                 argument(
                     argc,
                     argv,
@@ -295,6 +301,45 @@ int main(int argc, char* argv[])
                 ),
                 "source release rate"
             );
+
+            const int source_component_count = parse_non_negative_integer(
+                argument(argc, argv, "--source-component-count"),
+                "source component count"
+            );
+            if (source_component_count <= 0)
+            {
+                throw std::invalid_argument(
+                    "source component count must be greater than zero"
+                );
+            }
+            source_config.components.reserve(
+                static_cast<std::size_t>(source_component_count)
+            );
+            for (int component_index = 0;
+                 component_index < source_component_count;
+                 ++component_index)
+            {
+                const std::string component_prefix =
+                    "--source-component-" + std::to_string(component_index);
+                SourceComponentConfig component;
+                component.x = parse_number(
+                    argument(argc, argv, component_prefix + "-x-micron"),
+                    "source component x"
+                );
+                component.y = parse_number(
+                    argument(argc, argv, component_prefix + "-y-micron"),
+                    "source component y"
+                );
+                component.rate = parse_number(
+                    argument(
+                        argc,
+                        argv,
+                        component_prefix + "-rate-particle-equivalent-per-min"
+                    ),
+                    "source component release rate"
+                );
+                source_config.components.push_back(component);
+            }
         }
 
         const int uptake_count = parse_non_negative_integer(
@@ -376,13 +421,78 @@ int main(int argc, char* argv[])
         require_non_negative(initial, "initial concentration");
         if (has_source)
         {
-            require_non_negative(source_x, "source x");
-            require_non_negative(source_y, "source y");
-            require_non_negative(source_rate, "source release rate");
-            if (source_x >= width || source_y >= height)
+            if (
+                source_config.kind != "point"
+                && source_config.kind != "circle"
+            )
+            {
+                throw std::invalid_argument("unsupported source geometry kind");
+            }
+            require_non_negative(source_config.x, "source x");
+            require_non_negative(source_config.y, "source y");
+            require_non_negative(source_config.radius, "source footprint radius");
+            require_non_negative(source_config.rate, "source release rate");
+            if (source_config.x >= width || source_config.y >= height)
             {
                 throw std::invalid_argument("localized source lies outside 2D domain");
             }
+            if (source_config.kind == "point")
+            {
+                if (
+                    source_config.radius != 0.0
+                    || source_config.components.size() != 1
+                )
+                {
+                    throw std::invalid_argument(
+                        "point release source requires zero radius and one component"
+                    );
+                }
+            }
+            else
+            {
+                require_positive(
+                    source_config.radius,
+                    "circular source footprint radius"
+                );
+                if (
+                    source_config.x - source_config.radius < 0.0
+                    || source_config.x + source_config.radius > width
+                    || source_config.y - source_config.radius < 0.0
+                    || source_config.y + source_config.radius > height
+                )
+                {
+                    throw std::invalid_argument(
+                        "circular source footprint must lie fully inside domain"
+                    );
+                }
+            }
+
+            double component_rate_sum = 0.0;
+            for (const SourceComponentConfig& component : source_config.components)
+            {
+                require_non_negative(component.x, "source component x");
+                require_non_negative(component.y, "source component y");
+                require_non_negative(component.rate, "source component release rate");
+                if (component.x >= width || component.y >= height)
+                {
+                    throw std::invalid_argument(
+                        "source component lies outside 2D domain"
+                    );
+                }
+                component_rate_sum += component.rate;
+            }
+            const double release_tolerance =
+                std::max(1e-12, std::abs(source_config.rate) * 1e-12);
+            if (
+                std::abs(component_rate_sum - source_config.rate)
+                > release_tolerance
+            )
+            {
+                throw std::invalid_argument(
+                    "source component release rates must sum to declared source rate"
+                );
+            }
+
             if (concentration_unit != "particle_equivalent/micron^3")
             {
                 throw std::invalid_argument(
@@ -393,6 +503,113 @@ int main(int argc, char* argv[])
         if (!integer_multiple(width, grid) || !integer_multiple(height, grid))
         {
             throw std::invalid_argument("grid spacing must tile the 2D domain exactly");
+        }
+
+        if (has_source)
+        {
+            if (source_config.kind == "point")
+            {
+                const SourceComponentConfig& component =
+                    source_config.components.front();
+                if (
+                    std::abs(component.x - source_config.x) > 1e-12
+                    || std::abs(component.y - source_config.y) > 1e-12
+                )
+                {
+                    throw std::invalid_argument(
+                        "point source component must match declared source position"
+                    );
+                }
+            }
+            else
+            {
+                const int nx = static_cast<int>(std::lround(width / grid));
+                const int ny = static_cast<int>(std::lround(height / grid));
+                const double radius_tolerance =
+                    std::max(1e-12, source_config.radius * 1e-12);
+                std::set<int> expected_source_voxels;
+
+                for (int y_index = 0; y_index < ny; ++y_index)
+                {
+                    const double y =
+                        (static_cast<double>(y_index) + 0.5) * grid;
+                    for (int x_index = 0; x_index < nx; ++x_index)
+                    {
+                        const double x =
+                            (static_cast<double>(x_index) + 0.5) * grid;
+                        if (
+                            std::hypot(
+                                x - source_config.x,
+                                y - source_config.y
+                            )
+                            <= source_config.radius + radius_tolerance
+                        )
+                        {
+                            expected_source_voxels.insert(
+                                y_index * nx + x_index
+                            );
+                        }
+                    }
+                }
+
+                if (
+                    source_config.components.size()
+                    != expected_source_voxels.size()
+                )
+                {
+                    throw std::invalid_argument(
+                        "circular source component count does not match footprint"
+                    );
+                }
+
+                std::set<int> declared_source_voxels;
+                for (const SourceComponentConfig& component :
+                     source_config.components)
+                {
+                    const int x_index =
+                        static_cast<int>(std::floor(component.x / grid));
+                    const int y_index =
+                        static_cast<int>(std::floor(component.y / grid));
+                    const double voxel_center_x =
+                        (static_cast<double>(x_index) + 0.5) * grid;
+                    const double voxel_center_y =
+                        (static_cast<double>(y_index) + 0.5) * grid;
+
+                    if (
+                        std::abs(component.x - voxel_center_x) > 1e-12
+                        || std::abs(component.y - voxel_center_y) > 1e-12
+                    )
+                    {
+                        throw std::invalid_argument(
+                            "circular source components must lie on voxel centers"
+                        );
+                    }
+
+                    const int voxel_key = y_index * nx + x_index;
+                    if (
+                        expected_source_voxels.find(voxel_key)
+                        == expected_source_voxels.end()
+                    )
+                    {
+                        throw std::invalid_argument(
+                            "circular source component does not match declared footprint rasterization"
+                        );
+                    }
+                    if (!declared_source_voxels.insert(voxel_key).second)
+                    {
+                        throw std::invalid_argument(
+                            "circular source contains a duplicate rasterized voxel"
+                        );
+                    }
+                }
+
+                if (declared_source_voxels != expected_source_voxels)
+                {
+                    throw std::invalid_argument(
+                        "circular source components do not match declared footprint rasterization"
+                    );
+                }
+            }
         }
 
         for (const UptakeConfig& uptake : uptake_configs)
@@ -590,7 +807,7 @@ int main(int argc, char* argv[])
         }
 
         BioFVM::Agent_Container agent_container;
-        BioFVM::Basic_Agent* source_agent = nullptr;
+        std::vector<BioFVM::Basic_Agent*> source_agents;
         std::vector<std::vector<BioFVM::Basic_Agent*>> uptake_recipients;
         if (has_source || !uptake_configs.empty())
         {
@@ -606,16 +823,31 @@ int main(int argc, char* argv[])
 
         if (has_source)
         {
-            source_agent = BioFVM::create_basic_agent();
-            source_agent->set_total_volume(1.0);
-            if (!source_agent->assign_position(source_x, source_y, 0.0))
+            std::set<int> source_voxel_indices;
+            source_agents.reserve(source_config.components.size());
+            for (const SourceComponentConfig& component : source_config.components)
             {
-                throw std::invalid_argument(
-                    "localized source position is invalid in BioFVM mesh"
-                );
+                BioFVM::Basic_Agent* source_agent =
+                    BioFVM::create_basic_agent();
+                source_agent->set_total_volume(1.0);
+                if (!source_agent->assign_position(component.x, component.y, 0.0))
+                {
+                    throw std::invalid_argument(
+                        "source component position is invalid in BioFVM mesh"
+                    );
+                }
+                if (!source_voxel_indices.insert(
+                    source_agent->get_current_voxel_index()
+                ).second)
+                {
+                    throw std::invalid_argument(
+                        "one source maps multiple components to one BioFVM voxel"
+                    );
+                }
+                (*source_agent->net_export_rates)[0] = component.rate;
+                source_agent->set_internal_uptake_constants(dt);
+                source_agents.push_back(source_agent);
             }
-            (*source_agent->net_export_rates)[0] = source_rate;
-            source_agent->set_internal_uptake_constants(dt);
         }
 
         std::map<int, std::size_t> uptake_voxel_owner;
@@ -701,14 +933,20 @@ int main(int argc, char* argv[])
 
         for (long step = 1; step <= total_steps; ++step)
         {
-            if (source_agent != nullptr)
+            if (!source_agents.empty())
             {
                 const bool track_internalized =
                     BioFVM::default_microenvironment_options
                         .track_internalized_substrates_in_each_agent;
                 BioFVM::default_microenvironment_options
                     .track_internalized_substrates_in_each_agent = false;
-                source_agent->simulate_secretion_and_uptake(&microenvironment, dt);
+                for (BioFVM::Basic_Agent* source_agent : source_agents)
+                {
+                    source_agent->simulate_secretion_and_uptake(
+                        &microenvironment,
+                        dt
+                    );
+                }
                 BioFVM::default_microenvironment_options
                     .track_internalized_substrates_in_each_agent = track_internalized;
             }

@@ -91,6 +91,16 @@ The benchmark is run across x/y mesh refinement at fixed physical slice thicknes
 
 See [localized release model baseline](research/localized-release-model.md) for the evidence boundary and model rationale.
 
+### Finite donor extension
+
+Issue #39 adds a synthetic `CircularReleaseSource` while preserving the same aggregate `particle_equivalent/min` semantics.
+
+The circular footprint is rasterized onto voxel centers. The declared total release rate is divided across those components, so grid refinement changes the spatial representation but not the amount released.
+
+Native CI verifies `M(t) = q*t` at every sample and the same final released amount at 10 and 5 micron x/y grids, with a non-uniform spatial field.
+
+See [finite circular donor footprint](research/finite-donor-footprint.md).
+
 ## Localized uptake benchmark
 
 The first sink-side extension adds a synthetic `PointUptakeSink` with:
@@ -165,6 +175,6 @@ See [recipient count and planar-density analysis](research/recipient-density-ana
 
 ## What comes next
 
-The next useful output is the first reproducible scientific population/distance figure generated from normalized results, followed by finite recipient geometry before any spatial-refinement-independent density claim is made.
+The synthetic geometry pipeline now includes finite donor and recipient footprints plus normalized spatial fields. The next validation-facing step is an engine-independent donor-boundary radial-profile observable that measures distance from the finite donor boundary rather than from its center.
 
-A persistent file format should be introduced only when that figure/analysis workflow defines concrete storage requirements.
+That analysis should reproduce the *geometry of the external observable* before any Colombo 2025 parameter fitting is attempted.

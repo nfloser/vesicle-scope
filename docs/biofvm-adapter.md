@@ -1,6 +1,6 @@
 # BioFVM transport adapter
 
-Issues: #8, #11, #13, #15, #17, #19, #21, #29
+Issues: #8, #11, #13, #15, #17, #19, #21, #29, #39
 
 The first VesicleScope engine adapter is deliberately a small process boundary rather than a Python binding layer.
 
@@ -151,7 +151,9 @@ All values used by these tests are labelled synthetic verification inputs. They 
 
 ## Localized-release verification
 
-The source-capable runner links BioFVM's `Basic_Agent` and minimal `Agent_Container` implementation only for this executable. A single synthetic `PointReleaseSource` is mapped to BioFVM `net_export_rates`.
+The source-capable runner links BioFVM's `Basic_Agent` and minimal `Agent_Container` implementation only for this executable.
+
+A `PointReleaseSource` maps to one BioFVM net-export agent. A `CircularReleaseSource` is rasterized onto deterministic voxel centers inside its declared physical footprint and maps to multiple net-export agents. Its declared release rate remains one aggregate amount-per-time value; component rates sum back to that value rather than scaling with donor area or component count.
 
 With zero initial concentration, zero decay, no uptake and no-flux boundaries, CI checks:
 
@@ -161,11 +163,11 @@ integrated field quantity(t) = release rate * t
 
 at every requested sample.
 
-The same experiment is run at two x/y grid spacings with fixed physical slice thickness. Integrated amount must remain unchanged under refinement.
+The point-source reference and a finite circular donor are both checked across x/y refinement at fixed physical slice thickness. For the finite donor, the number of native source components changes while integrated released amount must remain unchanged.
 
-The adapter currently rejects more than one source. That is an intentional capability boundary, not a claim that biological systems have only one donor.
+The adapter still supports at most one scientific release source. That is an intentional v0.1 capability boundary, not a claim that biological systems have only one donor.
 
-Scientific rationale and evidence limits are documented in [localized release model baseline](research/localized-release-model.md).
+Point-source rationale is documented in [localized release model baseline](research/localized-release-model.md). Finite donor geometry and its relationship to the Colombo validation target are documented in [finite circular donor footprint](research/finite-donor-footprint.md).
 
 ## Localized-uptake verification
 
