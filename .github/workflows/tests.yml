@@ -50,6 +50,29 @@ jobs:
           VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
         run: python -m unittest discover -s tests -p test_biofvm_integration.py -v
 
+      - name: Generate deterministic donor-boundary run bundle
+        env:
+          VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
+          VESICLESCOPE_REVISION: ${{ github.sha }}
+        run: >-
+          python -m scripts.generate_donor_boundary_bundle
+          --output build/runs/donor-boundary-run.json
+
+      - name: Verify durable run bundle
+        run: |
+          test -s build/runs/donor-boundary-run.json
+          grep -F '"schema": "vesiclescope.simulation-run"' build/runs/donor-boundary-run.json
+          grep -F '"version": 1' build/runs/donor-boundary-run.json
+          grep -F '"payload_sha256":' build/runs/donor-boundary-run.json
+          ! grep -F '"created_at"' build/runs/donor-boundary-run.json
+
+      - name: Upload donor-boundary run bundle
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-synthetic-donor-boundary-run
+          path: build/runs/donor-boundary-run.json
+          if-no-files-found: error
+
 
   population-figure:
     runs-on: ubuntu-latest
