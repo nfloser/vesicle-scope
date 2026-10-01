@@ -313,8 +313,10 @@ def colombo_2025_tumour_distance_target() -> Colombo2025TumourDistanceTarget:
             "Raw tumour TIFF/source measurements are not publicly available; "
             "the paper states that data are available from the corresponding "
             "author upon reasonable request.",
-            "VesicleScope currently uses a point source for the donor, while "
-            "the experiment measures distance from a finite donor-cell boundary.",
+            "VesicleScope can reproduce finite circular donor-boundary geometry, "
+            "but the current donor radius is synthetic and normalized model "
+            "concentration is not yet a validated measurement model for "
+            "thresholded CD9-Halo fluorescence.",
             "Published approximately 10 micron segmentation zones and the "
             "current public analysis code's 5 micron histogram bins differ.",
             "Current VesicleScope release, diffusion, and uptake parameters are "
