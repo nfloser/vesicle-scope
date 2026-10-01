@@ -173,8 +173,16 @@ In the chosen synthetic regime, CI observes increasing total uptake from 2 to 4 
 
 See [recipient count and planar-density analysis](research/recipient-density-analysis.md).
 
+## Donor-boundary radial analysis
+
+Issue #41 adds the validation-facing geometry observable derived from normalized spatial fields. For a finite circular donor, extracellular voxel centers are measured from the declared donor boundary rather than from its center, donor-interior voxels remain explicitly accounted for, and radial bins preserve both mean concentration and integrated field quantity.
+
+The analysis supports explicit 5 and 10 micron bin definitions so the documented Colombo 2025 paper/public-code discrepancy remains visible.
+
+See [donor-boundary radial profile](research/donor-boundary-radial-profile.md).
+
 ## What comes next
 
-The synthetic geometry pipeline now includes finite donor and recipient footprints plus normalized spatial fields. The next validation-facing step is an engine-independent donor-boundary radial-profile observable that measures distance from the finite donor boundary rather than from its center.
+The geometry of the first external observable is now reproducible, but quantitative Colombo 2025 validation is still blocked by unavailable raw tumour measurements, the missing concentration-to-thresholded-fluorescence measurement model, the unresolved 5-versus-10-micron bin discrepancy and synthetic tumour parameters.
 
-That analysis should reproduce the *geometry of the external observable* before any Colombo 2025 parameter fitting is attempted.
+The next validation step should resolve what evidence can support a defensible measurement/comparison model before any parameter fitting is introduced.
