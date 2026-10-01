@@ -505,6 +505,113 @@ int main(int argc, char* argv[])
             throw std::invalid_argument("grid spacing must tile the 2D domain exactly");
         }
 
+        if (has_source)
+        {
+            if (source_config.kind == "point")
+            {
+                const SourceComponentConfig& component =
+                    source_config.components.front();
+                if (
+                    std::abs(component.x - source_config.x) > 1e-12
+                    || std::abs(component.y - source_config.y) > 1e-12
+                )
+                {
+                    throw std::invalid_argument(
+                        "point source component must match declared source position"
+                    );
+                }
+            }
+            else
+            {
+                const int nx = static_cast<int>(std::lround(width / grid));
+                const int ny = static_cast<int>(std::lround(height / grid));
+                const double radius_tolerance =
+                    std::max(1e-12, source_config.radius * 1e-12);
+                std::set<int> expected_source_voxels;
+
+                for (int y_index = 0; y_index < ny; ++y_index)
+                {
+                    const double y =
+                        (static_cast<double>(y_index) + 0.5) * grid;
+                    for (int x_index = 0; x_index < nx; ++x_index)
+                    {
+                        const double x =
+                            (static_cast<double>(x_index) + 0.5) * grid;
+                        if (
+                            std::hypot(
+                                x - source_config.x,
+                                y - source_config.y
+                            )
+                            <= source_config.radius + radius_tolerance
+                        )
+                        {
+                            expected_source_voxels.insert(
+                                y_index * nx + x_index
+                            );
+                        }
+                    }
+                }
+
+                if (
+                    source_config.components.size()
+                    != expected_source_voxels.size()
+                )
+                {
+                    throw std::invalid_argument(
+                        "circular source component count does not match footprint"
+                    );
+                }
+
+                std::set<int> declared_source_voxels;
+                for (const SourceComponentConfig& component :
+                     source_config.components)
+                {
+                    const int x_index =
+                        static_cast<int>(std::floor(component.x / grid));
+                    const int y_index =
+                        static_cast<int>(std::floor(component.y / grid));
+                    const double voxel_center_x =
+                        (static_cast<double>(x_index) + 0.5) * grid;
+                    const double voxel_center_y =
+                        (static_cast<double>(y_index) + 0.5) * grid;
+
+                    if (
+                        std::abs(component.x - voxel_center_x) > 1e-12
+                        || std::abs(component.y - voxel_center_y) > 1e-12
+                    )
+                    {
+                        throw std::invalid_argument(
+                            "circular source components must lie on voxel centers"
+                        );
+                    }
+
+                    const int voxel_key = y_index * nx + x_index;
+                    if (
+                        expected_source_voxels.find(voxel_key)
+                        == expected_source_voxels.end()
+                    )
+                    {
+                        throw std::invalid_argument(
+                            "circular source component does not match declared footprint rasterization"
+                        );
+                    }
+                    if (!declared_source_voxels.insert(voxel_key).second)
+                    {
+                        throw std::invalid_argument(
+                            "circular source contains a duplicate rasterized voxel"
+                        );
+                    }
+                }
+
+                if (declared_source_voxels != expected_source_voxels)
+                {
+                    throw std::invalid_argument(
+                        "circular source components do not match declared footprint rasterization"
+                    );
+                }
+            }
+        }
+
         for (const UptakeConfig& uptake : uptake_configs)
         {
             if (uptake.kind != "point" && uptake.kind != "circle")
