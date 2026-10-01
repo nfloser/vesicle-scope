@@ -253,6 +253,22 @@ class SimulationRunBundleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "release source"):
             deserialize_run_bundle(encoded)
 
+    def test_rejects_missing_required_result_collection(self) -> None:
+        document = json.loads(serialize_run_bundle(donor_bundle()))
+        del document["payload"]["result"]["field_snapshots"]
+        document["payload_sha256"] = canonical_payload_digest(document["payload"])
+        encoded = (
+            json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2)
+            + "\n"
+        ).encode("utf-8")
+
+        with self.assertRaisesRegex(ValueError, "missing required field"):
+            deserialize_run_bundle(encoded)
+
+    def test_rejects_blank_or_non_commit_revision(self) -> None:
+        with self.assertRaisesRegex(ValueError, "commit SHA"):
+            replace(donor_bundle(), vesiclescope_revision="main")
+
     def test_write_is_round_trippable_without_timestamp_or_absolute_path(self) -> None:
         bundle = donor_bundle()
         with tempfile.TemporaryDirectory() as directory:
