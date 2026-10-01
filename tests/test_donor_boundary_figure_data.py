@@ -121,6 +121,22 @@ class DonorBoundaryFigureDataTests(unittest.TestCase):
             (35.0, 55.0, 75.0, 95.0),
         )
 
+    def test_valid_shared_extent_does_not_depend_on_twenty_micron_ring_spacing(self) -> None:
+        data = prepare_donor_boundary_figure_data(
+            self.experiment,
+            self.result,
+            time_min=self.experiment.duration_min,
+            max_distance_micron=50.0,
+        )
+
+        self.assertEqual(data.max_distance_micron, 50.0)
+        self.assertEqual(
+            data.ring_boundary_distances_micron,
+            (20.0, 40.0, 50.0),
+        )
+        self.assertEqual(len(data.five_micron_bin_centers), 10)
+        self.assertEqual(len(data.ten_micron_bin_centers), 5)
+
     def test_rejects_result_identity_mismatch(self) -> None:
         with self.assertRaises(ValueError):
             prepare_donor_boundary_figure_data(
