@@ -75,7 +75,9 @@ jobs:
       - name: Verify headless figure rendering
         env:
           VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
-        run: python -m unittest discover -s tests -p test_population_figure_render.py -v
+        run: |
+          python -m unittest discover -s tests -p test_population_figure_render.py -v
+          python -m unittest discover -s tests -p test_donor_boundary_figure_render.py -v
 
       - name: Generate reviewed synthetic population figure
         env:
@@ -83,6 +85,13 @@ jobs:
         run: >-
           python -m scripts.generate_population_figure
           --output build/figures/recipient-count.svg
+
+      - name: Generate reviewed donor-boundary figure
+        env:
+          VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
+        run: >-
+          python -m scripts.generate_donor_boundary_figure
+          --output build/figures/donor-boundary-profile.svg
 
       - name: Verify inspectable scientific labels
         run: |
@@ -92,10 +101,24 @@ jobs:
           grep -F "particle_equivalent/micron^3" build/figures/recipient-count.svg
           grep -F "not experimental evidence" build/figures/recipient-count.svg
 
+          test -s build/figures/donor-boundary-profile.svg
+          grep -F "Synthetic donor-boundary transport verification" build/figures/donor-boundary-profile.svg
+          grep -F "5 micron public-code bins" build/figures/donor-boundary-profile.svg
+          grep -F "10 micron paper-described zones" build/figures/donor-boundary-profile.svg
+          grep -F "simulated concentration" build/figures/donor-boundary-profile.svg
+          grep -F "not experimental evidence" build/figures/donor-boundary-profile.svg
+
       - name: Upload population figure
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: vesiclescope-synthetic-population-figure
           path: build/figures/recipient-count.svg
+          if-no-files-found: error
+
+      - name: Upload donor-boundary figure
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-synthetic-donor-boundary-figure
+          path: build/figures/donor-boundary-profile.svg
           if-no-files-found: error
 
