@@ -10,7 +10,7 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; the synthetic transport/uptake/geometry pipeline includes verified finite donor and recipient footprints, an engine-independent donor-boundary radial analysis, a reproducible finite-recipient figure, and an external tumour-distance validation target with explicit readiness blockers.**
+**Research baseline established; the synthetic transport/uptake/geometry pipeline includes verified finite donor and recipient footprints, engine-independent donor-boundary analysis, reproducible scientific figures, deterministic durable run bundles, and an external tumour-distance validation target with explicit readiness blockers.**
 
 There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
 
@@ -18,6 +18,7 @@ See:
 
 - [research landscape](docs/research/landscape.md)
 - [architecture baseline](docs/architecture.md)
+- [deterministic simulation run bundles](docs/run-bundles.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)
 - [parameter provenance contract](docs/parameter-provenance.md)
 - [synthetic transport benchmark](docs/transport-benchmark.md)

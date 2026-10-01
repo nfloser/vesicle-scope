@@ -20,7 +20,7 @@ VesicleScope should integrate it through a narrow headless runner/adapter rather
 
 A complete experiment must run without a dashboard or notebook.
 
-Visualization consumes normalized result and analysis data. It must not contain model equations, parameter interpretation or simulation state transitions. Durable result serialization remains a separate concern and is not required for in-memory reproducible figure generation.
+Visualization consumes normalized result and analysis data. It must not contain model equations, parameter interpretation or simulation state transitions. Durable result serialization is a separate boundary: figures may still consume in-memory normalized results, while the v0.1 run-bundle layer can persist those same scientific contracts for later inspection.
 
 ### Initial conceptual components
 
@@ -246,4 +246,4 @@ The first figure boundary lives in `vesiclescope.figures`. It validates normaliz
 
 The headless generator runs the pinned BioFVM adapter, derives public population summaries, and renders an SVG labelled as synthetic fixed-grid verification. Numerical/core analysis CI remains independent of Matplotlib; a dedicated figure CI job installs the optional renderer and uploads the generated SVG as an artifact.
 
-Persistent field serialization remains deferred until a workflow needs durable simulation results independently of immediate figure generation.
+Durable normalized-result serialization is now implemented through the deterministic VesicleScope v0.1 run bundle because validation/model-comparison workflows need completed runs independently of immediate figure generation. The format preserves experiment provenance, numerics, exact engine identity, normalized fields and recipient uptake series with a payload digest. It is MIASE-informed but deliberately does not claim SED-ML/OMEX compatibility while the spatial BioFVM model lacks a complete standard model representation. Binary storage remains deferred until measured data volume or performance justifies it.
