@@ -157,14 +157,34 @@ def _validate_run_contracts(
     sample_times = tuple(item.time_min for item in result.samples)
     if len(set(sample_times)) != len(sample_times):
         raise ValueError("result sample times must be unique")
+    voxel_volume = (
+        grid.grid_spacing_micron
+        * grid.grid_spacing_micron
+        * grid.slice_thickness_micron
+    )
     for snapshot in result.field_snapshots:
         if len(snapshot.values) != grid.voxel_count:
             raise ValueError(
                 "result field snapshot length does not match normalized grid"
             )
-        if not any(_same_float(snapshot.time_min, time) for time in sample_times):
+        matching_samples = tuple(
+            sample
+            for sample in result.samples
+            if _same_float(snapshot.time_min, sample.time_min)
+        )
+        if len(matching_samples) != 1:
             raise ValueError(
-                "every field snapshot must correspond to a normalized sample time"
+                "every field snapshot must correspond to one normalized sample time"
+            )
+        integrated_from_field = sum(snapshot.values) * voxel_volume
+        if not math.isclose(
+            integrated_from_field,
+            matching_samples[0].integrated_field_quantity,
+            rel_tol=1e-10,
+            abs_tol=1e-8,
+        ):
+            raise ValueError(
+                "field snapshot does not reproduce sample integrated field quantity"
             )
 
     if not isinstance(result.recipient_uptake_series, tuple) or not all(
@@ -181,6 +201,45 @@ def _validate_run_contracts(
     if observed_recipient_ids != expected_recipient_ids:
         raise ValueError(
             "result recipient uptake series must match configured uptake sinks"
+        )
+
+    if result.recipient_uptake_series:
+        for series in result.recipient_uptake_series:
+            series_times = tuple(sample.time_min for sample in series.samples)
+            if len(series_times) != len(sample_times) or any(
+                not _same_float(left, right)
+                for left, right in zip(series_times, sample_times)
+            ):
+                raise ValueError(
+                    "recipient uptake series sample times must match transport samples"
+                )
+
+        for sample_index, sample in enumerate(result.samples):
+            total_internalized = sum(
+                series.samples[sample_index].internalized_field_quantity
+                for series in result.recipient_uptake_series
+            )
+            if not math.isclose(
+                total_internalized,
+                sample.internalized_field_quantity,
+                rel_tol=1e-10,
+                abs_tol=1e-8,
+            ):
+                raise ValueError(
+                    "recipient uptake series do not reproduce aggregate "
+                    "internalized field quantity"
+                )
+    elif any(
+        not math.isclose(
+            sample.internalized_field_quantity,
+            0.0,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+        for sample in result.samples
+    ):
+        raise ValueError(
+            "aggregate internalized field quantity requires recipient uptake series"
         )
 
 
