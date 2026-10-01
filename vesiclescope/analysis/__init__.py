@@ -1,5 +1,9 @@
 """Engine-independent analysis of normalized VesicleScope results."""
 
+from .diffusion_uptake import (
+    DiffusionUptakeSummary,
+    analyze_diffusion_uptake_condition,
+)
 from .donor_boundary import (
     DonorBoundaryRadialBin,
     DonorBoundaryRadialProfile,
@@ -17,12 +21,14 @@ from .recipient_population import (
 )
 
 __all__ = [
+    "DiffusionUptakeSummary",
     "DistanceBinSummary",
     "DonorBoundaryRadialBin",
     "DonorBoundaryRadialProfile",
     "PLANAR_DENSITY_UNIT",
     "RecipientPopulationSummary",
     "RecipientUptakeObservation",
+    "analyze_diffusion_uptake_condition",
     "analyze_donor_boundary_profile",
     "analyze_recipient_population",
     "distance_from_circular_donor_boundary",
