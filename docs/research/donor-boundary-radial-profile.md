@@ -52,6 +52,8 @@ x = (x_index + 0.5) * grid_spacing
 y = (y_index + 0.5) * grid_spacing
 ```
 
+Donor/extracellular membership is classified by the voxel center. VesicleScope does not currently compute partial voxel-circle overlap or sub-voxel boundary fractions. That discretization convention is explicit and must be reconsidered if a future microscopy comparison requires image-scale boundary fidelity.
+
 The analysis rejects a result when the normalized grid dimensions or slice thickness do not match the experiment domain.
 
 ## Quantity accounting
