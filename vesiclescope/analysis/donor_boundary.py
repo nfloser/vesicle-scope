@@ -205,6 +205,41 @@ class DonorBoundaryRadialProfile:
                 _finite_non_negative(getattr(self, field_name), field_name),
             )
 
+        if not math.isclose(
+            self.bins[0].lower_bound_micron,
+            0.0,
+            rel_tol=0.0,
+            abs_tol=_DISTANCE_TOLERANCE,
+        ):
+            raise ValueError("radial profile bins must start at zero")
+        for previous, current in zip(self.bins, self.bins[1:]):
+            if not math.isclose(
+                previous.upper_bound_micron,
+                current.lower_bound_micron,
+                rel_tol=0.0,
+                abs_tol=_DISTANCE_TOLERANCE,
+            ):
+                raise ValueError("radial profile bins must be contiguous")
+        if any(
+            item.concentration_unit != self.concentration_unit
+            or item.quantity_unit != self.quantity_unit
+            for item in self.bins
+        ):
+            raise ValueError("radial profile bin units must match profile units")
+        if sum(item.voxel_count for item in self.bins) != (
+            self.analyzed_extracellular_voxel_count
+        ):
+            raise ValueError("radial profile bin counts must match analyzed voxel count")
+        if not math.isclose(
+            sum(item.integrated_field_quantity for item in self.bins),
+            self.analyzed_extracellular_integrated_quantity,
+            rel_tol=1e-12,
+            abs_tol=1e-8,
+        ):
+            raise ValueError(
+                "radial profile bin quantities must match analyzed field quantity"
+            )
+
 
 def _matching_index(times: tuple[float, ...], requested: float, label: str) -> int:
     matches = [
