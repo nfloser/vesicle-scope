@@ -230,6 +230,18 @@ class SimulationRunBundleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "digest"):
             deserialize_run_bundle(tampered)
 
+    def test_rejects_scientifically_inconsistent_field_even_with_valid_digest(self) -> None:
+        document = json.loads(serialize_run_bundle(donor_bundle()))
+        document["payload"]["result"]["field_snapshots"][0]["values"][0] += 1.0
+        document["payload_sha256"] = canonical_payload_digest(document["payload"])
+        encoded = (
+            json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2)
+            + "\n"
+        ).encode("utf-8")
+
+        with self.assertRaisesRegex(ValueError, "integrated field quantity"):
+            deserialize_run_bundle(encoded)
+
     def test_rejects_unknown_schema_version(self) -> None:
         document = json.loads(serialize_run_bundle(donor_bundle()))
         document["version"] = RUN_BUNDLE_VERSION + 1
