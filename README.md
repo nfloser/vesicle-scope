@@ -26,6 +26,7 @@ See:
 - [localized release model baseline](docs/research/localized-release-model.md)
 - [finite circular donor footprint](docs/research/finite-donor-footprint.md)
 - [donor-boundary radial profile](docs/research/donor-boundary-radial-profile.md)
+- [synthetic donor-boundary profile figure](docs/research/synthetic-donor-boundary-figure.md)
 - [recipient uptake model baseline](docs/research/recipient-uptake-model.md)
 - [finite circular recipient footprint](docs/research/finite-recipient-footprint.md)
 - [recipient population model baseline](docs/research/recipient-population-model.md)
