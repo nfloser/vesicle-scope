@@ -117,11 +117,11 @@ Four blockers are explicit in the code contract.
 
 The fit summaries alone are not a replacement for the per-sample radial signal measurements, uncertainty and background distributions.
 
-### 2. Donor geometry does not yet match
+### 2. Measurement mapping is not yet established
 
-The experiment measures distance from a finite, segmented donor-cell **boundary**.
+VesicleScope now supports a finite circular donor and an engine-independent donor-boundary radial profile, so the basic distance geometry can be reproduced.
 
-The current VesicleScope donor remains a point release source. Comparing centre-distance from that point directly with donor-boundary distance would introduce an unreported geometric offset.
+However, the current donor radius remains a synthetic verification input and the normalized simulated concentration field is not yet a validated measurement model for the experiment's thresholded CD9-Halo-associated fluorescence signal.
 
 ### 3. Binning semantics differ
 
@@ -144,6 +144,7 @@ VesicleScope can currently assert, from public material:
 - current public analysis-code version and license;
 - fit-derived radial summary landmarks;
 - raw-data access status;
+- reproducible finite-donor boundary-distance analysis under explicit 5 or 10 micron bins;
 - blockers preventing a direct fit.
 
 That information is exposed through:
@@ -155,10 +156,10 @@ target = colombo_2025_tumour_distance_target()
 assert not target.quantitatively_ready
 ```
 
-## Next prerequisite
+## Current next prerequisite
 
-The next model-side prerequisite is a **finite donor geometry plus a donor-boundary radial-profile observable** derived from normalized VesicleScope spatial fields.
+Finite circular donor geometry and the donor-boundary radial-profile observable are now implemented as synthetic, engine-independent capabilities.
 
-That work should reproduce the geometry of the observable—not the published values—before any parameter-estimation problem is introduced.
+That closes the geometry prerequisite but does not turn simulated concentration into the publication's thresholded fluorescence observable.
 
-Parameter fitting remains out of scope until the missing measurement data and analysis-bin discrepancy are resolved.
+Parameter fitting remains out of scope until the missing measurement data, measurement-model question and analysis-bin discrepancy are resolved. Any future comparison must keep the 5-versus-10-micron bin definitions explicit.
