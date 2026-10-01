@@ -157,7 +157,9 @@ Current checks include:
 - grid dimensions cover the declared domain;
 - each field snapshot has exactly one grid value per voxel;
 - field snapshot times correspond to normalized result samples;
-- result recipient uptake series match configured recipients in stable identifier order;
+- every field snapshot re-integrates to the stored sample field quantity;
+- result recipient uptake series match configured recipients in stable identifier order and sample times;
+- per-recipient uptake re-sums to the stored aggregate internalized quantity;
 - engine and unit strings are non-blank.
 
 Normal domain/result dataclass validation remains authoritative for individual values.
