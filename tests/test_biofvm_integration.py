@@ -1,5 +1,6 @@
 import math
 import os
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -15,7 +16,7 @@ from vesiclescope.domain import (
     ScientificParameter,
     TransportExperiment,
 )
-from vesiclescope.engines.biofvm import BioFVMNumerics, run_transport
+from vesiclescope.engines.biofvm import BioFVMNumerics, build_command, run_transport
 from vesiclescope.scenarios import (
     finite_recipient_count_sweep_experiment,
     recipient_count_sweep_experiment,
@@ -514,6 +515,31 @@ class BioFVMTransportIntegrationTests(unittest.TestCase):
             final_amounts[0],
             rate * experiment.duration_min,
             delta=1e-8,
+        )
+
+    def test_native_runner_rejects_tampered_finite_donor_rasterization(self) -> None:
+        experiment = finite_release_experiment()
+        command = list(
+            build_command(
+                experiment,
+                BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1),
+                self.runner,
+            )
+        )
+        component_x_argument = "--source-component-0-x-micron"
+        command[command.index(component_x_argument) + 1] = "100"
+
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn(
+            "circular source components must lie on voxel centers",
+            completed.stderr,
         )
 
     def test_localized_release_amount_is_resolution_invariant(self) -> None:
