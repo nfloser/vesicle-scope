@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -34,6 +35,9 @@ def _safe_output_filename(index: int, experiment_id: str) -> str:
     component = _SAFE_COMPONENT_RE.sub("-", experiment_id).strip(".-_")
     if not component:
         component = "experiment"
+    if len(component) > 80:
+        digest = hashlib.sha256(experiment_id.encode("utf-8")).hexdigest()[:12]
+        component = f"{component[:64].rstrip('.-_')}-{digest}"
     return f"{index:03d}-{component}.run.json"
 
 
