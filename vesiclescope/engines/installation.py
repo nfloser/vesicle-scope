@@ -145,10 +145,8 @@ def fetch_physicell(
     return target
 
 
-def _runner_source_path() -> Path:
-    resource = resources.files("vesiclescope.engines.native").joinpath("transport_runner.cpp")
-    with resources.as_file(resource) as path:
-        return Path(path)
+def _runner_source_resource():
+    return resources.files("vesiclescope.engines.native").joinpath("transport_runner.cpp")
 
 
 def _compile_command(
@@ -213,15 +211,15 @@ def build_biofvm_runner(
     target = Path(output_path) if output_path is not None else default_runner_path(metadata)
     target.parent.mkdir(parents=True, exist_ok=True)
 
-    runner_source = _runner_source_path()
-    command = _compile_command(
-        compiler=compiler,
-        runner_source=runner_source,
-        physicell_dir=checkout,
-        output_path=target,
-        metadata=metadata,
-    )
-    _run_checked(command, description="BioFVM transport runner build")
+    with resources.as_file(_runner_source_resource()) as runner_source:
+        command = _compile_command(
+            compiler=compiler,
+            runner_source=Path(runner_source),
+            physicell_dir=checkout,
+            output_path=target,
+            metadata=metadata,
+        )
+        _run_checked(command, description="BioFVM transport runner build")
     if not target.is_file():
         raise RuntimeError(f"compiler completed without producing runner: {target}")
     return target
