@@ -23,7 +23,7 @@ def request_json(url: str, *, method: str = "GET", payload: dict | None = None):
         data = json.dumps(payload).encode("utf-8")
         headers["Content-Type"] = "application/json"
     request = Request(url, method=method, data=data, headers=headers)
-    with urlopen(request) as response:
+    with urlopen(request, timeout=30) as response:
         return response.status, json.loads(response.read().decode("utf-8"))
 
 
