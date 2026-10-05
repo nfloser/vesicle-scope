@@ -61,3 +61,16 @@ VesicleScope currently **does not claim SED-ML compatibility**.
 OMEX is being used as the standards-oriented container. The current spatial BioFVM experiment itself remains represented by the provenance-aware VesicleScope experiment contract rather than SBML, CellML or another portable standardized model language.
 
 See [the interoperability research decision](research/combine-archive-interoperability.md) for the rationale and the requirements for future honest SED-ML support.
+
+
+## Local workspace
+
+The loopback browser workspace exposes the same archive contract as the CLI.
+
+For a selected experiment, **Download project OMEX** packages the stored experiment plus completed run bundles whose embedded experiment exactly matches it. Export does not rerun BioFVM.
+
+**Import VesicleScope COMBINE project** accepts a local `.omex` file and sends it directly to the loopback server as a bounded binary upload. The workspace validates the complete archive before writing any artifact. Imported experiment/run filenames are generated deterministically and made collision-safe; an import failure does not leave a partial project behind.
+
+The browser upload path is limited to 64 MB. This is a product-surface limit, separate from the archive reader's defensive uncompressed-size limits.
+
+The same scientific boundary applies in the browser: OMEX is a reproducible project container and **SED-ML compatibility is not claimed**.
