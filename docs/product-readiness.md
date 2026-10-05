@@ -28,7 +28,7 @@ Completed run bundles can now be verified, inspected and compared at their norma
 
 ### Native engine installation
 
-The pinned BioFVM runner currently has a reproducible repository build path, but installation/distribution of the native dependency is not yet a polished end-user workflow.
+The installed CLI can now report engine readiness, fetch/verify the exact reviewed PhysiCell checkout and compile the packaged canonical BioFVM transport runner. Remaining portability work is to validate/package equivalent setup behavior across the operating systems VesicleScope intends to support; the current reviewed native build path is Linux-oriented and requires Git, g++ and OpenMP.
 
 ### Interactive product surface
 

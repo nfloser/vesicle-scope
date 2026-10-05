@@ -90,5 +90,17 @@ class CliTests(unittest.TestCase):
             self.assertIn("synthetic_benchmark", summary)
 
 
+    def test_engine_status_is_available_without_network(self) -> None:
+        output = StringIO()
+        with redirect_stdout(output):
+            status = main(["engine", "status"])
+        self.assertEqual(status, 0)
+        text = output.getvalue()
+        self.assertIn("physicell_release:", text)
+        self.assertIn("physicell_commit:", text)
+        self.assertIn("biofvm_version:", text)
+        self.assertIn("default_runner_path:", text)
+
+
 if __name__ == "__main__":
     unittest.main()

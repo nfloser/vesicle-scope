@@ -26,6 +26,7 @@ See:
 - [parameter provenance contract](docs/parameter-provenance.md)
 - [synthetic transport benchmark](docs/transport-benchmark.md)
 - [BioFVM transport adapter](docs/biofvm-adapter.md)
+- [BioFVM engine setup](docs/engine-setup.md)
 - [BioFVM diffusion verification](docs/research/biofvm-diffusion-benchmark.md)
 - [localized release model baseline](docs/research/localized-release-model.md)
 - [finite circular donor footprint](docs/research/finite-donor-footprint.md)
@@ -108,8 +109,8 @@ To run the reviewed synthetic diffusion × uptake workflow with figures:
 
 ```bash
 python -m pip install '.[figures]'
-bash scripts/fetch-physicell.sh
-make -f native/biofvm_benchmark/Makefile runner
+vesiclescope engine status
+vesiclescope engine build --output build/native/biofvm_transport_runner
 
 vesiclescope run diffusion-uptake-factor \
   --runner build/native/biofvm_transport_runner \
