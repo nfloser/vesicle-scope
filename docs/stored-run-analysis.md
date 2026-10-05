@@ -38,3 +38,28 @@ This path does not:
 If a bundle is tampered with or violates its normalized scientific contracts, it is rejected before rendering.
 
 The SVG renderer uses the same optional Matplotlib dependency as VesicleScope's other scientific figures and writes inspectable text labels for provenance and scientific status.
+
+
+## Compare two completed runs
+
+Endpoint comparison remains available directly:
+
+```bash
+vesiclescope run-bundle compare left.run.json right.run.json
+```
+
+To persist the complete comparison, including both stored time axes and a direct final-field difference when the grids are compatible:
+
+```bash
+vesiclescope run-bundle compare \
+  left.run.json right.run.json \
+  --output comparison.json
+```
+
+The JSON artifact is deterministic and records the payload digest of both source bundles, exact VesicleScope revisions, numerical settings, endpoint deltas/ratios, both stored extracellular/internalized time series and spatial compatibility.
+
+VesicleScope does **not** invent aligned time samples. Each stored time axis is preserved exactly as recorded.
+
+A final spatial field is subtracted as `right - left` only when both bundles have compatible concentration units, domain dimensions, grid dimensions, grid spacing, slice thickness and final snapshot time. If those checks fail, the artifact records why direct spatial comparison is unavailable and no interpolation or resampling is performed.
+
+The local browser workspace uses the same engine-independent comparison contract. It displays both stored quantity series and, when compatible, a final-field difference map. This is a numerical comparison only; it does not rank either condition as biologically better, optimal, therapeutic or more physiological.

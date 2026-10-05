@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -75,6 +76,12 @@ def _parser() -> argparse.ArgumentParser:
     bundle_compare = bundle_commands.add_parser("compare")
     bundle_compare.add_argument("left", type=Path)
     bundle_compare.add_argument("right", type=Path)
+    bundle_compare.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Optional deterministic JSON file with full stored-run comparison detail.",
+    )
 
     bundle_figure = bundle_commands.add_parser(
         "figure",
@@ -228,6 +235,78 @@ def _inspect_bundle(bundle) -> None:
     print(f"release_sources: {len(bundle.experiment.release_sources)}")
     print(f"uptake_sinks: {len(bundle.experiment.uptake_sinks)}")
     print(f"evidence_categories: {', '.join(_evidence_categories(bundle.experiment))}")
+
+
+
+def _comparison_payload(summary, *, left_digest: str, right_digest: str) -> dict[str, object]:
+    endpoint = summary.endpoint
+    spatial = summary.spatial
+    return {
+        "schema": "vesiclescope.stored-run-comparison",
+        "version": 1,
+        "interpretation": "numerical stored-run comparison only; no biological ranking implied",
+        "left_run_payload_sha256": left_digest,
+        "right_run_payload_sha256": right_digest,
+        "left_experiment_id": endpoint.left_experiment_id,
+        "right_experiment_id": endpoint.right_experiment_id,
+        "left_revision": summary.left_revision,
+        "right_revision": summary.right_revision,
+        "quantity_unit": endpoint.quantity_unit,
+        "left_numerics": {
+            "grid_spacing_micron": endpoint.left_grid_spacing_micron,
+            "time_step_min": endpoint.left_time_step_min,
+        },
+        "right_numerics": {
+            "grid_spacing_micron": endpoint.right_grid_spacing_micron,
+            "time_step_min": endpoint.right_time_step_min,
+        },
+        "endpoint": {
+            "extracellular_delta_right_minus_left": endpoint.extracellular_delta,
+            "internalized_delta_right_minus_left": endpoint.internalized_delta,
+            "extracellular_ratio_right_over_left": endpoint.extracellular_ratio_right_over_left,
+            "internalized_ratio_right_over_left": endpoint.internalized_ratio_right_over_left,
+        },
+        "left_series": [
+            {
+                "time_min": item.time_min,
+                "extracellular_quantity": item.extracellular_quantity,
+                "internalized_quantity": item.internalized_quantity,
+            }
+            for item in summary.left_series
+        ],
+        "right_series": [
+            {
+                "time_min": item.time_min,
+                "extracellular_quantity": item.extracellular_quantity,
+                "internalized_quantity": item.internalized_quantity,
+            }
+            for item in summary.right_series
+        ],
+        "spatial": {
+            "compatible": spatial.compatible,
+            "reason": spatial.reason,
+            "nx": spatial.nx,
+            "ny": spatial.ny,
+            "concentration_unit": spatial.concentration_unit,
+            "time_min": spatial.time_min,
+            "values": list(spatial.values),
+            "minimum_difference": spatial.minimum_difference,
+            "maximum_difference": spatial.maximum_difference,
+            "mean_absolute_difference": spatial.mean_absolute_difference,
+        },
+    }
+
+
+def _write_comparison_json(path: Path, payload: dict[str, object]) -> Path:
+    output = Path(path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        json.dumps(payload, allow_nan=False, ensure_ascii=False, sort_keys=True, indent=2)
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return output
 
 
 def _print_comparison(summary) -> None:
@@ -411,19 +490,38 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     if args.command == "run-bundle":
-        from vesiclescope.analysis import compare_run_bundles, summarize_run_ensemble
-        from vesiclescope.run_bundles import read_run_bundle
+        from vesiclescope.analysis import compare_run_bundles_detailed, summarize_run_ensemble
+        from vesiclescope.run_bundles import read_run_bundle, run_bundle_payload_sha256
 
         try:
             if args.bundle_command == "inspect":
                 _inspect_bundle(read_run_bundle(args.path))
                 return 0
             if args.bundle_command == "compare":
-                summary = compare_run_bundles(
-                    read_run_bundle(args.left),
-                    read_run_bundle(args.right),
+                left_bundle = read_run_bundle(args.left)
+                right_bundle = read_run_bundle(args.right)
+                detailed = compare_run_bundles_detailed(left_bundle, right_bundle)
+                _print_comparison(detailed.endpoint)
+                print(f"left_series_samples: {len(detailed.left_series)}")
+                print(f"right_series_samples: {len(detailed.right_series)}")
+                print(
+                    "spatial_difference: "
+                    + (
+                        "compatible"
+                        if detailed.spatial.compatible
+                        else f"unavailable ({detailed.spatial.reason})"
+                    )
                 )
-                _print_comparison(summary)
+                if args.output is not None:
+                    output = _write_comparison_json(
+                        args.output,
+                        _comparison_payload(
+                            detailed,
+                            left_digest=run_bundle_payload_sha256(left_bundle),
+                            right_digest=run_bundle_payload_sha256(right_bundle),
+                        ),
+                    )
+                    print(output)
                 return 0
             if args.bundle_command == "figure":
                 from vesiclescope.figures import render_stored_run_figure

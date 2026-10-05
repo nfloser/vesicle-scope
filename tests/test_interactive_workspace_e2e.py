@@ -203,6 +203,19 @@ class InteractiveWorkspaceEndToEndTests(unittest.TestCase):
                     baseline["diffusion"]["value"] * 0.75,
                 )
 
+                status, baseline_run = request_json(
+                    f"{base}/api/run",
+                    method="POST",
+                    payload={
+                        "experiment": "baseline.json",
+                        "run_name": "baseline.run.json",
+                        "grid_spacing_micron": 10.0,
+                        "time_step_min": 0.1,
+                    },
+                )
+                self.assertEqual(status, 201)
+                self.assertEqual(baseline_run, {"name": "baseline.run.json"})
+
                 status, run = request_json(
                     f"{base}/api/run",
                     method="POST",
@@ -238,6 +251,28 @@ class InteractiveWorkspaceEndToEndTests(unittest.TestCase):
                         for sink in bundle.experiment.uptake_sinks
                     )
                 )
+
+                status, comparison = request_json(
+                    f"{base}/api/compare?left=baseline.run.json&right=variant.run.json"
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(
+                    comparison["left_experiment_id"],
+                    baseline["experiment_id"],
+                )
+                self.assertEqual(
+                    comparison["right_experiment_id"],
+                    "synthetic.workspace.variant",
+                )
+                self.assertGreater(len(comparison["left_series"]), 1)
+                self.assertGreater(len(comparison["right_series"]), 1)
+                self.assertTrue(comparison["spatial"]["compatible"])
+                self.assertEqual(
+                    len(comparison["spatial"]["values"]),
+                    comparison["spatial"]["nx"] * comparison["spatial"]["ny"],
+                )
+                self.assertEqual(comparison["left_revision"], REVISION.lower())
+                self.assertEqual(comparison["right_revision"], REVISION.lower())
             finally:
                 server.shutdown()
                 server.server_close()

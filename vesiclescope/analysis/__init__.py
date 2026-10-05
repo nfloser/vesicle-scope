@@ -1,6 +1,13 @@
 """Engine-independent analysis of normalized VesicleScope results."""
 
-from .run_comparison import RunComparisonSummary, compare_run_bundles
+from .run_comparison import (
+    DetailedRunComparison,
+    RunComparisonSummary,
+    SpatialDifferenceSummary,
+    StoredQuantitySample,
+    compare_run_bundles,
+    compare_run_bundles_detailed,
+)
 from .uncertainty import (
     EmpiricalQuantitySummary,
     RunEnsembleSummary,
@@ -27,8 +34,12 @@ from .recipient_population import (
 )
 
 __all__ = [
+    "DetailedRunComparison",
     "RunComparisonSummary",
+    "SpatialDifferenceSummary",
+    "StoredQuantitySample",
     "compare_run_bundles",
+    "compare_run_bundles_detailed",
     "EmpiricalQuantitySummary",
     "RunEnsembleSummary",
     "summarize_run_ensemble",

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from vesiclescope.analysis import compare_run_bundles
+from vesiclescope.analysis import compare_run_bundles_detailed
 from vesiclescope.ui.workspace import Workspace
 
 
@@ -260,22 +260,64 @@ class WorkspaceApplication:
         return _run_summary(self.workspace.read_run(name), include_field=include_field)
 
     def compare(self, left: str, right: str) -> dict[str, object]:
-        summary = compare_run_bundles(
+        summary = compare_run_bundles_detailed(
             self.workspace.read_run(left),
             self.workspace.read_run(right),
         )
+        endpoint = summary.endpoint
+        spatial = summary.spatial
         return {
-            "left_experiment_id": summary.left_experiment_id,
-            "right_experiment_id": summary.right_experiment_id,
-            "quantity_unit": summary.quantity_unit,
-            "left_grid_spacing_micron": summary.left_grid_spacing_micron,
-            "right_grid_spacing_micron": summary.right_grid_spacing_micron,
-            "left_time_step_min": summary.left_time_step_min,
-            "right_time_step_min": summary.right_time_step_min,
-            "extracellular_delta": summary.extracellular_delta,
-            "internalized_delta": summary.internalized_delta,
-            "extracellular_ratio_right_over_left": summary.extracellular_ratio_right_over_left,
-            "internalized_ratio_right_over_left": summary.internalized_ratio_right_over_left,
+            "left_experiment_id": endpoint.left_experiment_id,
+            "right_experiment_id": endpoint.right_experiment_id,
+            "quantity_unit": endpoint.quantity_unit,
+            "left_grid_spacing_micron": endpoint.left_grid_spacing_micron,
+            "right_grid_spacing_micron": endpoint.right_grid_spacing_micron,
+            "left_time_step_min": endpoint.left_time_step_min,
+            "right_time_step_min": endpoint.right_time_step_min,
+            "extracellular_delta": endpoint.extracellular_delta,
+            "internalized_delta": endpoint.internalized_delta,
+            "extracellular_ratio_right_over_left": endpoint.extracellular_ratio_right_over_left,
+            "internalized_ratio_right_over_left": endpoint.internalized_ratio_right_over_left,
+            "left_revision": summary.left_revision,
+            "right_revision": summary.right_revision,
+            "left_engine": {
+                "name": summary.left_engine,
+                "physicell_release": summary.left_physicell_release,
+                "biofvm_version": summary.left_biofvm_version,
+            },
+            "right_engine": {
+                "name": summary.right_engine,
+                "physicell_release": summary.right_physicell_release,
+                "biofvm_version": summary.right_biofvm_version,
+            },
+            "left_series": [
+                {
+                    "time_min": item.time_min,
+                    "extracellular_quantity": item.extracellular_quantity,
+                    "internalized_quantity": item.internalized_quantity,
+                }
+                for item in summary.left_series
+            ],
+            "right_series": [
+                {
+                    "time_min": item.time_min,
+                    "extracellular_quantity": item.extracellular_quantity,
+                    "internalized_quantity": item.internalized_quantity,
+                }
+                for item in summary.right_series
+            ],
+            "spatial": {
+                "compatible": spatial.compatible,
+                "reason": spatial.reason,
+                "nx": spatial.nx,
+                "ny": spatial.ny,
+                "concentration_unit": spatial.concentration_unit,
+                "time_min": spatial.time_min,
+                "values": list(spatial.values),
+                "minimum_difference": spatial.minimum_difference,
+                "maximum_difference": spatial.maximum_difference,
+                "mean_absolute_difference": spatial.mean_absolute_difference,
+            },
         }
 
     def artifact_path(self, kind: str, name: str) -> Path:
