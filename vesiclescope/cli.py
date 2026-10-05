@@ -64,6 +64,26 @@ def _parser() -> argparse.ArgumentParser:
     execute_batch.add_argument("--time-step-min", type=float, required=True)
     execute_batch.add_argument("--output-dir", type=Path, required=True)
 
+    archive = subparsers.add_parser(
+        "archive",
+        help="Create or inspect standards-oriented COMBINE/OMEX project archives.",
+    )
+    archive_commands = archive.add_subparsers(dest="archive_command")
+
+    archive_create = archive_commands.add_parser(
+        "create",
+        help="Package one experiment and optional stored runs into deterministic OMEX.",
+    )
+    archive_create.add_argument("experiment", type=Path)
+    archive_create.add_argument("runs", type=Path, nargs="*")
+    archive_create.add_argument("--output", type=Path, required=True)
+
+    archive_inspect = archive_commands.add_parser(
+        "inspect",
+        help="Validate and inspect a VesicleScope COMBINE archive without simulation.",
+    )
+    archive_inspect.add_argument("path", type=Path)
+
     bundles = subparsers.add_parser(
         "run-bundle",
         help="Inspect or compare completed deterministic run bundles.",
@@ -466,6 +486,42 @@ def main(argv: list[str] | None = None) -> int:
             print(f"vesiclescope: {exc}", file=sys.stderr)
             return 2
 
+
+    if args.command == "archive":
+        from vesiclescope.combine_archive import (
+            read_combine_archive,
+            write_combine_archive,
+        )
+        from vesiclescope.experiment_files import read_experiment_document
+        from vesiclescope.run_bundles import read_run_bundle
+
+        try:
+            if args.archive_command == "create":
+                experiment = read_experiment_document(args.experiment)
+                runs = tuple(read_run_bundle(path) for path in args.runs)
+                output = write_combine_archive(args.output, experiment, runs)
+                print(output)
+                return 0
+            if args.archive_command == "inspect":
+                project = read_combine_archive(args.path)
+                print(f"experiment_id: {project.experiment.experiment_id}")
+                print(f"stored_runs: {len(project.runs)}")
+                print("container: COMBINE Archive / OMEX")
+                print("sedml_compatibility: not claimed")
+                print(
+                    "scientific_status: container preserves VesicleScope provenance; "
+                    "simulation output is not experimental evidence by itself"
+                )
+                for index, bundle in enumerate(project.runs, start=1):
+                    print(
+                        f"run_{index:03d}: "
+                        f"{bundle.experiment.experiment_id} "
+                        f"revision={bundle.vesiclescope_revision}"
+                    )
+                return 0
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            print(f"vesiclescope: {exc}", file=sys.stderr)
+            return 2
 
     if args.command == "engine":
         from vesiclescope.engines.installation import (
