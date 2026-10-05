@@ -19,8 +19,17 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install package
+        run: python -m pip install --disable-pip-version-check .
+
       - name: Compile package
         run: python -m compileall -q vesiclescope
+
+      - name: Smoke-test installed CLI
+        run: |
+          vesiclescope --version
+          vesiclescope --help
+          vesiclescope examples
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
@@ -73,15 +82,14 @@ jobs:
           path: build/runs/donor-boundary-run.json
           if-no-files-found: error
 
-      - name: Install pinned figure renderer for factor experiment
-        run: python -m pip install --disable-pip-version-check -r requirements-figures.txt
+      - name: Install VesicleScope with figure support
+        run: python -m pip install --disable-pip-version-check '.[figures]'
 
-      - name: Run synthetic diffusion × uptake factor experiment
-        env:
-          VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
-          VESICLESCOPE_REVISION: ${{ github.sha }}
+      - name: Run synthetic diffusion × uptake factor experiment through CLI
         run: >-
-          python -m scripts.run_diffusion_uptake_factor_experiment
+          vesiclescope run diffusion-uptake-factor
+          --runner build/native/biofvm_transport_runner
+          --revision ${{ github.sha }}
           --output-dir build/diffusion-uptake
 
       - name: Verify diffusion × uptake artefacts
