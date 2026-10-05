@@ -88,5 +88,33 @@ class EngineInstallationTests(unittest.TestCase):
         self.assertEqual(command[-2:], ["-o", "/out/runner"])
 
 
+    def test_cache_root_honors_explicit_override(self) -> None:
+        from vesiclescope.engines.installation import default_cache_root
+
+        with patch.dict("os.environ", {"VESICLESCOPE_CACHE_DIR": "/tmp/custom-vesiclescope"}, clear=False):
+            self.assertEqual(default_cache_root(), Path("/tmp/custom-vesiclescope"))
+
+    def test_windows_defaults_use_local_app_data_and_exe_suffix(self) -> None:
+        from vesiclescope.engines import installation
+
+        with (
+            patch.object(installation.os, "name", "nt"),
+            patch.dict(
+                installation.os.environ,
+                {"LOCALAPPDATA": r"C:\Users\runner\AppData\Local"},
+                clear=True,
+            ),
+        ):
+            root = installation.default_cache_root()
+            runner = installation.default_runner_path()
+
+        self.assertEqual(
+            root,
+            Path(r"C:\Users\runner\AppData\Local") / "VesicleScope" / "Cache",
+        )
+        self.assertEqual(runner.name, "biofvm_transport_runner.exe")
+
+
+
 if __name__ == "__main__":
     unittest.main()
