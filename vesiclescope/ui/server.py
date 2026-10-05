@@ -60,6 +60,14 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 raise ValueError(f"missing query parameter: {name}")
             return values[0]
 
+        def _validate_host(self) -> None:
+            raw_host = self.headers.get("Host")
+            if not raw_host:
+                raise ValueError("request Host header is required")
+            hostname = urlsplit(f"//{raw_host}").hostname
+            if hostname not in {"127.0.0.1", "localhost"}:
+                raise ValueError("request Host must resolve to the local VesicleScope UI")
+
         def _read_json(self) -> dict[str, Any]:
             if self.headers.get_content_type() != "application/json":
                 raise ValueError("request Content-Type must be application/json")
@@ -85,6 +93,7 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
             parsed = urlsplit(self.path)
             query = parse_qs(parsed.query, keep_blank_values=True)
             try:
+                self._validate_host()
                 if parsed.path == "/":
                     self.send_response(HTTPStatus.OK)
                     self._security_headers()
@@ -139,6 +148,7 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
         def do_POST(self) -> None:
             parsed = urlsplit(self.path)
             try:
+                self._validate_host()
                 payload = self._read_json()
                 if parsed.path == "/api/example":
                     name = payload.get("name", "diffusion-uptake-baseline.json")
