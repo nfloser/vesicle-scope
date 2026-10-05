@@ -11,6 +11,7 @@ from vesiclescope.ui.workspace import Workspace
 
 
 _REVISION_RE = re.compile(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})\Z")
+_MAX_COMBINE_ARCHIVE_BYTES = 64 * 1024 * 1024
 
 
 def _evidence_categories(experiment) -> list[str]:
@@ -237,6 +238,19 @@ class WorkspaceApplication:
             "name": path.name,
             "experiment": _experiment_summary(self.workspace.read_experiment(path.name)),
         }
+
+
+    def export_archive(self, experiment_name: str) -> tuple[str, bytes]:
+        data = self.workspace.export_combine_archive(experiment_name)
+        filename = re.sub(r"\.json\Z", "", experiment_name) + ".omex"
+        return filename, data
+
+    def import_archive(self, data: bytes) -> dict[str, object]:
+        if not isinstance(data, bytes):
+            raise ValueError("COMBINE archive upload must be binary")
+        if len(data) > _MAX_COMBINE_ARCHIVE_BYTES:
+            raise ValueError("COMBINE archive upload exceeds 64 MB")
+        return self.workspace.import_combine_archive(data)
 
     def execute(
         self,

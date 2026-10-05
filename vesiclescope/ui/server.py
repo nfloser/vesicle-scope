@@ -15,6 +15,7 @@ from vesiclescope.ui.app import WorkspaceApplication
 
 
 _MAX_JSON_BODY = 2_100_000
+_MAX_ARCHIVE_BODY = 64 * 1024 * 1024
 
 
 def _index_bytes() -> bytes:
@@ -89,6 +90,24 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 raise ValueError("request JSON must be an object")
             return value
 
+
+        def _read_archive_body(self) -> bytes:
+            if self.headers.get_content_type() != "application/zip":
+                raise ValueError("archive request Content-Type must be application/zip")
+            raw_length = self.headers.get("Content-Length")
+            if raw_length is None:
+                raise ValueError("request Content-Length is required")
+            try:
+                length = int(raw_length)
+            except ValueError as exc:
+                raise ValueError("invalid request Content-Length") from exc
+            if length < 0 or length > _MAX_ARCHIVE_BODY:
+                raise ValueError("COMBINE archive request exceeds 64 MB limit")
+            body = self.rfile.read(length)
+            if len(body) != length:
+                raise ValueError("COMBINE archive request body is incomplete")
+            return body
+
         def do_GET(self) -> None:
             parsed = urlsplit(self.path)
             query = parse_qs(parsed.query, keep_blank_values=True)
@@ -127,6 +146,9 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 if parsed.path == "/download/run":
                     self._send_artifact("run", self._query_one(query, "name"))
                     return
+                if parsed.path == "/download/archive":
+                    self._send_archive(self._query_one(query, "experiment"))
+                    return
                 self._send_error_json(HTTPStatus.NOT_FOUND, "not found")
             except (OSError, RuntimeError, TypeError, ValueError) as exc:
                 self._send_error_json(HTTPStatus.BAD_REQUEST, str(exc))
@@ -145,10 +167,30 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
             self.end_headers()
             self.wfile.write(data)
 
+
+        def _send_archive(self, experiment_name: str) -> None:
+            filename, data = app.export_archive(experiment_name)
+            self.send_response(HTTPStatus.OK)
+            self._security_headers()
+            self.send_header("Content-Type", "application/zip")
+            self.send_header(
+                "Content-Disposition",
+                f"attachment; filename*=UTF-8''{quote(filename)}",
+            )
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
         def do_POST(self) -> None:
             parsed = urlsplit(self.path)
             try:
                 self._validate_host()
+                if parsed.path == "/api/archive/import":
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.import_archive(self._read_archive_body()),
+                    )
+                    return
                 payload = self._read_json()
                 if parsed.path == "/api/example":
                     name = payload.get("name", "diffusion-uptake-baseline.json")

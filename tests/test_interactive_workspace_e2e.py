@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from urllib.request import Request, urlopen
 
+from vesiclescope.combine_archive import deserialize_combine_archive
 from vesiclescope.run_bundles import deserialize_run_bundle
 from vesiclescope.ui.app import WorkspaceApplication
 from vesiclescope.ui.server import create_server
@@ -116,6 +117,53 @@ class InteractiveWorkspaceEndToEndTests(unittest.TestCase):
                         "attachment;",
                         response.headers["Content-Disposition"],
                     )
+
+                baseline_experiment_id = inspected["experiment"]["experiment_id"]
+                with urlopen(
+                    f"{base}/download/archive?experiment=baseline.json"
+                ) as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(
+                        response.headers.get_content_type(),
+                        "application/zip",
+                    )
+                    archive_bytes = response.read()
+                    self.assertIn(
+                        "attachment;",
+                        response.headers["Content-Disposition"],
+                    )
+
+                project = deserialize_combine_archive(archive_bytes)
+                self.assertEqual(project.experiment.experiment_id, baseline_experiment_id)
+                self.assertEqual(len(project.runs), 1)
+                self.assertEqual(
+                    project.runs[0].vesiclescope_revision,
+                    REVISION.lower(),
+                )
+
+                import_request = Request(
+                    f"{base}/api/archive/import",
+                    method="POST",
+                    data=archive_bytes,
+                    headers={"Content-Type": "application/zip"},
+                )
+                with urlopen(import_request, timeout=30) as response:
+                    self.assertEqual(response.status, 201)
+                    imported = json.loads(response.read().decode("utf-8"))
+
+                self.assertEqual(len(imported["runs"]), 1)
+                status, imported_run = request_json(
+                    f"{base}/api/run?name={imported['runs'][0]}"
+                )
+                self.assertEqual(status, 200)
+                self.assertEqual(
+                    imported_run["experiment"]["experiment_id"],
+                    baseline_experiment_id,
+                )
+                self.assertEqual(
+                    imported_run["vesiclescope_revision"],
+                    REVISION.lower(),
+                )
 
                 bundle = deserialize_run_bundle(downloaded)
                 self.assertEqual(bundle.vesiclescope_revision, REVISION.lower())

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from urllib.request import Request, urlopen
 
+from vesiclescope.combine_archive import deserialize_combine_archive
 from vesiclescope.ui.app import WorkspaceApplication
 from vesiclescope.ui.server import create_server
 from vesiclescope.ui.workspace import Workspace
@@ -39,6 +40,45 @@ class WorkspaceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 workspace.run_path("nested/run.json")
 
+
+
+    def test_workspace_combine_archive_round_trip_is_collision_safe(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Workspace(Path(directory) / "workspace").initialize()
+            workspace.create_baseline_experiment("baseline.json")
+
+            exported = workspace.export_combine_archive("baseline.json")
+            project = deserialize_combine_archive(exported)
+            self.assertEqual(project.experiment, workspace.read_experiment("baseline.json"))
+            self.assertEqual(project.runs, ())
+
+            first = workspace.import_combine_archive(exported)
+            second = workspace.import_combine_archive(exported)
+
+            self.assertNotEqual(first["experiment"], second["experiment"])
+            self.assertEqual(first["runs"], [])
+            self.assertEqual(second["runs"], [])
+            self.assertEqual(
+                workspace.read_experiment(first["experiment"]),
+                workspace.read_experiment("baseline.json"),
+            )
+            self.assertEqual(
+                workspace.read_experiment(second["experiment"]),
+                workspace.read_experiment("baseline.json"),
+            )
+
+    def test_invalid_combine_archive_does_not_partially_change_workspace(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Workspace(Path(directory) / "workspace").initialize()
+            workspace.create_baseline_experiment("baseline.json")
+            before_experiments = workspace.list_experiment_names()
+            before_runs = workspace.list_run_names()
+
+            with self.assertRaises(ValueError):
+                workspace.import_combine_archive(b"not a zip")
+
+            self.assertEqual(workspace.list_experiment_names(), before_experiments)
+            self.assertEqual(workspace.list_run_names(), before_runs)
 
     def test_workspace_derives_new_synthetic_experiment_without_overwriting_source(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -205,6 +245,9 @@ class WorkspaceTests(unittest.TestCase):
                     self.assertIn("Numerical comparison only", html)
                     self.assertIn("no interpolation is performed", html)
                     self.assertIn("Final field difference (right − left)", html)
+                    self.assertIn("Import VesicleScope COMBINE project", html)
+                    self.assertIn("Download project OMEX", html)
+                    self.assertIn("SED-ML compatibility is not claimed", html)
                 connection = http.client.HTTPConnection("127.0.0.1", port)
                 connection.putrequest("GET", "/api/health", skip_host=True)
                 connection.putheader("Host", "attacker.example")
