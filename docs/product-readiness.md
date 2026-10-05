@@ -20,11 +20,11 @@ The installable CLI is a product milestone, not the finished product.
 
 ### User-defined experiments
 
-A deterministic external experiment document is now available for export, validation, inspection and programmatic loading while preserving the existing provenance contract. The remaining gap is a user-facing editor plus execution of arbitrary supported loaded experiments without requiring Python code.
+A deterministic external experiment document is available for export, validation and inspection, and supported documents can now be executed directly through the installed CLI with explicit numerical settings. The remaining gap is a user-facing interactive editor rather than file editing.
 
 ### Run inspection and comparison
 
-A user should be able to open existing run bundles, inspect provenance and solver metadata, compare completed runs and regenerate supported analyses/figures without rerunning the solver.
+Completed run bundles can now be verified, inspected and compared at their normalized final endpoints without rerunning the solver. Remaining work includes richer time-series/spatial comparison and regenerating supported analyses/figures directly from stored bundles.
 
 ### Native engine installation
 
