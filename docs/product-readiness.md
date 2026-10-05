@@ -32,9 +32,9 @@ The installed CLI can now report engine readiness, fetch/verify the exact review
 
 ### Interactive product surface
 
-The scientific core is intentionally headless. A finished product still needs an interactive workflow that lets users define/load experiments, launch runs, inspect spatial fields/time series, compare results and export artifacts without editing Python.
+A local browser-based workspace is now implemented on top of the same experiment documents, run bundles and execution/comparison services as the CLI. It is loopback-only by default, confines artifacts to explicit workspace directories and can create/import experiments, launch runs, inspect stored spatial/time-series outputs, compare runs and download persisted JSON artifacts.
 
-This surface must consume the same contracts and workflows as the CLI rather than duplicating model logic.
+Remaining work is product hardening and usability validation rather than inventing a second scientific path: broader end-to-end browser coverage, cross-platform native-engine validation, and later scientific capabilities that require their own research gates.
 
 ### Uncertainty and calibration
 
