@@ -1,5 +1,6 @@
 """Engine-independent analysis of normalized VesicleScope results."""
 
+from .run_comparison import RunComparisonSummary, compare_run_bundles
 from .diffusion_uptake import (
     DiffusionUptakeSummary,
     analyze_diffusion_uptake_condition,
@@ -21,6 +22,8 @@ from .recipient_population import (
 )
 
 __all__ = [
+    "RunComparisonSummary",
+    "compare_run_bundles",
     "DiffusionUptakeSummary",
     "DistanceBinSummary",
     "DonorBoundaryRadialBin",
