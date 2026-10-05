@@ -46,3 +46,36 @@ The figure workflow pins the reviewed version in `requirements-figures.txt` so C
 - Publication: Colombo et al. 2025, DOI `10.1002/jev2.70169`
 
 VesicleScope records this pin to identify the public analysis semantics reviewed for external validation. No upstream source code is copied into the VesicleScope runtime.
+
+
+## Smoldyn (candidate; not a dependency)
+
+**Status:** research candidate for future continuum-versus-particle comparison; not installed, linked, vendored or redistributed by VesicleScope  
+**Upstream:** https://github.com/ssandrews/Smoldyn  
+**Reviewed commit:** `e21d6dd2c0411f5624b6da88c323597d6a92ee92` (2026-10-02 upstream commit)  
+**Reviewed development line:** CMake fallback `2.76.dev...`  
+**Potential use:** separate stochastic Brownian-particle engine for model-class comparison after research/licensing gates
+
+Upstream currently documents:
+
+- Python installation via `pip install smoldyn`;
+- a BioSimulators interface;
+- SED-ML language `urn:sedml:language:smoldyn`;
+- Brownian diffusion / Smoluchowski algorithm mapping to KiSAO `KISAO_0000057`;
+- COMBINE media type `text/smoldyn+plain`.
+
+### License status
+
+Do not treat the applicable Smoldyn license as resolved from one metadata field.
+
+At the reviewed commit:
+
+- repository root `LICENSE` contains GNU GPL v3;
+- current Python package metadata declares `LGPL-3.0-or-later`;
+- core source and CMake headers state LGPL;
+- BioSimulators container metadata states LGPL;
+- historical commit `83ef2f671aeb6d2d44a1f93fb7b1c14531ea7b5b` changed the root license text from LGPL v3 to GPL v3.
+
+No Smoldyn dependency or distributed integration should be added until the exact applicable terms for the selected release/artifact are clarified.
+
+See [the particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md).
