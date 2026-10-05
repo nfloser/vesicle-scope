@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+from vesiclescope.experiment_editing import derive_synthetic_experiment
 from vesiclescope.experiment_files import (
     deserialize_experiment_document,
     read_experiment_document,
@@ -93,6 +94,40 @@ class Workspace:
             newline="\n",
         )
         return output
+
+
+    def derive_synthetic_variant(
+        self,
+        *,
+        source_name: str,
+        output_name: str,
+        experiment_id: str,
+        duration_min: float,
+        sample_every_min: float,
+        diffusion_value: float,
+        decay_value: float,
+        initial_concentration_value: float,
+        release_rates: dict[str, float],
+        uptake_rates: dict[str, float],
+    ) -> Path:
+        self.initialize()
+        source = self.read_experiment(source_name)
+        output = self.experiment_path(output_name)
+        if output.exists():
+            raise ValueError(f"experiment already exists: {output_name}")
+
+        derived = derive_synthetic_experiment(
+            source,
+            experiment_id=experiment_id,
+            duration_min=duration_min,
+            sample_every_min=sample_every_min,
+            diffusion_value=diffusion_value,
+            decay_value=decay_value,
+            initial_concentration_value=initial_concentration_value,
+            release_rates=release_rates,
+            uptake_rates=uptake_rates,
+        )
+        return write_experiment_document(output, derived)
 
     def read_experiment(self, name: str):
         return read_experiment_document(self.experiment_path(name))

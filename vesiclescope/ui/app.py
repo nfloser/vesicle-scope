@@ -206,6 +206,38 @@ class WorkspaceApplication:
     def experiment(self, name: str) -> dict[str, object]:
         return _experiment_summary(self.workspace.read_experiment(name))
 
+
+    def derive_synthetic_experiment(
+        self,
+        *,
+        source_name: str,
+        output_name: str,
+        experiment_id: str,
+        duration_min: float,
+        sample_every_min: float,
+        diffusion_value: float,
+        decay_value: float,
+        initial_concentration_value: float,
+        release_rates: dict[str, float],
+        uptake_rates: dict[str, float],
+    ) -> dict[str, object]:
+        path = self.workspace.derive_synthetic_variant(
+            source_name=source_name,
+            output_name=output_name,
+            experiment_id=experiment_id,
+            duration_min=duration_min,
+            sample_every_min=sample_every_min,
+            diffusion_value=diffusion_value,
+            decay_value=decay_value,
+            initial_concentration_value=initial_concentration_value,
+            release_rates=release_rates,
+            uptake_rates=uptake_rates,
+        )
+        return {
+            "name": path.name,
+            "experiment": _experiment_summary(self.workspace.read_experiment(path.name)),
+        }
+
     def execute(
         self,
         *,

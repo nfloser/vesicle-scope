@@ -4,11 +4,23 @@ import http.client
 import json
 import tempfile
 import unittest
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from vesiclescope.ui.app import WorkspaceApplication
 from vesiclescope.ui.server import create_server
 from vesiclescope.ui.workspace import Workspace
+
+
+
+def post_json(url: str, payload: dict):
+    request = Request(
+        url,
+        method="POST",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    with urlopen(request, timeout=30) as response:
+        return response.status, json.loads(response.read().decode("utf-8"))
 
 
 class WorkspaceTests(unittest.TestCase):
@@ -26,6 +38,126 @@ class WorkspaceTests(unittest.TestCase):
                 workspace.experiment_path("../escape.json")
             with self.assertRaises(ValueError):
                 workspace.run_path("nested/run.json")
+
+
+    def test_workspace_derives_new_synthetic_experiment_without_overwriting_source(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Workspace(Path(directory) / "workspace").initialize()
+            workspace.create_baseline_experiment("baseline.json")
+            source = workspace.read_experiment("baseline.json")
+
+            output = workspace.derive_synthetic_variant(
+                source_name="baseline.json",
+                output_name="variant.json",
+                experiment_id="synthetic.ui.variant",
+                duration_min=30.0,
+                sample_every_min=5.0,
+                diffusion_value=125.0,
+                decay_value=0.0,
+                initial_concentration_value=0.0,
+                release_rates={
+                    item.identifier: 150.0
+                    for item in source.release_sources
+                },
+                uptake_rates={
+                    item.identifier: 0.75
+                    for item in source.uptake_sinks
+                },
+            )
+
+            self.assertEqual(output.name, "variant.json")
+            self.assertEqual(workspace.read_experiment("baseline.json").diffusion.value, 100.0)
+            derived = workspace.read_experiment("variant.json")
+            self.assertEqual(derived.experiment_id, "synthetic.ui.variant")
+            self.assertEqual(derived.diffusion.value, 125.0)
+            self.assertEqual(derived.release_sources[0].release_rate.value, 150.0)
+            self.assertTrue(
+                all(item.uptake_rate.value == 0.75 for item in derived.uptake_sinks)
+            )
+
+            with self.assertRaisesRegex(ValueError, "already exists"):
+                workspace.derive_synthetic_variant(
+                    source_name="baseline.json",
+                    output_name="variant.json",
+                    experiment_id="synthetic.ui.other",
+                    duration_min=20.0,
+                    sample_every_min=5.0,
+                    diffusion_value=100.0,
+                    decay_value=0.0,
+                    initial_concentration_value=0.0,
+                    release_rates={
+                        item.identifier: item.release_rate.value
+                        for item in source.release_sources
+                    },
+                    uptake_rates={
+                        item.identifier: item.uptake_rate.value
+                        for item in source.uptake_sinks
+                    },
+                )
+
+    def test_loopback_api_derives_synthetic_variant(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Workspace(Path(directory) / "workspace").initialize()
+            runner = Path(directory) / "runner"
+            runner.write_text("", encoding="utf-8")
+            app = WorkspaceApplication(workspace, runner, "c" * 40)
+            server = create_server(app, port=0)
+            _, port = server.server_address
+            base = f"http://127.0.0.1:{port}"
+
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                status, _ = post_json(
+                    f"{base}/api/example",
+                    {"name": "baseline.json"},
+                )
+                self.assertEqual(status, 201)
+
+                with urlopen(
+                    f"{base}/api/experiment?name=baseline.json",
+                    timeout=30,
+                ) as response:
+                    source = json.loads(response.read().decode("utf-8"))
+
+                status, derived = post_json(
+                    f"{base}/api/derive",
+                    {
+                        "source": "baseline.json",
+                        "name": "variant.json",
+                        "experiment_id": "synthetic.http.variant",
+                        "duration_min": 25.0,
+                        "sample_every_min": 5.0,
+                        "diffusion_value": 140.0,
+                        "decay_value": 0.0,
+                        "initial_concentration_value": 0.0,
+                        "release_rates": {
+                            item["identifier"]: item["rate"]
+                            for item in source["release_sources"]
+                        },
+                        "uptake_rates": {
+                            item["identifier"]: 0.65
+                            for item in source["uptake_sinks"]
+                        },
+                    },
+                )
+                self.assertEqual(status, 201)
+                self.assertEqual(derived["name"], "variant.json")
+                self.assertEqual(
+                    derived["experiment"]["experiment_id"],
+                    "synthetic.http.variant",
+                )
+                self.assertEqual(derived["experiment"]["diffusion"]["value"], 140.0)
+                self.assertTrue(
+                    all(
+                        item["uptake_rate"] == 0.65
+                        for item in derived["experiment"]["uptake_sinks"]
+                    )
+                )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
 
     def test_invalid_experiment_file_is_reported_without_breaking_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

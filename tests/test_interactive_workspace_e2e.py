@@ -138,5 +138,111 @@ class InteractiveWorkspaceEndToEndTests(unittest.TestCase):
                 thread.join(timeout=2)
 
 
+    def test_derive_synthetic_variant_then_execute_and_persist_bundle(self) -> None:
+        assert RUNNER is not None
+        assert REVISION is not None
+
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Workspace(Path(directory) / "workspace").initialize()
+            app = WorkspaceApplication(workspace, Path(RUNNER), REVISION)
+            server = create_server(app, port=0)
+            _, port = server.server_address
+            base = f"http://127.0.0.1:{port}"
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                status, created = request_json(
+                    f"{base}/api/example",
+                    method="POST",
+                    payload={"name": "baseline.json"},
+                )
+                self.assertEqual(status, 201)
+                self.assertEqual(created, {"name": "baseline.json"})
+
+                status, baseline = request_json(
+                    f"{base}/api/experiment?name=baseline.json"
+                )
+                self.assertEqual(status, 200)
+                release_rates = {
+                    item["identifier"]: item["rate"]
+                    for item in baseline["release_sources"]
+                }
+                uptake_rates = {
+                    item["identifier"]: item["uptake_rate"] * 1.25
+                    for item in baseline["uptake_sinks"]
+                }
+
+                status, derived = request_json(
+                    f"{base}/api/derive",
+                    method="POST",
+                    payload={
+                        "source": "baseline.json",
+                        "name": "variant.json",
+                        "experiment_id": "synthetic.workspace.variant",
+                        "duration_min": baseline["duration_min"],
+                        "sample_every_min": baseline["sample_every_min"],
+                        "diffusion_value": baseline["diffusion"]["value"] * 0.75,
+                        "decay_value": baseline["decay"]["value"],
+                        "initial_concentration_value": baseline["initial_concentration"]["value"],
+                        "release_rates": release_rates,
+                        "uptake_rates": uptake_rates,
+                    },
+                )
+                self.assertEqual(status, 201)
+                self.assertEqual(derived["name"], "variant.json")
+                self.assertEqual(
+                    derived["experiment"]["experiment_id"],
+                    "synthetic.workspace.variant",
+                )
+                self.assertEqual(
+                    derived["experiment"]["scientific_status"],
+                    "synthetic_benchmark",
+                )
+                self.assertEqual(
+                    derived["experiment"]["diffusion"]["value"],
+                    baseline["diffusion"]["value"] * 0.75,
+                )
+
+                status, run = request_json(
+                    f"{base}/api/run",
+                    method="POST",
+                    payload={
+                        "experiment": "variant.json",
+                        "run_name": "variant.run.json",
+                        "grid_spacing_micron": 10.0,
+                        "time_step_min": 0.1,
+                    },
+                )
+                self.assertEqual(status, 201)
+                self.assertEqual(run, {"name": "variant.run.json"})
+
+                with urlopen(
+                    f"{base}/download/run?name=variant.run.json"
+                ) as response:
+                    downloaded = response.read()
+
+                bundle = deserialize_run_bundle(downloaded)
+                self.assertEqual(
+                    bundle.experiment.experiment_id,
+                    "synthetic.workspace.variant",
+                )
+                self.assertEqual(bundle.vesiclescope_revision, REVISION.lower())
+                self.assertEqual(
+                    bundle.experiment.diffusion.value,
+                    baseline["diffusion"]["value"] * 0.75,
+                )
+                self.assertTrue(
+                    all(
+                        sink.uptake_rate.value
+                        == uptake_rates[sink.identifier]
+                        for sink in bundle.experiment.uptake_sinks
+                    )
+                )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
+
+
 if __name__ == "__main__":
     unittest.main()
