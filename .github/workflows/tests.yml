@@ -80,6 +80,12 @@ jobs:
           VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
         run: python -m unittest discover -s tests -p test_biofvm_integration.py -v
 
+      - name: Exercise local workspace end to end
+        env:
+          VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
+          VESICLESCOPE_REVISION: ${{ github.sha }}
+        run: python -m unittest discover -s tests -p test_interactive_workspace_e2e.py -v
+
       - name: Generate deterministic donor-boundary run bundle
         env:
           VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
