@@ -260,6 +260,18 @@ jobs:
           vesiclescope run-bundle ensemble "${RUNS[@]}" > build/explicit-batch/ensemble-summary.txt
           grep -F 'empirical stored-run ensemble; not a confidence interval' build/explicit-batch/ensemble-summary.txt
           grep -F 'member_count: 2' build/explicit-batch/ensemble-summary.txt
+          vesiclescope archive create-batch \
+            build/explicit-batch/batch-manifest.json \
+            --output build/explicit-batch/batch.omex
+          test -s build/explicit-batch/batch.omex
+          vesiclescope archive inspect build/explicit-batch/batch.omex \
+            > build/explicit-batch/archive-summary.txt
+          grep -F 'project_type: batch' build/explicit-batch/archive-summary.txt
+          grep -F 'batch_members: 2' build/explicit-batch/archive-summary.txt
+          grep -F 'no sampling or biological distribution implied' \
+            build/explicit-batch/archive-summary.txt
+          grep -F 'sedml_compatibility: not claimed' \
+            build/explicit-batch/archive-summary.txt
 
       - name: Upload external experiment run
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
