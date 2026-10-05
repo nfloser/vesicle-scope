@@ -210,6 +210,99 @@ class CliTests(unittest.TestCase):
             self.assertIn("sedml_compatibility: not claimed", text)
             self.assertIn("not experimental evidence", text)
 
+
+    def test_archive_create_batch_routes_manifest_runs_and_inspection(self) -> None:
+        from vesiclescope.batch_manifests import (
+            ExperimentBatchManifest,
+            ExperimentBatchManifestMember,
+        )
+        from vesiclescope.combine_archive import CombineBatchArchiveProject
+        from vesiclescope.engines import BioFVMNumerics
+
+        manifest = ExperimentBatchManifest(
+            vesiclescope_revision="a" * 40,
+            numerics=BioFVMNumerics(
+                grid_spacing_micron=10.0,
+                time_step_min=0.1,
+            ),
+            members=(
+                ExperimentBatchManifestMember(
+                    index=1,
+                    input_filename="left.json",
+                    experiment_id="experiment.left",
+                    run_filename="left.run.json",
+                    run_bundle_payload_sha256="1" * 64,
+                ),
+                ExperimentBatchManifestMember(
+                    index=2,
+                    input_filename="right.json",
+                    experiment_id="experiment.right",
+                    run_filename="right.run.json",
+                    run_bundle_payload_sha256="2" * 64,
+                ),
+            ),
+        )
+        project = CombineBatchArchiveProject(
+            manifest=manifest,
+            experiments=(),
+            runs=(),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path = root / "batch-manifest.json"
+            output_path = root / "batch.omex"
+            with patch(
+                "vesiclescope.batch_manifests.read_batch_manifest",
+                return_value=manifest,
+            ), patch(
+                "vesiclescope.run_bundles.read_run_bundle",
+                side_effect=("left-bundle", "right-bundle"),
+            ) as read_run, patch(
+                "vesiclescope.combine_archive.write_batch_combine_archive",
+                return_value=output_path,
+            ) as write_archive:
+                stdout = StringIO()
+                with redirect_stdout(stdout):
+                    status = main(
+                        [
+                            "archive",
+                            "create-batch",
+                            str(manifest_path),
+                            "--output",
+                            str(output_path),
+                        ]
+                    )
+
+                self.assertEqual(status, 0)
+                self.assertIn(str(output_path), stdout.getvalue())
+                self.assertEqual(
+                    [call.args[0] for call in read_run.call_args_list],
+                    [root / "left.run.json", root / "right.run.json"],
+                )
+                write_archive.assert_called_once_with(
+                    output_path,
+                    manifest,
+                    ("left-bundle", "right-bundle"),
+                )
+
+            with patch(
+                "vesiclescope.combine_archive.read_any_combine_archive",
+                return_value=project,
+            ):
+                stdout = StringIO()
+                with redirect_stdout(stdout):
+                    status = main(
+                        ["archive", "inspect", str(output_path)]
+                    )
+                self.assertEqual(status, 0)
+                text = stdout.getvalue()
+                self.assertIn("project_type: batch", text)
+                self.assertIn("batch_members: 2", text)
+                self.assertIn("experiment.left", text)
+                self.assertIn("no sampling or biological distribution implied", text)
+                self.assertIn("sedml_compatibility: not claimed", text)
+
     def test_run_bundle_ensemble_reports_empirical_interpretation(self) -> None:
         quantity = SimpleNamespace(
             member_count=2,
