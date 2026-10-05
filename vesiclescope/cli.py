@@ -17,78 +17,53 @@ def _parser() -> argparse.ArgumentParser:
             "extracellular-vesicle transport."
         ),
     )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
-    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser(
-        "examples",
-        help="List reviewed built-in synthetic examples.",
-    )
+    subparsers.add_parser("examples", help="List reviewed built-in synthetic examples.")
 
-    run = subparsers.add_parser(
-        "run",
-        help="Run a reviewed built-in example.",
-    )
-    run.add_argument(
-        "example",
-        choices=("diffusion-uptake-factor",),
-        help="Reviewed built-in example identifier.",
-    )
-    run.add_argument(
-        "--runner",
-        type=Path,
-        required=True,
-        help="Path to the built native BioFVM transport runner.",
-    )
-    run.add_argument(
-        "--revision",
-        required=True,
-        help="Exact 40- or 64-character VesicleScope commit SHA represented by the run.",
-    )
-    run.add_argument(
-        "--output-dir",
-        type=Path,
-        required=True,
-        help="Directory for deterministic run artifacts.",
-    )
+    run = subparsers.add_parser("run", help="Run a reviewed built-in example.")
+    run.add_argument("example", choices=("diffusion-uptake-factor",))
+    run.add_argument("--runner", type=Path, required=True)
+    run.add_argument("--revision", required=True)
+    run.add_argument("--output-dir", type=Path, required=True)
 
     experiment = subparsers.add_parser(
         "experiment",
-        help="Create, validate and inspect external experiment documents.",
+        help="Create, validate, inspect and run external experiment documents.",
     )
     experiment_commands = experiment.add_subparsers(dest="experiment_command")
 
-    export = experiment_commands.add_parser(
-        "export-example",
-        help="Write a reviewed built-in experiment document.",
-    )
-    export.add_argument(
-        "example",
-        choices=("diffusion-uptake-baseline",),
-        help="Reviewed example experiment to export.",
-    )
-    export.add_argument(
-        "--output",
-        type=Path,
-        required=True,
-        help="Output VesicleScope experiment JSON path.",
-    )
+    export = experiment_commands.add_parser("export-example")
+    export.add_argument("example", choices=("diffusion-uptake-baseline",))
+    export.add_argument("--output", type=Path, required=True)
 
-    validate = experiment_commands.add_parser(
-        "validate",
-        help="Validate an external experiment document.",
-    )
+    validate = experiment_commands.add_parser("validate")
     validate.add_argument("path", type=Path)
 
-    inspect = experiment_commands.add_parser(
-        "inspect",
-        help="Print a concise scientific summary of an experiment document.",
-    )
+    inspect = experiment_commands.add_parser("inspect")
     inspect.add_argument("path", type=Path)
+
+    execute = experiment_commands.add_parser("run")
+    execute.add_argument("path", type=Path)
+    execute.add_argument("--runner", type=Path, required=True)
+    execute.add_argument("--revision", required=True)
+    execute.add_argument("--grid-spacing-micron", type=float, required=True)
+    execute.add_argument("--time-step-min", type=float, required=True)
+    execute.add_argument("--output", type=Path, required=True)
+
+    bundles = subparsers.add_parser(
+        "run-bundle",
+        help="Inspect or compare completed deterministic run bundles.",
+    )
+    bundle_commands = bundles.add_subparsers(dest="bundle_command")
+
+    bundle_inspect = bundle_commands.add_parser("inspect")
+    bundle_inspect.add_argument("path", type=Path)
+
+    bundle_compare = bundle_commands.add_parser("compare")
+    bundle_compare.add_argument("left", type=Path)
+    bundle_compare.add_argument("right", type=Path)
 
     return parser
 
@@ -113,16 +88,21 @@ def _baseline_experiment():
     )
 
 
-def _inspect_experiment(experiment) -> None:
-    evidence = sorted(
-        {
-            experiment.diffusion.evidence.value,
-            experiment.decay.evidence.value,
-            experiment.initial_concentration.evidence.value,
-            *(source.release_rate.evidence.value for source in experiment.release_sources),
-            *(sink.uptake_rate.evidence.value for sink in experiment.uptake_sinks),
-        }
+def _evidence_categories(experiment) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            {
+                experiment.diffusion.evidence.value,
+                experiment.decay.evidence.value,
+                experiment.initial_concentration.evidence.value,
+                *(source.release_rate.evidence.value for source in experiment.release_sources),
+                *(sink.uptake_rate.evidence.value for sink in experiment.uptake_sinks),
+            }
+        )
     )
+
+
+def _inspect_experiment(experiment) -> None:
     print(f"experiment_id: {experiment.experiment_id}")
     print(
         "domain_micron: "
@@ -134,7 +114,66 @@ def _inspect_experiment(experiment) -> None:
     print(f"boundary: {experiment.boundary.value}")
     print(f"release_sources: {len(experiment.release_sources)}")
     print(f"uptake_sinks: {len(experiment.uptake_sinks)}")
-    print(f"evidence_categories: {', '.join(evidence)}")
+    print(f"evidence_categories: {', '.join(_evidence_categories(experiment))}")
+
+
+def _inspect_bundle(bundle) -> None:
+    final = bundle.result.samples[-1]
+    print(f"experiment_id: {bundle.experiment.experiment_id}")
+    print(f"vesiclescope_revision: {bundle.vesiclescope_revision}")
+    print(
+        "engine: "
+        f"{bundle.result.engine.engine} "
+        f"PhysiCell {bundle.result.engine.physicell_release} "
+        f"BioFVM {bundle.result.engine.biofvm_version}"
+    )
+    print(f"grid_spacing_micron: {bundle.numerics.grid_spacing_micron:g}")
+    print(f"time_step_min: {bundle.numerics.time_step_min:g}")
+    print(f"samples: {len(bundle.result.samples)}")
+    print(
+        "final_extracellular_quantity: "
+        f"{final.integrated_field_quantity:g} {bundle.result.integrated_quantity_unit}"
+    )
+    print(
+        "final_internalized_quantity: "
+        f"{final.internalized_field_quantity:g} {bundle.result.internalized_quantity_unit}"
+    )
+    print(f"release_sources: {len(bundle.experiment.release_sources)}")
+    print(f"uptake_sinks: {len(bundle.experiment.uptake_sinks)}")
+    print(f"evidence_categories: {', '.join(_evidence_categories(bundle.experiment))}")
+
+
+def _print_comparison(summary) -> None:
+    print(f"left_experiment_id: {summary.left_experiment_id}")
+    print(f"right_experiment_id: {summary.right_experiment_id}")
+    print(f"quantity_unit: {summary.quantity_unit}")
+    print(
+        "grid_spacing_micron: "
+        f"left={summary.left_grid_spacing_micron:g}, "
+        f"right={summary.right_grid_spacing_micron:g}"
+    )
+    print(
+        "time_step_min: "
+        f"left={summary.left_time_step_min:g}, right={summary.right_time_step_min:g}"
+    )
+    print(f"extracellular_delta_right_minus_left: {summary.extracellular_delta:g}")
+    print(f"internalized_delta_right_minus_left: {summary.internalized_delta:g}")
+    print(
+        "extracellular_ratio_right_over_left: "
+        + (
+            "undefined"
+            if summary.extracellular_ratio_right_over_left is None
+            else f"{summary.extracellular_ratio_right_over_left:g}"
+        )
+    )
+    print(
+        "internalized_ratio_right_over_left: "
+        + (
+            "undefined"
+            if summary.internalized_ratio_right_over_left is None
+            else f"{summary.internalized_ratio_right_over_left:g}"
+        )
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -161,21 +200,11 @@ def main(argv: list[str] | None = None) -> int:
         except (RuntimeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
             return 2
-
         print(result.summary_path)
         print(result.figure_path)
         return 0
 
     if args.command == "experiment":
-        if args.experiment_command is None:
-            experiment_parser = next(
-                action
-                for action in parser._actions
-                if isinstance(action, argparse._SubParsersAction)
-            ).choices["experiment"]
-            experiment_parser.print_help()
-            return 0
-
         from vesiclescope.experiment_files import (
             read_experiment_document,
             write_experiment_document,
@@ -186,20 +215,51 @@ def main(argv: list[str] | None = None) -> int:
                 output = write_experiment_document(args.output, _baseline_experiment())
                 print(output)
                 return 0
-
-            experiment = read_experiment_document(args.path)
-            if args.experiment_command == "validate":
-                print(f"valid: {experiment.experiment_id}")
+            if args.experiment_command in {"validate", "inspect"}:
+                experiment = read_experiment_document(args.path)
+                if args.experiment_command == "validate":
+                    print(f"valid: {experiment.experiment_id}")
+                else:
+                    _inspect_experiment(experiment)
                 return 0
-            if args.experiment_command == "inspect":
-                _inspect_experiment(experiment)
+            if args.experiment_command == "run":
+                from vesiclescope.workflows import run_external_experiment
+
+                result = run_external_experiment(
+                    experiment_path=args.path,
+                    runner=args.runner,
+                    revision=args.revision,
+                    output_path=args.output,
+                    grid_spacing_micron=args.grid_spacing_micron,
+                    time_step_min=args.time_step_min,
+                )
+                print(result.bundle_path)
                 return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
             return 2
 
-    parser.error(f"unsupported command: {args.command}")
-    return 2
+    if args.command == "run-bundle":
+        from vesiclescope.analysis import compare_run_bundles
+        from vesiclescope.run_bundles import read_run_bundle
+
+        try:
+            if args.bundle_command == "inspect":
+                _inspect_bundle(read_run_bundle(args.path))
+                return 0
+            if args.bundle_command == "compare":
+                summary = compare_run_bundles(
+                    read_run_bundle(args.left),
+                    read_run_bundle(args.right),
+                )
+                _print_comparison(summary)
+                return 0
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            print(f"vesiclescope: {exc}", file=sys.stderr)
+            return 2
+
+    parser.print_help()
+    return 0
 
 
 if __name__ == "__main__":
