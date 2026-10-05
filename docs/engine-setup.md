@@ -59,11 +59,17 @@ The existing checkout is still verified. `--no-fetch` prevents fallback network 
 
 ## Toolchain
 
-The current Linux/native path requires:
+The reviewed native path requires:
 
 - Git for source verification/fetch;
-- a C++ compiler available as `g++`;
+- a GNU-compatible C++ compiler available as `g++`;
 - OpenMP support compatible with the existing runner build flags.
+
+Linux uses the conventional user cache under `~/.cache/vesiclescope`.
+
+On Windows, VesicleScope uses `%LOCALAPPDATA%\\VesicleScope\\Cache` when `LOCALAPPDATA` is available and writes the runner as `biofvm_transport_runner.exe`. The Windows CI path uses the MinGW/GCC toolchain provided by the GitHub-hosted Windows image and exercises a real pinned-engine build.
+
+Set `VESICLESCOPE_CACHE_DIR` to override the cache root explicitly on either platform.
 
 The builder does not download or execute a prebuilt binary.
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
+import os
 import re
 import shutil
 import subprocess
@@ -26,7 +27,18 @@ class EngineSetupStatus:
     runner_exists: bool
 
 
+def _is_windows() -> bool:
+    return os.name == "nt"
+
+
 def default_cache_root() -> Path:
+    override = os.environ.get("VESICLESCOPE_CACHE_DIR")
+    if override:
+        return Path(override).expanduser()
+    if _is_windows():
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            return Path(local_app_data) / "VesicleScope" / "Cache"
     return Path.home() / ".cache" / "vesiclescope"
 
 
@@ -37,7 +49,8 @@ def default_physicell_dir(metadata: BioFVMEngineMetadata | None = None) -> Path:
 
 def default_runner_path(metadata: BioFVMEngineMetadata | None = None) -> Path:
     metadata = metadata or pinned_engine_metadata()
-    return default_cache_root() / "engines" / metadata.physicell_commit / "biofvm_transport_runner"
+    filename = "biofvm_transport_runner.exe" if _is_windows() else "biofvm_transport_runner"
+    return default_cache_root() / "engines" / metadata.physicell_commit / filename
 
 
 def engine_setup_status() -> EngineSetupStatus:
@@ -166,6 +179,7 @@ def _compile_command(
         "BioFVM_utilities.cpp",
         "BioFVM_basic_agent.cpp",
         "BioFVM_agent_container.cpp",
+        "BioFVM_matlab.cpp",
     ]
     return [
         compiler,
