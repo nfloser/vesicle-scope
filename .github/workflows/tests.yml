@@ -30,6 +30,7 @@ jobs:
           vesiclescope --version
           vesiclescope --help
           vesiclescope examples
+          vesiclescope engine status
           vesiclescope experiment export-example diffusion-uptake-baseline --output build/example-experiment.json
           vesiclescope experiment validate build/example-experiment.json
           vesiclescope experiment inspect build/example-experiment.json
@@ -54,8 +55,15 @@ jobs:
       - name: Verify diffusion against analytical solution
         run: make -f native/biofvm_benchmark/Makefile run
 
-      - name: Build contract-driven BioFVM runner
-        run: make -f native/biofvm_benchmark/Makefile runner
+      - name: Install VesicleScope for engine setup
+        run: python -m pip install --disable-pip-version-check .
+
+      - name: Build contract-driven BioFVM runner through installed CLI
+        run: >-
+          vesiclescope engine build
+          --physicell-dir .deps/physicell
+          --no-fetch
+          --output build/native/biofvm_transport_runner
 
       - name: Verify transport, finite recipients, fields and populations
         env:
