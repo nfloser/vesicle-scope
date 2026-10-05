@@ -30,3 +30,4 @@ include = ["vesiclescope*"]
 
 [tool.setuptools.package-data]
 "vesiclescope.engines" = ["*.env"]
+"vesiclescope.engines.native" = ["*.cpp"]
