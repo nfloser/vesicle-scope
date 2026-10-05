@@ -7,6 +7,9 @@ from vesiclescope.engines import (
     BioFVMGrid2D,
     BioFVMNumerics,
     BioFVMRunResult,
+    RecipientUptakeSample,
+    RecipientUptakeSeries,
+    SpatialFieldSnapshot2D,
     TransportSample,
 )
 from vesiclescope.run_bundles import SimulationRunBundle
@@ -15,6 +18,15 @@ from vesiclescope.scenarios import diffusion_uptake_factor_conditions
 
 def bundle(*, extracellular: float, internalized: float) -> SimulationRunBundle:
     experiment = diffusion_uptake_factor_conditions()[4].experiment
+    grid = BioFVMGrid2D(
+        nx=21,
+        ny=21,
+        grid_spacing_micron=10.0,
+        slice_thickness_micron=25.0,
+    )
+    voxel_volume = 10.0 * 10.0 * 25.0
+    concentration = extracellular / (grid.voxel_count * voxel_volume)
+    per_recipient = internalized / len(experiment.uptake_sinks)
     result = BioFVMRunResult(
         experiment_id=experiment.experiment_id,
         concentration_unit="particle_equivalent/micron^3",
@@ -26,24 +38,39 @@ def bundle(*, extracellular: float, internalized: float) -> SimulationRunBundle:
             physicell_commit="dbd3499250141b27600e91e501c54c46f68f2763",
             biofvm_version="1.1.7",
         ),
-        grid=BioFVMGrid2D(
-            nx=21,
-            ny=21,
-            grid_spacing_micron=10.0,
-            slice_thickness_micron=25.0,
-        ),
+        grid=grid,
         samples=(
             TransportSample(
                 time_min=20.0,
-                mean_concentration=0.0,
-                min_concentration=0.0,
-                max_concentration=0.0,
+                mean_concentration=concentration,
+                min_concentration=concentration,
+                max_concentration=concentration,
                 integrated_field_quantity=extracellular,
                 internalized_field_quantity=internalized,
             ),
         ),
-        field_snapshots=(),
-        recipient_uptake_series=(),
+        field_snapshots=(
+            SpatialFieldSnapshot2D(
+                time_min=20.0,
+                values=(concentration,) * grid.voxel_count,
+            ),
+        ),
+        recipient_uptake_series=tuple(
+            RecipientUptakeSeries(
+                identifier=sink.identifier,
+                x_micron=sink.x_micron,
+                y_micron=sink.y_micron,
+                effective_volume_micron3=sink.effective_volume_micron3,
+                uptake_rate_per_min=sink.uptake_rate.value,
+                samples=(
+                    RecipientUptakeSample(
+                        time_min=20.0,
+                        internalized_field_quantity=per_recipient,
+                    ),
+                ),
+            )
+            for sink in experiment.uptake_sinks
+        ),
     )
     return SimulationRunBundle(
         vesiclescope_revision="a" * 40,
