@@ -9,7 +9,7 @@ from statistics import fmean, median
 from vesiclescope.run_bundles import SimulationRunBundle
 
 
-_MIN_MEMBERS_FOR_95_INTERVAL = 20
+_MIN_MEMBERS_FOR_95_PERCENTILE_INTERVAL = 40
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +21,7 @@ class EmpiricalQuantitySummary:
     maximum: float
     mean: float
     median: float
-    empirical_interval_95: tuple[float, float] | None
+    empirical_percentile_interval_95: tuple[float, float] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,7 +52,7 @@ def _summarize(values: tuple[float, ...]) -> EmpiricalQuantitySummary:
         raise ValueError("uncertainty ensemble values must be finite")
 
     interval = None
-    if len(values) >= _MIN_MEMBERS_FOR_95_INTERVAL:
+    if len(values) >= _MIN_MEMBERS_FOR_95_PERCENTILE_INTERVAL:
         interval = (
             _linear_quantile(values, 0.025),
             _linear_quantile(values, 0.975),
@@ -64,7 +64,7 @@ def _summarize(values: tuple[float, ...]) -> EmpiricalQuantitySummary:
         maximum=max(values),
         mean=fmean(values),
         median=median(values),
-        empirical_interval_95=interval,
+        empirical_percentile_interval_95=interval,
     )
 
 
@@ -73,10 +73,12 @@ def summarize_run_ensemble(
 ) -> RunEnsembleSummary:
     """Summarize final quantities from an explicit finite ensemble of stored runs.
 
-    The returned interval, when available, is an empirical 2.5/97.5 percentile
-    interval using linear interpolation. It is not a confidence interval and
-    does not imply that the ensemble members were sampled from a probability
-    distribution.
+    When at least 40 members are supplied, the returned 95% empirical
+    percentile interval uses linear interpolation at the 2.5th and 97.5th
+    percentiles. The 40-member reporting guard ensures at least one member per
+    nominal 2.5% tail; it is not a claim of statistical adequacy. The interval
+    is not a confidence interval and does not imply probability-distribution
+    sampling.
     """
 
     if not isinstance(bundles, tuple):
