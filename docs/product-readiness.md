@@ -36,7 +36,7 @@ The installed CLI can report engine readiness, fetch/verify the exact reviewed P
 
 A local browser-based workspace is now implemented on top of the same experiment documents, run bundles and execution/comparison services as the CLI. It is loopback-only by default, confines artifacts to explicit workspace directories and can create/import experiments, launch runs, inspect stored spatial/time-series outputs, compare runs and download persisted JSON artifacts.
 
-The loopback HTTP product path is exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, and the v0.2 path also derives a new synthetic variant through the same provenance-safe domain boundary, executes it with explicit numerics, persists the deterministic run bundle, reopens normalized spatial/time-series output and downloads the validated artifact. Remaining work is primarily broader browser usability validation, macOS/prebuilt-engine packaging, richer multi-run analysis and later scientific capabilities that require their own research gates.
+The loopback HTTP product path is exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, and the v0.2 path also derives a new synthetic variant through the same provenance-safe domain boundary, executes it with explicit numerics, persists deterministic run bundles, compares their stored series/compatible fields and downloads validated artifacts. Release CI additionally syntax-checks the packaged inline browser client. Broader browser automation and visual-polish testing remain usability follow-up rather than a hidden scientific execution gap.
 
 ### Uncertainty and calibration
 
@@ -93,3 +93,31 @@ The following are intentionally outside the v0.1.0 release claim:
 - particle/continuum model comparison;
 - macOS validation and prebuilt native-engine binaries;
 - medical, diagnostic or clinical use.
+
+
+## Final dataset-independent gap audit for v0.2.0
+
+Version 0.2.0 is the completed product boundary for the currently selected dataset-independent Linux/Windows research scope.
+
+The release gate is satisfied as follows:
+
+- **one scientific contract:** CLI, local browser workspace, experiment documents, batch execution, run bundles, analyses and figures share the same domain/result contracts;
+- **provenance-safe authoring:** the interactive editor creates new immutable variants only from fully synthetic benchmarks and refuses evidence-backed mutation without an explicit future provenance-editing design;
+- **execution and persistence:** single experiments and explicit ordered batches execute through the same pinned native BioFVM path and persist deterministic run artifacts with exact revision/engine/numerical identity;
+- **offline analysis:** stored runs can be inspected, rendered, conservatively summarized as explicit ensembles and compared across recorded time series and directly compatible final fields without solver reruns or hidden interpolation;
+- **supported installation:** wheel installation plus the reviewed source-build engine path is continuously verified on Linux and Windows;
+- **interactive product path:** the loopback HTTP workspace is exercised end to end with the real native runner; the packaged inline browser client is syntax-checked in release CI;
+- **quality:** unit/regression, analytical, native integration, figures, package, Windows product and HTTP/native E2E checks are required; installed-wheel dependency consistency is checked with `pip check`;
+- **governance:** `CONTRIBUTING.md`, `SECURITY.md`, `AGENTS.md`, architecture/research documentation and release notes define contribution, security and scientific-claim boundaries;
+- **reproducibility:** exact revisions, solver identity, units, parameter provenance, deterministic serialization and payload digests remain first-class release requirements;
+- **known defects/placeholders:** no known critical defect or fake/demo-only scientific path remains in the selected release scope.
+
+The following remain explicit research, data or platform-extension gates and are **not** represented as finished biological capabilities:
+
+- external biological calibration/validation beyond the currently documented Colombo 2025 public context requires suitable measured/raw data and experimental context;
+- evidence-backed parameter distributions, formal sensitivity analysis and inference require a separate scientific research gate; calibration additionally requires suitable measurements;
+- continuum-versus-particle comparison requires equivalent experiment semantics plus a reviewed alternate-engine decision before implementation;
+- macOS and prebuilt native binaries are not in the supported v0.2.0 platform boundary; Linux and Windows retain the reproducible source-build route;
+- medical, diagnostic and clinical use are outside product scope.
+
+Within that declared boundary, no known critical dataset-independent product gap remains for v0.2.0.

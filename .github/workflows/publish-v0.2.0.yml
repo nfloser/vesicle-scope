@@ -1,0 +1,111 @@
+name: Publish VesicleScope 0.2.0
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/publish-v0.2.0.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-v0.2.0.yml"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: publish-vesiclescope-v0.2.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: v0.2.0
+    steps:
+      - name: Check out exact release boundary
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify release content
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -F 'version = "0.2.0"' pyproject.toml | wc -l)" -eq 1
+          grep -F '__version__ = "0.2.0"' vesiclescope/__init__.py
+          grep -F "VesicleScope 0.2.0" docs/releases/v0.2.0.md
+          grep -F "not confidence intervals" docs/releases/v0.2.0.md
+          grep -F "do **not** rank" docs/releases/v0.2.0.md
+          test -s CONTRIBUTING.md
+          test -s SECURITY.md
+
+      - name: Build and verify release wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/dist
+          python -m pip wheel --disable-pip-version-check --no-deps . --wheel-dir build/dist
+          WHEEL="$(find build/dist -name 'vesicle_scope-0.2.0-*.whl' -print -quit)"
+          test -n "$WHEEL"
+          test "$(find build/dist -name 'vesicle_scope-0.2.0-*.whl' | wc -l)" -eq 1
+          python -m venv build/release-venv
+          build/release-venv/bin/python -m pip install --disable-pip-version-check "$WHEEL"
+          build/release-venv/bin/python -m pip check
+          build/release-venv/bin/vesiclescope --version | grep -F "vesiclescope 0.2.0"
+          build/release-venv/bin/vesiclescope --help >/dev/null
+
+      - name: Verify or create release tag at this exact commit
+        shell: bash
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if git rev-parse "$RELEASE_TAG^{commit}" >/dev/null 2>&1; then
+            EXISTING="$(git rev-parse "$RELEASE_TAG^{commit}")"
+            test "$EXISTING" = "$RELEASE_COMMIT"
+          else
+            git tag "$RELEASE_TAG" "$RELEASE_COMMIT"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+
+      - name: Publish or verify GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,url
+          else
+            gh release create "$RELEASE_TAG" build/dist/vesicle_scope-0.2.0-*.whl \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --title "VesicleScope 0.2.0" \
+              --notes-file docs/releases/v0.2.0.md
+          fi
+
+      - name: Close final product-release issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_URL="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          gh issue close 77 --repo "$GITHUB_REPOSITORY" \
+            --comment "Published and verified VesicleScope 0.2.0 from release boundary `${GITHUB_SHA}`: $RELEASE_URL"
+
+      - name: Upload published wheel for workflow traceability
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-v0.2.0-published-wheel
+          path: build/dist/vesicle_scope-0.2.0-*.whl
+          if-no-files-found: error

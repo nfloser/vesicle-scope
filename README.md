@@ -2,15 +2,15 @@
 
 VesicleScope is an evidence-grounded computational research platform for studying extracellular-vesicle (EV) transport and cell-to-cell communication.
 
-The project is starting deliberately with a narrow question rather than a large simulator:
+VesicleScope was developed deliberately around a narrow research question rather than as an unconstrained large simulator:
 
 > How do recipient-cell density, donor-recipient distance, EV release, extracellular transport and recipient uptake interact to determine the spatial communication range predicted by a tissue-scale EV transport model?
 
-The first milestone is research and architecture, not feature implementation. Before a biological mechanism or parameter enters the software it must have explicit provenance, context and limitations.
+Before a biological mechanism or parameter enters the software it must have explicit provenance, context and limitations. The current product keeps that research gate in the same contracts used by its CLI and local browser workspace.
 
 ## Status
 
-**VesicleScope 0.1.0 is the first installable research-product release candidate.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, offline analysis, a CLI and a local interactive workspace.
+**VesicleScope 0.2.0 is the current installable research-product release.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, a provenance-safe synthetic editor, explicit experiment batches, conservative stored-run ensemble summaries, rich offline run comparison, a CLI and a local interactive workspace.
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
@@ -124,7 +124,7 @@ vesiclescope run diffusion-uptake-factor \
 
 The workflow writes a deterministic summary, one SVG interaction figure and nine durable run bundles. It is a controlled synthetic model-behaviour experiment and **not experimental evidence**.
 
-See [product readiness](docs/product-readiness.md) and [v0.1.0 release notes](docs/releases/v0.1.0.md) for the supported product boundary and remaining scientific limitations.
+See [product readiness](docs/product-readiness.md) and [v0.2.0 release notes](docs/releases/v0.2.0.md) for the supported product boundary and remaining scientific limitations.
 
 
 ## Local interactive workspace
@@ -170,6 +170,6 @@ Third-party dependencies remain subject to their own licenses and citation requi
 
 ## Development
 
-Repository-specific development and scientific rules are in [AGENTS.md](AGENTS.md).
+Repository-specific scientific rules are in [AGENTS.md](AGENTS.md). Human contribution guidance is in [CONTRIBUTING.md](CONTRIBUTING.md), and security reporting guidance is in [SECURITY.md](SECURITY.md).
 
 Current work is tracked through GitHub issues and pull requests. Implementation does not proceed directly on `main`.
