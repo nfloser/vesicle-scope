@@ -18,6 +18,7 @@ See:
 
 - [research landscape](docs/research/landscape.md)
 - [architecture baseline](docs/architecture.md)
+- [product readiness](docs/product-readiness.md)
 - [deterministic simulation run bundles](docs/run-bundles.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)
 - [parameter provenance contract](docs/parameter-provenance.md)
@@ -87,6 +88,33 @@ python -m scripts.generate_population_figure \
 Recipient circles are rendered from each scenario's declared 15 micron footprint radius in physical x/y coordinates; the renderer does not infer geometry from voxel size or effective uptake volume.
 
 Matplotlib is an optional visualization dependency; the numerical engine and core analysis layer do not depend on it. CI independently regenerates and validates the SVG.
+
+## Install and first run
+
+VesicleScope now has an installable headless interface. The scientific core has no mandatory Python runtime dependency; figure generation remains optional.
+
+```bash
+python -m pip install .
+vesiclescope --version
+vesiclescope examples
+```
+
+To run the reviewed synthetic diffusion × uptake workflow with figures:
+
+```bash
+python -m pip install '.[figures]'
+bash scripts/fetch-physicell.sh
+make -f native/biofvm_benchmark/Makefile runner
+
+vesiclescope run diffusion-uptake-factor \
+  --runner build/native/biofvm_transport_runner \
+  --revision "$(git rev-parse HEAD)" \
+  --output-dir build/diffusion-uptake
+```
+
+The workflow writes a deterministic summary, one SVG interaction figure and nine durable run bundles. It is a controlled synthetic model-behaviour experiment and **not experimental evidence**.
+
+See [product readiness](docs/product-readiness.md) for the remaining work between this headless milestone and a finished interactive research product.
 
 ## Model-comparison direction
 
