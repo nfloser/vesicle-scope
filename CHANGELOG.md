@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- add explicit stored-run ensemble summaries for conservative uncertainty propagation without hidden biological distributions.
+
 ## 0.1.0
 
 First installable VesicleScope research-product release.
