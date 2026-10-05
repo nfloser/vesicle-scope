@@ -146,19 +146,15 @@ class RunEnsembleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "incompatible"):
             summarize_run_ensemble((left, right))
 
-    def test_rejects_non_finite_endpoint(self) -> None:
+    def test_rejects_non_finite_endpoint_defensively(self) -> None:
         item = bundle(1, extracellular=4.0, internalized=2.0)
-        invalid_result = replace(
-            item.result,
-            samples=(
-                replace(
-                    item.result.samples[-1],
-                    integrated_field_quantity=math.inf,
-                ),
-            ),
+        # Valid persisted bundles cannot contain this value. Bypass the frozen
+        # sample only here to exercise the analysis layer's defensive boundary.
+        object.__setattr__(
+            item.result.samples[-1],
+            "integrated_field_quantity",
+            math.inf,
         )
-        # bypass SimulationRunBundle reconstruction so the analysis guard itself is exercised
-        object.__setattr__(item, "result", invalid_result)
         with self.assertRaisesRegex(ValueError, "finite"):
             summarize_run_ensemble((item,))
 
