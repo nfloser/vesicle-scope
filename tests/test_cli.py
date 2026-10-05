@@ -3,6 +3,8 @@ from io import StringIO
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 from vesiclescope import __version__
 from vesiclescope.cli import main
@@ -89,6 +91,52 @@ class CliTests(unittest.TestCase):
             self.assertIn("uptake_sinks: 8", summary)
             self.assertIn("synthetic_benchmark", summary)
 
+
+
+    def test_run_bundle_ensemble_reports_empirical_interpretation(self) -> None:
+        quantity = SimpleNamespace(
+            member_count=2,
+            minimum=1.0,
+            maximum=3.0,
+            mean=2.0,
+            median=2.0,
+            empirical_percentile_interval_95=None,
+        )
+        summary = SimpleNamespace(
+            member_experiment_ids=("member.a", "member.b"),
+            quantity_unit="particle_equivalent",
+            final_extracellular=quantity,
+            final_internalized=quantity,
+        )
+        with patch(
+            "vesiclescope.run_bundles.read_run_bundle",
+            side_effect=(object(), object()),
+        ), patch(
+            "vesiclescope.analysis.summarize_run_ensemble",
+            return_value=summary,
+        ):
+            output = StringIO()
+            with redirect_stdout(output):
+                status = main(
+                    [
+                        "run-bundle",
+                        "ensemble",
+                        "a.json",
+                        "b.json",
+                    ]
+                )
+
+        self.assertEqual(status, 0)
+        text = output.getvalue()
+        self.assertIn(
+            "interpretation: empirical stored-run ensemble; not a confidence interval",
+            text,
+        )
+        self.assertIn("member_experiment_ids: member.a, member.b", text)
+        self.assertIn(
+            "final_extracellular_empirical_percentile_interval_95: unavailable",
+            text,
+        )
 
     def test_engine_status_is_available_without_network(self) -> None:
         output = StringIO()
