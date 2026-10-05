@@ -65,6 +65,39 @@ def _parser() -> argparse.ArgumentParser:
     bundle_compare.add_argument("left", type=Path)
     bundle_compare.add_argument("right", type=Path)
 
+    engine = subparsers.add_parser(
+        "engine",
+        help="Inspect or build the pinned BioFVM transport engine.",
+    )
+    engine_commands = engine.add_subparsers(dest="engine_command")
+
+    engine_commands.add_parser(
+        "status",
+        help="Show the reviewed engine pin, toolchain and default cache paths.",
+    )
+
+    engine_build = engine_commands.add_parser(
+        "build",
+        help="Verify/fetch PhysiCell and compile the pinned transport runner.",
+    )
+    engine_build.add_argument(
+        "--physicell-dir",
+        type=Path,
+        default=None,
+        help="Existing verified PhysiCell checkout; omit to use/fetch the default cache.",
+    )
+    engine_build.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Runner output path; omit to use the default VesicleScope cache.",
+    )
+    engine_build.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="Fail instead of fetching when the PhysiCell checkout is missing.",
+    )
+
     return parser
 
 
@@ -176,6 +209,18 @@ def _print_comparison(summary) -> None:
     )
 
 
+
+def _print_engine_status(status) -> None:
+    print(f"physicell_release: {status.metadata.physicell_release}")
+    print(f"physicell_commit: {status.metadata.physicell_commit}")
+    print(f"biofvm_version: {status.metadata.biofvm_version}")
+    print(f"git: {status.git_path or 'missing'}")
+    print(f"g++: {status.compiler_path or 'missing'}")
+    print(f"default_physicell_dir: {status.default_physicell_dir}")
+    print(f"default_runner_path: {status.default_runner_path}")
+    print(f"runner_exists: {'yes' if status.runner_exists else 'no'}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -234,6 +279,29 @@ def main(argv: list[str] | None = None) -> int:
                     time_step_min=args.time_step_min,
                 )
                 print(result.bundle_path)
+                return 0
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            print(f"vesiclescope: {exc}", file=sys.stderr)
+            return 2
+
+
+    if args.command == "engine":
+        from vesiclescope.engines.installation import (
+            build_biofvm_runner,
+            engine_setup_status,
+        )
+
+        try:
+            if args.engine_command == "status":
+                _print_engine_status(engine_setup_status())
+                return 0
+            if args.engine_command == "build":
+                output = build_biofvm_runner(
+                    physicell_dir=args.physicell_dir,
+                    output_path=args.output,
+                    fetch_if_missing=not args.no_fetch,
+                )
+                print(output)
                 return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
