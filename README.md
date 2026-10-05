@@ -22,6 +22,7 @@ See:
 - [deterministic simulation run bundles](docs/run-bundles.md)
 - [external experiment documents](docs/experiment-files.md)
 - [external experiment execution and run inspection](docs/external-execution.md)
+- [offline stored-run analysis](docs/stored-run-analysis.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)
 - [parameter provenance contract](docs/parameter-provenance.md)
 - [synthetic transport benchmark](docs/transport-benchmark.md)
