@@ -171,6 +171,45 @@ class CliTests(unittest.TestCase):
             self.assertIn('"right_run_payload_sha256": "' + "2" * 64 + '"', document)
             self.assertIn("spatial_difference: compatible", stdout.getvalue())
 
+
+    def test_archive_create_and_inspect_round_trip_without_solver(self) -> None:
+        from vesiclescope.experiment_files import write_experiment_document
+        from vesiclescope.scenarios import diffusion_uptake_factor_conditions
+
+        experiment = diffusion_uptake_factor_conditions()[4].experiment
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            experiment_path = root / "experiment.json"
+            archive_path = root / "project.omex"
+            write_experiment_document(experiment_path, experiment)
+
+            create_output = StringIO()
+            with redirect_stdout(create_output):
+                create_status = main(
+                    [
+                        "archive",
+                        "create",
+                        str(experiment_path),
+                        "--output",
+                        str(archive_path),
+                    ]
+                )
+            self.assertEqual(create_status, 0)
+            self.assertTrue(archive_path.is_file())
+
+            inspect_output = StringIO()
+            with redirect_stdout(inspect_output):
+                inspect_status = main(
+                    ["archive", "inspect", str(archive_path)]
+                )
+            self.assertEqual(inspect_status, 0)
+            text = inspect_output.getvalue()
+            self.assertIn(f"experiment_id: {experiment.experiment_id}", text)
+            self.assertIn("stored_runs: 0", text)
+            self.assertIn("container: COMBINE Archive / OMEX", text)
+            self.assertIn("sedml_compatibility: not claimed", text)
+            self.assertIn("not experimental evidence", text)
+
     def test_run_bundle_ensemble_reports_empirical_interpretation(self) -> None:
         quantity = SimpleNamespace(
             member_count=2,
