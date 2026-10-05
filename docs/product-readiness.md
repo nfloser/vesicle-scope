@@ -40,7 +40,9 @@ The loopback HTTP product path is now exercised end to end in native-engine CI: 
 
 ### Uncertainty and calibration
 
-Uncertainty propagation and parameter inference remain future scientific capabilities. They require a separate research gate and, for calibration, suitable measured data. Synthetic inputs may verify generic mechanics but cannot establish biological validity.
+The 0.2 development line now includes the first engine-independent uncertainty-propagation boundary: an explicit ordered ensemble of stored run bundles can be summarized at final extracellular/internalized endpoints without rerunning BioFVM or inventing parameter distributions. It reports descriptive statistics and, only for sufficiently large supplied ensembles, a clearly labelled empirical percentile interval that is not presented as a confidence interval.
+
+Random sampling, evidence-backed parameter distributions, formal sensitivity indices and parameter inference remain separate scientific capabilities. They require their own research gate; calibration additionally requires suitable measured data. Synthetic inputs may verify generic mechanics but cannot establish biological validity.
 
 ### External biological validation
 
