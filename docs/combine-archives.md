@@ -1,31 +1,31 @@
 # COMBINE / OMEX project archives
 
-VesicleScope can package one validated experiment and its completed run bundles into a deterministic COMBINE Archive (\`.omex\`).
+VesicleScope can package one validated experiment and its completed run bundles into a deterministic COMBINE Archive (`.omex`).
 
 This feature is for reproducible exchange and storage. It does not change the scientific model and it does not execute BioFVM during archive inspection.
 
 ## Create an archive
 
-\`\`\`bash
+```bash
 vesiclescope archive create \
   experiment.json \
   baseline.run.json variant.run.json \
   --output project.omex
-\`\`\`
+```
 
 Run bundles are optional:
 
-\`\`\`bash
+```bash
 vesiclescope archive create experiment.json --output experiment-only.omex
-\`\`\`
+```
 
 Every run must contain the exact same experiment as the archived experiment document. VesicleScope rejects mixed projects rather than silently combining incompatible definitions.
 
 ## Inspect an archive
 
-\`\`\`bash
+```bash
 vesiclescope archive inspect project.omex
-\`\`\`
+```
 
 Inspection validates:
 
@@ -41,14 +41,14 @@ It does not rerun the simulation.
 
 A VesicleScope archive contains:
 
-\`\`\`text
+```text
 manifest.xml
 README.md
 experiment.json
 runs/run-001.json
 runs/run-002.json
 ...
-\`\`\`
+```
 
 The experiment is the OMEX master resource. VesicleScope-native JSON is listed using a JSON media-type URI; no custom COMBINE specification URI is invented.
 
