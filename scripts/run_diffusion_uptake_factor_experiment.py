@@ -9,6 +9,7 @@ from pathlib import Path
 
 from vesiclescope.analysis import analyze_diffusion_uptake_condition
 from vesiclescope.engines import BioFVMNumerics, run_transport
+from vesiclescope.figures import render_diffusion_uptake_figure
 from vesiclescope.run_bundles import (
     SimulationRunBundle,
     read_run_bundle,
@@ -62,10 +63,12 @@ def main() -> int:
     numerics = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
 
     rows = []
+    analyses = []
     for condition in diffusion_uptake_factor_conditions():
         experiment = condition.experiment
         result = run_transport(experiment, numerics, runner)
         analysis = analyze_diffusion_uptake_condition(condition, result)
+        analyses.append(analysis)
 
         bundle = SimulationRunBundle(
             vesiclescope_revision=args.revision,
@@ -127,7 +130,12 @@ def main() -> int:
         + "\n",
         encoding="utf-8",
     )
+    figure_path = render_diffusion_uptake_figure(
+        tuple(analyses),
+        output_dir / "diffusion-uptake.svg",
+    )
     print(summary_path)
+    print(figure_path)
     return 0
 
 
