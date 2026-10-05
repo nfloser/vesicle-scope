@@ -34,7 +34,7 @@ The installed CLI can report engine readiness, fetch/verify the exact reviewed P
 
 A local browser-based workspace is now implemented on top of the same experiment documents, run bundles and execution/comparison services as the CLI. It is loopback-only by default, confines artifacts to explicit workspace directories and can create/import experiments, launch runs, inspect stored spatial/time-series outputs, compare runs and download persisted JSON artifacts.
 
-Remaining work is product hardening and usability validation rather than inventing a second scientific path: broader end-to-end browser coverage, cross-platform native-engine validation, and later scientific capabilities that require their own research gates.
+The loopback HTTP product path is now exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, executes it with explicit numerics, persists the deterministic run bundle, reopens normalized spatial/time-series output and downloads the same validated artifact. Remaining work is primarily usability validation of the browser interaction itself, macOS/prebuilt-engine packaging, and later scientific capabilities that require their own research gates.
 
 ### Uncertainty and calibration
 
