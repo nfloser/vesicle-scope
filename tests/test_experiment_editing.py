@@ -68,6 +68,22 @@ class SyntheticExperimentEditingTests(unittest.TestCase):
             tuple((sink.x_micron, sink.y_micron) for sink in source.uptake_sinks),
         )
 
+
+    def test_requires_a_new_experiment_identifier(self) -> None:
+        source = baseline()
+        with self.assertRaisesRegex(ValueError, "must differ"):
+            derive_synthetic_experiment(
+                source,
+                experiment_id=source.experiment_id,
+                duration_min=source.duration_min,
+                sample_every_min=source.sample_every_min,
+                diffusion_value=source.diffusion.value,
+                decay_value=source.decay.value,
+                initial_concentration_value=source.initial_concentration.value,
+                release_rates=release_rates(source),
+                uptake_rates=uptake_rates(source),
+            )
+
     def test_rejects_non_synthetic_source_experiment(self) -> None:
         source = baseline()
         assumed = replace(
