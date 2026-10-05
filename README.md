@@ -28,6 +28,7 @@ See:
 - [finite circular donor footprint](docs/research/finite-donor-footprint.md)
 - [donor-boundary radial profile](docs/research/donor-boundary-radial-profile.md)
 - [synthetic donor-boundary profile figure](docs/research/synthetic-donor-boundary-figure.md)
+- [synthetic diffusion × uptake factor experiment](docs/research/diffusion-uptake-factor-experiment.md)
 - [recipient uptake model baseline](docs/research/recipient-uptake-model.md)
 - [finite circular recipient footprint](docs/research/finite-recipient-footprint.md)
 - [recipient population model baseline](docs/research/recipient-population-model.md)
