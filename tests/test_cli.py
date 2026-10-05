@@ -93,6 +93,84 @@ class CliTests(unittest.TestCase):
 
 
 
+
+    def test_run_bundle_compare_can_write_deterministic_detailed_json(self) -> None:
+        endpoint = SimpleNamespace(
+            left_experiment_id="left.exp",
+            right_experiment_id="right.exp",
+            quantity_unit="particle_equivalent",
+            left_grid_spacing_micron=10.0,
+            right_grid_spacing_micron=10.0,
+            left_time_step_min=0.1,
+            right_time_step_min=0.1,
+            extracellular_delta=-2.0,
+            internalized_delta=2.0,
+            extracellular_ratio_right_over_left=0.9,
+            internalized_ratio_right_over_left=1.1,
+        )
+        sample_left = SimpleNamespace(
+            time_min=0.0,
+            extracellular_quantity=0.0,
+            internalized_quantity=0.0,
+        )
+        sample_right = SimpleNamespace(
+            time_min=0.0,
+            extracellular_quantity=0.0,
+            internalized_quantity=0.0,
+        )
+        spatial = SimpleNamespace(
+            compatible=True,
+            reason=None,
+            nx=2,
+            ny=1,
+            concentration_unit="particle_equivalent/micron^3",
+            time_min=20.0,
+            values=(1.0, -1.0),
+            minimum_difference=-1.0,
+            maximum_difference=1.0,
+            mean_absolute_difference=1.0,
+        )
+        detailed = SimpleNamespace(
+            endpoint=endpoint,
+            left_revision="a" * 40,
+            right_revision="b" * 40,
+            left_series=(sample_left,),
+            right_series=(sample_right,),
+            spatial=spatial,
+        )
+
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "vesiclescope.run_bundles.read_run_bundle",
+            side_effect=("left-bundle", "right-bundle"),
+        ), patch(
+            "vesiclescope.run_bundles.run_bundle_payload_sha256",
+            side_effect=("1" * 64, "2" * 64),
+        ), patch(
+            "vesiclescope.analysis.compare_run_bundles_detailed",
+            return_value=detailed,
+        ):
+            output_path = Path(directory) / "comparison.json"
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                status = main(
+                    [
+                        "run-bundle",
+                        "compare",
+                        "left.json",
+                        "right.json",
+                        "--output",
+                        str(output_path),
+                    ]
+                )
+
+            self.assertEqual(status, 0)
+            self.assertTrue(output_path.is_file())
+            document = output_path.read_text(encoding="utf-8")
+            self.assertIn('"schema": "vesiclescope.stored-run-comparison"', document)
+            self.assertIn('"left_run_payload_sha256": "' + "1" * 64 + '"', document)
+            self.assertIn('"right_run_payload_sha256": "' + "2" * 64 + '"', document)
+            self.assertIn("spatial_difference: compatible", stdout.getvalue())
+
     def test_run_bundle_ensemble_reports_empirical_interpretation(self) -> None:
         quantity = SimpleNamespace(
             member_count=2,
