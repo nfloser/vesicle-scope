@@ -52,6 +52,17 @@ def _parser() -> argparse.ArgumentParser:
     execute.add_argument("--time-step-min", type=float, required=True)
     execute.add_argument("--output", type=Path, required=True)
 
+    execute_batch = experiment_commands.add_parser(
+        "run-batch",
+        help="Execute an explicit ordered set of experiment documents.",
+    )
+    execute_batch.add_argument("paths", type=Path, nargs="+")
+    execute_batch.add_argument("--runner", type=Path, required=True)
+    execute_batch.add_argument("--revision", required=True)
+    execute_batch.add_argument("--grid-spacing-micron", type=float, required=True)
+    execute_batch.add_argument("--time-step-min", type=float, required=True)
+    execute_batch.add_argument("--output-dir", type=Path, required=True)
+
     bundles = subparsers.add_parser(
         "run-bundle",
         help="Inspect or compare completed deterministic run bundles.",
@@ -356,6 +367,21 @@ def main(argv: list[str] | None = None) -> int:
                     time_step_min=args.time_step_min,
                 )
                 print(result.bundle_path)
+                return 0
+            if args.experiment_command == "run-batch":
+                from vesiclescope.workflows import run_experiment_batch
+
+                result = run_experiment_batch(
+                    experiment_paths=tuple(args.paths),
+                    runner=args.runner,
+                    revision=args.revision,
+                    output_dir=args.output_dir,
+                    grid_spacing_micron=args.grid_spacing_micron,
+                    time_step_min=args.time_step_min,
+                )
+                print(result.manifest_path)
+                for path in result.run_paths:
+                    print(path)
                 return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
