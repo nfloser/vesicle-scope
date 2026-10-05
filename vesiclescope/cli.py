@@ -78,6 +78,13 @@ def _parser() -> argparse.ArgumentParser:
     archive_create.add_argument("runs", type=Path, nargs="*")
     archive_create.add_argument("--output", type=Path, required=True)
 
+    archive_create_batch = archive_commands.add_parser(
+        "create-batch",
+        help="Package a completed experiment batch into deterministic OMEX.",
+    )
+    archive_create_batch.add_argument("manifest", type=Path)
+    archive_create_batch.add_argument("--output", type=Path, required=True)
+
     archive_inspect = archive_commands.add_parser(
         "inspect",
         help="Validate and inspect a VesicleScope COMBINE archive without simulation.",
@@ -488,8 +495,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
     if args.command == "archive":
+        from vesiclescope.batch_manifests import read_batch_manifest
         from vesiclescope.combine_archive import (
-            read_combine_archive,
+            CombineBatchArchiveProject,
+            read_any_combine_archive,
+            write_batch_combine_archive,
             write_combine_archive,
         )
         from vesiclescope.experiment_files import read_experiment_document
@@ -502,22 +512,60 @@ def main(argv: list[str] | None = None) -> int:
                 output = write_combine_archive(args.output, experiment, runs)
                 print(output)
                 return 0
+            if args.archive_command == "create-batch":
+                manifest = read_batch_manifest(args.manifest)
+                root = args.manifest.parent
+                runs = tuple(
+                    read_run_bundle(root / member.run_filename)
+                    for member in manifest.members
+                )
+                output = write_batch_combine_archive(
+                    args.output,
+                    manifest,
+                    runs,
+                )
+                print(output)
+                return 0
             if args.archive_command == "inspect":
-                project = read_combine_archive(args.path)
-                print(f"experiment_id: {project.experiment.experiment_id}")
-                print(f"stored_runs: {len(project.runs)}")
+                project = read_any_combine_archive(args.path)
                 print("container: COMBINE Archive / OMEX")
                 print("sedml_compatibility: not claimed")
-                print(
-                    "scientific_status: container preserves VesicleScope provenance; "
-                    "simulation output is not experimental evidence by itself"
-                )
-                for index, bundle in enumerate(project.runs, start=1):
+                if isinstance(project, CombineBatchArchiveProject):
+                    print("project_type: batch")
+                    print(f"batch_members: {len(project.manifest.members)}")
                     print(
-                        f"run_{index:03d}: "
-                        f"{bundle.experiment.experiment_id} "
-                        f"revision={bundle.vesiclescope_revision}"
+                        "vesiclescope_revision: "
+                        f"{project.manifest.vesiclescope_revision}"
                     )
+                    print(
+                        "numerics: "
+                        f"grid_spacing_micron={project.manifest.numerics.grid_spacing_micron:g}, "
+                        f"time_step_min={project.manifest.numerics.time_step_min:g}"
+                    )
+                    print(
+                        "scientific_status: explicit input batch; "
+                        "no sampling or biological distribution implied"
+                    )
+                    for member in project.manifest.members:
+                        print(
+                            f"member_{member.index:03d}: "
+                            f"{member.experiment_id} "
+                            f"digest={member.run_bundle_payload_sha256}"
+                        )
+                else:
+                    print("project_type: experiment")
+                    print(f"experiment_id: {project.experiment.experiment_id}")
+                    print(f"stored_runs: {len(project.runs)}")
+                    print(
+                        "scientific_status: container preserves VesicleScope provenance; "
+                        "simulation output is not experimental evidence by itself"
+                    )
+                    for index, bundle in enumerate(project.runs, start=1):
+                        print(
+                            f"run_{index:03d}: "
+                            f"{bundle.experiment.experiment_id} "
+                            f"revision={bundle.vesiclescope_revision}"
+                        )
                 return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
