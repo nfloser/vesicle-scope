@@ -27,3 +27,6 @@ vesiclescope = "vesiclescope.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["vesiclescope*"]
+
+[tool.setuptools.package-data]
+"vesiclescope.engines" = ["*.env"]
