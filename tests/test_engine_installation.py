@@ -85,6 +85,7 @@ class EngineInstallationTests(unittest.TestCase):
         self.assertIn(metadata.biofvm_version, joined)
         self.assertIn("BioFVM_basic_agent.cpp", joined)
         self.assertIn("BioFVM_agent_container.cpp", joined)
+        self.assertIn("BioFVM_matlab.cpp", joined)
         self.assertEqual(command[-2:], ["-o", "/out/runner"])
 
 
