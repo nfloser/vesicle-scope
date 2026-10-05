@@ -1,8 +1,9 @@
 """Deterministic durable bundles for normalized VesicleScope simulation runs.
 
-The v0.1 format is intentionally VesicleScope-native. It follows MIASE-style
-reproducibility requirements without claiming SED-ML, OMEX or MultiCellDS
-compatibility that the current spatial BioFVM model cannot yet provide.
+The run-bundle format is intentionally VesicleScope-native. It follows
+MIASE-style reproducibility requirements and can be embedded in a COMBINE/OMEX
+project archive. The run bundle itself does not claim SED-ML, standardized
+model-language, or MultiCellDS compatibility.
 """
 
 from __future__ import annotations
