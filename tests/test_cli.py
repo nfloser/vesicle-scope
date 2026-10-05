@@ -102,5 +102,37 @@ class CliTests(unittest.TestCase):
         self.assertIn("default_runner_path:", text)
 
 
+    def test_workspace_init_creates_product_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory) / "workspace"
+            output = StringIO()
+            with redirect_stdout(output):
+                status = main(["workspace", "init", str(workspace)])
+            self.assertEqual(status, 0)
+            self.assertTrue((workspace / "experiments").is_dir())
+            self.assertTrue((workspace / "runs").is_dir())
+            self.assertIn(str(workspace.resolve()), output.getvalue())
+
+    def test_ui_reports_missing_runner_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            error = StringIO()
+            with redirect_stderr(error):
+                status = main(
+                    [
+                        "ui",
+                        "--workspace",
+                        str(Path(directory) / "workspace"),
+                        "--runner",
+                        str(Path(directory) / "missing-runner"),
+                        "--revision",
+                        "a" * 40,
+                        "--no-browser",
+                    ]
+                )
+            self.assertEqual(status, 2)
+            self.assertIn("native runner does not exist", error.getvalue())
+
+
+
 if __name__ == "__main__":
     unittest.main()
