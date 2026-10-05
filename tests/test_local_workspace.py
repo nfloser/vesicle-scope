@@ -1,5 +1,6 @@
 from pathlib import Path
 from threading import Thread
+import http.client
 import json
 import tempfile
 import unittest
@@ -69,6 +70,15 @@ class WorkspaceTests(unittest.TestCase):
                     html = response.read().decode("utf-8")
                     self.assertIn("VesicleScope", html)
                     self.assertIn("not experimental evidence", html)
+                connection = http.client.HTTPConnection("127.0.0.1", port)
+                connection.putrequest("GET", "/api/health", skip_host=True)
+                connection.putheader("Host", "attacker.example")
+                connection.endheaders()
+                hostile = connection.getresponse()
+                self.assertEqual(hostile.status, 400)
+                payload = json.loads(hostile.read().decode("utf-8"))
+                self.assertIn("Host", payload["error"])
+                connection.close()
             finally:
                 server.shutdown()
                 server.server_close()
