@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
-import json
-import os
 from pathlib import Path
 import re
-import tempfile
 
+from vesiclescope.batch_manifests import (
+    ExperimentBatchManifest,
+    ExperimentBatchManifestMember,
+    write_batch_manifest,
+)
 from vesiclescope.experiment_files import read_experiment_document
 from vesiclescope.run_bundles import run_bundle_payload_sha256
 from .external_experiment import ExternalExperimentRunResult, run_external_experiment
@@ -70,38 +72,6 @@ def _prepare_members(
     return tuple(members)
 
 
-def _write_manifest(path: Path, payload: dict[str, object]) -> Path:
-    content = (
-        json.dumps(
-            payload,
-            ensure_ascii=False,
-            allow_nan=False,
-            sort_keys=True,
-            indent=2,
-        )
-        + "\n"
-    )
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        dir=path.parent,
-        text=True,
-    )
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(content)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_name, path)
-    except BaseException:
-        try:
-            os.unlink(temporary_name)
-        except FileNotFoundError:
-            pass
-        raise
-    return path
-
-
 def run_experiment_batch(
     *,
     experiment_paths: tuple[Path, ...],
@@ -147,29 +117,21 @@ def run_experiment_batch(
         )
 
     normalized_revision = completed[0][1].bundle.vesiclescope_revision
-    manifest = {
-        "schema": "vesiclescope.experiment-batch",
-        "version": 1,
-        "scientific_status": (
-            "explicit input batch; no sampling or biological distribution implied"
-        ),
-        "vesiclescope_revision": normalized_revision,
-        "numerics": {
-            "grid_spacing_micron": completed[0][1].bundle.numerics.grid_spacing_micron,
-            "time_step_min": completed[0][1].bundle.numerics.time_step_min,
-        },
-        "members": [
-            {
-                "index": index,
-                "input_filename": member.input_path.name,
-                "experiment_id": member.experiment_id,
-                "run_filename": result.bundle_path.name,
-                "run_bundle_payload_sha256": run_bundle_payload_sha256(result.bundle),
-            }
+    manifest = ExperimentBatchManifest(
+        vesiclescope_revision=normalized_revision,
+        numerics=completed[0][1].bundle.numerics,
+        members=tuple(
+            ExperimentBatchManifestMember(
+                index=index,
+                input_filename=member.input_path.name,
+                experiment_id=member.experiment_id,
+                run_filename=result.bundle_path.name,
+                run_bundle_payload_sha256=run_bundle_payload_sha256(result.bundle),
+            )
             for index, (member, result) in enumerate(completed, start=1)
-        ],
-    }
-    _write_manifest(manifest_path, manifest)
+        ),
+    )
+    write_batch_manifest(manifest_path, manifest)
     return ExperimentBatchResult(
         manifest_path=manifest_path,
         run_paths=tuple(result.bundle_path for _, result in completed),
