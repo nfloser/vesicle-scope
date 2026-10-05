@@ -98,7 +98,7 @@ class EngineInstallationTests(unittest.TestCase):
         from vesiclescope.engines import installation
 
         with (
-            patch.object(installation.os, "name", "nt"),
+            patch.object(installation, "_is_windows", return_value=True),
             patch.dict(
                 installation.os.environ,
                 {"LOCALAPPDATA": r"C:\Users\runner\AppData\Local"},
