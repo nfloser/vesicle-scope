@@ -11,7 +11,7 @@ BUILD_DIR := build/native
 BENCHMARK_TARGET := $(BUILD_DIR)/biofvm_diffusion_benchmark
 RUNNER_TARGET := $(BUILD_DIR)/biofvm_transport_runner
 BENCHMARK_SOURCE := native/biofvm_benchmark/benchmark.cpp
-RUNNER_SOURCE := native/biofvm_benchmark/transport_runner.cpp
+RUNNER_SOURCE := vesiclescope/engines/native/transport_runner.cpp
 
 PIN_DEFINES := \
 	-DVESICLESCOPE_PHYSICELL_RELEASE=\"$(PHYSICELL_RELEASE)\" \
