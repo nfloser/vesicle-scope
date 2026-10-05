@@ -95,6 +95,34 @@ jobs:
           --revision ${{ github.sha }}
           --output-dir build/diffusion-uptake
 
+      - name: Execute an external experiment through the installed CLI
+        run: |
+          vesiclescope experiment export-example diffusion-uptake-baseline --output build/external-experiment.json
+          vesiclescope experiment validate build/external-experiment.json
+          vesiclescope experiment run build/external-experiment.json \
+            --runner build/native/biofvm_transport_runner \
+            --revision ${{ github.sha }} \
+            --grid-spacing-micron 10 \
+            --time-step-min 0.1 \
+            --output build/external-run.json
+          vesiclescope run-bundle inspect build/external-run.json
+          vesiclescope run-bundle compare build/external-run.json build/external-run.json
+
+      - name: Verify external run bundle
+        run: |
+          test -s build/external-run.json
+          grep -F '"schema": "vesiclescope.simulation-run"' build/external-run.json
+          grep -F '"payload_sha256":' build/external-run.json
+
+      - name: Upload external experiment run
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-external-experiment-run
+          path: |
+            build/external-experiment.json
+            build/external-run.json
+          if-no-files-found: error
+
       - name: Verify diffusion × uptake artefacts
         run: |
           test -s build/diffusion-uptake/summary.json
