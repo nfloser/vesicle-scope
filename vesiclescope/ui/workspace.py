@@ -6,6 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+from vesiclescope.combine_archive import (
+    deserialize_combine_archive,
+    serialize_combine_archive,
+)
 from vesiclescope.experiment_editing import derive_synthetic_experiment
 from vesiclescope.experiment_files import (
     deserialize_experiment_document,
@@ -13,7 +17,7 @@ from vesiclescope.experiment_files import (
     serialize_experiment_document,
     write_experiment_document,
 )
-from vesiclescope.run_bundles import read_run_bundle
+from vesiclescope.run_bundles import read_run_bundle, write_run_bundle
 from vesiclescope.scenarios import diffusion_uptake_factor_conditions
 from vesiclescope.workflows import run_external_experiment
 
@@ -95,6 +99,79 @@ class Workspace:
         )
         return output
 
+
+
+    def _available_name(self, directory: Path, stem: str) -> str:
+        safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("._-")
+        if not safe_stem or not safe_stem[0].isalnum():
+            safe_stem = "imported"
+        candidate = f"{safe_stem}.json"
+        index = 2
+        while self._safe_path(directory, candidate).exists():
+            candidate = f"{safe_stem}-{index}.json"
+            index += 1
+        return candidate
+
+    def export_combine_archive(self, experiment_name: str) -> bytes:
+        self.initialize()
+        experiment = self.read_experiment(experiment_name)
+        runs = []
+        for name in self.list_run_names():
+            try:
+                bundle = self.read_run(name)
+            except ValueError:
+                continue
+            if bundle.experiment == experiment:
+                runs.append(bundle)
+        return serialize_combine_archive(experiment, tuple(runs))
+
+    def import_combine_archive(self, data: bytes) -> dict[str, object]:
+        self.initialize()
+        project = deserialize_combine_archive(data)
+
+        experiment_stem = f"imported-{project.experiment.experiment_id}"
+        experiment_name = self._available_name(
+            self.experiments_dir,
+            experiment_stem,
+        )
+
+        reserved_run_names: set[str] = set()
+        run_names: list[str] = []
+        for index, _bundle in enumerate(project.runs, start=1):
+            stem = f"imported-{project.experiment.experiment_id}-run-{index:03d}"
+            safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("._-") or "imported-run"
+            candidate = f"{safe_stem}.json"
+            suffix = 2
+            while (
+                candidate in reserved_run_names
+                or self.run_path(candidate).exists()
+            ):
+                candidate = f"{safe_stem}-{suffix}.json"
+                suffix += 1
+            reserved_run_names.add(candidate)
+            run_names.append(candidate)
+
+        experiment_path = self.experiment_path(experiment_name)
+        run_paths = tuple(self.run_path(name) for name in run_names)
+        created: list[Path] = []
+        try:
+            write_experiment_document(experiment_path, project.experiment)
+            created.append(experiment_path)
+            for path, bundle in zip(run_paths, project.runs):
+                write_run_bundle(path, bundle)
+                created.append(path)
+        except BaseException:
+            for path in reversed(created):
+                try:
+                    path.unlink()
+                except FileNotFoundError:
+                    pass
+            raise
+
+        return {
+            "experiment": experiment_name,
+            "runs": run_names,
+        }
 
     def derive_synthetic_variant(
         self,
