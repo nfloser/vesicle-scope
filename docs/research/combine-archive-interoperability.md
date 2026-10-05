@@ -11,7 +11,7 @@ VesicleScope can already persist deterministic experiment documents and run bund
 
 ### COMBINE Archive / OMEX
 
-COMBINE defines an archive as a single file containing the documents needed for a modelling/simulation project. The archive is encoded as OMEX and requires a root \`manifest.xml\` declaring the archive and its contents.
+COMBINE defines an archive as a single file containing the documents needed for a modelling/simulation project. The archive is encoded as OMEX and requires a root `manifest.xml` declaring the archive and its contents.
 
 References:
 
@@ -22,11 +22,11 @@ References:
 
 The normative archive specification defines:
 
-- archive namespace: \`http://identifiers.org/combine.specifications/omex\`;
-- manifest namespace: \`http://identifiers.org/combine.specifications/omex-manifest\`;
-- mandatory root \`manifest.xml\`;
+- archive namespace: `http://identifiers.org/combine.specifications/omex`;
+- manifest namespace: `http://identifiers.org/combine.specifications/omex-manifest`;
+- mandatory root `manifest.xml`;
 - one manifest content entry representing the archive itself;
-- content entries with \`location\`, \`format\` and optional \`master\`.
+- content entries with `location`, `format` and optional `master`.
 
 JSON resources can be declared by media-type URI. VesicleScope therefore does not need to invent a COMBINE specification identifier for its native JSON formats.
 
@@ -58,7 +58,7 @@ An archive may contain:
 
 - one deterministic VesicleScope experiment document;
 - zero or more deterministic VesicleScope run bundles for that exact experiment;
-- \`manifest.xml\`;
+- `manifest.xml`;
 - a human-readable project readme.
 
 The experiment is the manifest's master resource because it is the primary project definition.
