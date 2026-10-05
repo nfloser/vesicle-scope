@@ -42,6 +42,8 @@ The loopback HTTP product path is now exercised end to end in native-engine CI: 
 
 The 0.2 development line now includes the first engine-independent uncertainty-propagation boundary: an explicit ordered ensemble of stored run bundles can be summarized at final extracellular/internalized endpoints without rerunning BioFVM or inventing parameter distributions. It reports descriptive statistics and, only for sufficiently large supplied ensembles, a clearly labelled empirical percentile interval that is not presented as a confidence interval.
 
+Users can also execute an explicit ordered set of validated experiment documents as one deterministic batch. Every member remains a normal run bundle, while the completed batch manifest preserves input order, experiment identity, numerics, revision and bundle digest. This connects user-supplied finite designs to the stored-run ensemble analysis without introducing a sampler or hidden parameter mutation.
+
 Random sampling, evidence-backed parameter distributions, formal sensitivity indices and parameter inference remain separate scientific capabilities. They require their own research gate; calibration additionally requires suitable measured data. Synthetic inputs may verify generic mechanics but cannot establish biological validity.
 
 ### External biological validation
