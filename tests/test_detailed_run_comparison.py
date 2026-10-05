@@ -7,6 +7,8 @@ from vesiclescope.engines import (
     BioFVMGrid2D,
     BioFVMNumerics,
     BioFVMRunResult,
+    RecipientUptakeSample,
+    RecipientUptakeSeries,
     SpatialFieldSnapshot2D,
     TransportSample,
 )
@@ -35,8 +37,15 @@ def bundle(
         grid_spacing_micron=grid_spacing,
         slice_thickness_micron=slice_thickness,
     )
+    voxel_volume = grid_spacing * grid_spacing * slice_thickness
     if field_values is None:
-        field_values = tuple(0.001 for _ in range(grid.voxel_count))
+        final_concentration = extracellular[-1] / (grid.voxel_count * voxel_volume)
+        field_values = tuple(final_concentration for _ in range(grid.voxel_count))
+    else:
+        extracellular = (
+            *extracellular[:-1],
+            sum(field_values) * voxel_volume,
+        )
     samples = tuple(
         TransportSample(
             time_min=time,
@@ -67,7 +76,23 @@ def bundle(
                 values=field_values,
             ),
         ),
-        recipient_uptake_series=(),
+        recipient_uptake_series=tuple(
+            RecipientUptakeSeries(
+                identifier=sink.identifier,
+                x_micron=sink.x_micron,
+                y_micron=sink.y_micron,
+                effective_volume_micron3=sink.effective_volume_micron3,
+                uptake_rate_per_min=sink.uptake_rate.value,
+                samples=tuple(
+                    RecipientUptakeSample(
+                        time_min=time,
+                        internalized_field_quantity=inside / len(experiment.uptake_sinks),
+                    )
+                    for time, inside in zip(sample_times, internalized)
+                ),
+            )
+            for sink in experiment.uptake_sinks
+        ),
     )
     return SimulationRunBundle(
         vesiclescope_revision=revision,
