@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
+import os
+import tempfile
 import zipfile
 
 from vesiclescope.domain import TransportExperiment
@@ -35,6 +37,9 @@ MANIFEST_NAME = "manifest.xml"
 EXPERIMENT_NAME = "experiment.json"
 README_NAME = "README.md"
 _ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
+_MAX_ARCHIVE_MEMBERS = 1024
+_MAX_MEMBER_UNCOMPRESSED_BYTES = 128 * 1024 * 1024
+_MAX_TOTAL_UNCOMPRESSED_BYTES = 512 * 1024 * 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,7 +171,24 @@ def write_combine_archive(
     if output.exists() and output.is_dir():
         raise ValueError("COMBINE archive output path must be a file")
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_bytes(serialize_combine_archive(experiment, runs))
+    data = serialize_combine_archive(experiment, runs)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            dir=output.parent,
+            prefix=f".{output.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_path = Path(handle.name)
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, output)
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
     return output
 
 
@@ -228,7 +250,19 @@ def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
         raise ValueError("COMBINE archive is not a valid ZIP container") from exc
 
     with archive:
-        names = tuple(info.filename for info in archive.infolist())
+        infos = archive.infolist()
+        if len(infos) > _MAX_ARCHIVE_MEMBERS:
+            raise ValueError("COMBINE archive contains too many members")
+        if any(info.is_dir() for info in infos):
+            raise ValueError("COMBINE archive must not contain directory entries")
+        if any(info.flag_bits & 0x1 for info in infos):
+            raise ValueError("encrypted COMBINE archive members are not supported")
+        if any(info.file_size > _MAX_MEMBER_UNCOMPRESSED_BYTES for info in infos):
+            raise ValueError("COMBINE archive member exceeds the size limit")
+        if sum(info.file_size for info in infos) > _MAX_TOTAL_UNCOMPRESSED_BYTES:
+            raise ValueError("COMBINE archive exceeds the total uncompressed size limit")
+
+        names = tuple(info.filename for info in infos)
         if len(names) != len(set(names)):
             raise ValueError("COMBINE archive contains duplicate member names")
         if not all(_member_name_is_safe(name) for name in names):
