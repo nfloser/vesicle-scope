@@ -65,7 +65,12 @@ def derive_synthetic_experiment(
 
     if not isinstance(experiment, TransportExperiment):
         raise TypeError("experiment must be a TransportExperiment")
-    if experiment_id == experiment.experiment_id:\n        raise ValueError("derived experiment_id must differ from the source experiment_id")\n\n    if any(
+    if experiment_id == experiment.experiment_id:
+        raise ValueError(
+            "derived experiment_id must differ from the source experiment_id"
+        )
+
+    if any(
         parameter.evidence is not EvidenceCategory.SYNTHETIC_BENCHMARK
         for parameter in _scientific_parameters(experiment)
     ):
