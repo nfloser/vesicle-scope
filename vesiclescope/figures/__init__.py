@@ -15,6 +15,11 @@ from .population import (
     prepare_recipient_count_figure_data,
     render_recipient_count_figure,
 )
+from .stored_run import (
+    StoredRunFigureData,
+    prepare_stored_run_figure_data,
+    render_stored_run_figure,
+)
 
 __all__ = [
     "DiffusionUptakeFigureData",
@@ -26,4 +31,7 @@ __all__ = [
     "RecipientCountFigureData",
     "prepare_recipient_count_figure_data",
     "render_recipient_count_figure",
+    "StoredRunFigureData",
+    "prepare_stored_run_figure_data",
+    "render_stored_run_figure",
 ]
