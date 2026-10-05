@@ -24,7 +24,7 @@ A deterministic external experiment document is available for export, validation
 
 ### Run inspection and comparison
 
-Completed run bundles can now be verified, inspected and compared at their normalized final endpoints without rerunning the solver. Remaining work includes richer time-series/spatial comparison and regenerating supported analyses/figures directly from stored bundles.
+Completed run bundles can be verified, inspected and compared at their normalized final endpoints without rerunning the solver. A verified bundle can also regenerate a deterministic offline SVG containing its final spatial field, normalized extracellular/internalized time series, units, engine/numerical settings and exact VesicleScope revision. Richer multi-run spatial/time-series comparison remains later analysis work rather than a blocker for single-run reproducibility.
 
 ### Native engine installation
 

@@ -106,6 +106,19 @@ jobs:
       - name: Install VesicleScope with figure support
         run: python -m pip install --disable-pip-version-check '.[figures]'
 
+      - name: Regenerate a stored-run overview without BioFVM execution
+        run: >-
+          vesiclescope run-bundle figure
+          build/runs/donor-boundary-run.json
+          --output build/runs/donor-boundary-run.svg
+
+      - name: Verify stored-run overview provenance labels
+        run: |
+          test -s build/runs/donor-boundary-run.svg
+          grep -F "VesicleScope stored-run overview" build/runs/donor-boundary-run.svg
+          grep -F "synthetic benchmark; not experimental evidence" build/runs/donor-boundary-run.svg
+          grep -F "${{ github.sha }}" build/runs/donor-boundary-run.svg
+
       - name: Run synthetic diffusion × uptake factor experiment through CLI
         run: >-
           vesiclescope run diffusion-uptake-factor
@@ -186,6 +199,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_population_figure_render.py -v
           python -m unittest discover -s tests -p test_donor_boundary_figure_render.py -v
+          python -m unittest discover -s tests -p test_stored_run_figure.py -v
 
       - name: Generate reviewed synthetic population figure
         env:
