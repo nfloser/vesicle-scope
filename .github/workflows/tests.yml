@@ -35,6 +35,16 @@ jobs:
           vesiclescope experiment validate build/example-experiment.json
           vesiclescope experiment inspect build/example-experiment.json
 
+      - name: Verify installed UI asset
+        run: |
+          cd /tmp
+          python - <<'PY'
+          from importlib import resources
+          html = resources.files("vesiclescope.ui").joinpath("static/index.html").read_text(encoding="utf-8")
+          assert "VesicleScope" in html
+          assert "not experimental evidence" in html
+          PY
+
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
