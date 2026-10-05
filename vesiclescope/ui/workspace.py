@@ -101,10 +101,14 @@ class Workspace:
 
 
 
-    def _available_name(self, directory: Path, stem: str) -> str:
+    def _safe_import_stem(self, stem: str) -> str:
         safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("._-")
         if not safe_stem or not safe_stem[0].isalnum():
             safe_stem = "imported"
+        return safe_stem[:120].rstrip("._-") or "imported"
+
+    def _available_name(self, directory: Path, stem: str) -> str:
+        safe_stem = self._safe_import_stem(stem)
         candidate = f"{safe_stem}.json"
         index = 2
         while self._safe_path(directory, candidate).exists():
@@ -139,7 +143,7 @@ class Workspace:
         run_names: list[str] = []
         for index, _bundle in enumerate(project.runs, start=1):
             stem = f"imported-{project.experiment.experiment_id}-run-{index:03d}"
-            safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("._-") or "imported-run"
+            safe_stem = self._safe_import_stem(stem)
             candidate = f"{safe_stem}.json"
             suffix = 2
             while (
