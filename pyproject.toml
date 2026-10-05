@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vesicle-scope"
+version = "0.1.0.dev0"
+description = "Evidence-grounded computational research software for extracellular-vesicle transport"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "VesicleScope contributors" }]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = []
+
+[project.optional-dependencies]
+figures = ["matplotlib==3.11.2"]
+
+[project.scripts]
+vesiclescope = "vesiclescope.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["vesiclescope*"]
+
+[tool.setuptools.package-data]
+"vesiclescope.engines" = ["*.env"]
