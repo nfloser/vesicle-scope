@@ -211,6 +211,38 @@ jobs:
           grep -F '"schema": "vesiclescope.simulation-run"' build/external-run.json
           grep -F '"payload_sha256":' build/external-run.json
 
+      - name: Execute an explicit two-member experiment batch
+        env:
+          VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
+          VESICLESCOPE_REVISION: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from vesiclescope.experiment_files import write_experiment_document
+          from vesiclescope.scenarios import diffusion_uptake_factor_conditions
+
+          Path("build/batch-inputs").mkdir(parents=True, exist_ok=True)
+          conditions = diffusion_uptake_factor_conditions()
+          write_experiment_document(Path("build/batch-inputs/member-a.json"), conditions[0].experiment)
+          write_experiment_document(Path("build/batch-inputs/member-b.json"), conditions[1].experiment)
+          PY
+          vesiclescope experiment run-batch \
+            build/batch-inputs/member-a.json \
+            build/batch-inputs/member-b.json \
+            --runner "$VESICLESCOPE_BIOFVM_RUNNER" \
+            --revision "$VESICLESCOPE_REVISION" \
+            --grid-spacing-micron 10 \
+            --time-step-min 0.1 \
+            --output-dir build/explicit-batch
+          test -s build/explicit-batch/batch-manifest.json
+          test "$(find build/explicit-batch -name '*.run.json' | wc -l)" -eq 2
+          grep -F '"schema": "vesiclescope.experiment-batch"' build/explicit-batch/batch-manifest.json
+          grep -F 'no sampling or biological distribution implied' build/explicit-batch/batch-manifest.json
+          mapfile -t RUNS < <(find build/explicit-batch -name '*.run.json' | sort)
+          vesiclescope run-bundle ensemble "${RUNS[@]}" > build/explicit-batch/ensemble-summary.txt
+          grep -F 'empirical stored-run ensemble; not a confidence interval' build/explicit-batch/ensemble-summary.txt
+          grep -F 'member_count: 2' build/explicit-batch/ensemble-summary.txt
+
       - name: Upload external experiment run
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

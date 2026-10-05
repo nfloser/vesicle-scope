@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- execute explicit ordered experiment batches and persist a deterministic member manifest consumable by ensemble analysis.
 - add explicit stored-run ensemble summaries for conservative uncertainty propagation without hidden biological distributions.
 
 ## 0.1.0
