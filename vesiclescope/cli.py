@@ -65,6 +65,13 @@ def _parser() -> argparse.ArgumentParser:
     bundle_compare.add_argument("left", type=Path)
     bundle_compare.add_argument("right", type=Path)
 
+    bundle_figure = bundle_commands.add_parser(
+        "figure",
+        help="Render a completed run bundle without rerunning BioFVM.",
+    )
+    bundle_figure.add_argument("path", type=Path)
+    bundle_figure.add_argument("--output", type=Path, required=True)
+
     engine = subparsers.add_parser(
         "engine",
         help="Inspect or build the pinned BioFVM transport engine.",
@@ -346,6 +353,15 @@ def main(argv: list[str] | None = None) -> int:
                     read_run_bundle(args.right),
                 )
                 _print_comparison(summary)
+                return 0
+            if args.bundle_command == "figure":
+                from vesiclescope.figures import render_stored_run_figure
+
+                output = render_stored_run_figure(
+                    read_run_bundle(args.path),
+                    args.output,
+                )
+                print(output)
                 return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
