@@ -199,6 +199,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_population_figure_render.py -v
           python -m unittest discover -s tests -p test_donor_boundary_figure_render.py -v
+          python -m unittest discover -s tests -p test_stored_run_figure.py -v
 
       - name: Generate reviewed synthetic population figure
         env:
