@@ -164,7 +164,7 @@ class Workspace:
             for path, bundle in zip(run_paths, project.runs):
                 write_run_bundle(path, bundle)
                 created.append(path)
-        except BaseException:
+        except Exception:
             for path in reversed(created):
                 try:
                     path.unlink()
