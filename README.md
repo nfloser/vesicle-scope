@@ -140,7 +140,7 @@ vesiclescope ui \
   --revision "$(git rev-parse HEAD)"
 ```
 
-The UI binds to `127.0.0.1` by default. It can create/import experiments, derive new provenance-safe variants from synthetic benchmarks, launch runs with explicit numerical settings, inspect stored spatial fields and time series, compare completed runs and download persisted JSON artifacts. Synthetic editing creates a new experiment and refuses evidence-backed parameters rather than silently reusing their provenance. It does not introduce a separate scientific execution path.
+The UI binds to `127.0.0.1` by default. It can create/import experiments, derive new provenance-safe variants from synthetic benchmarks, launch runs with explicit numerical settings, inspect stored spatial fields and time series, compare completed runs across their stored quantity series and directly compatible final fields, and download persisted JSON artifacts. Synthetic editing creates a new experiment and refuses evidence-backed parameters rather than silently reusing their provenance. It does not introduce a separate scientific execution path.
 
 ## Model-comparison direction
 
