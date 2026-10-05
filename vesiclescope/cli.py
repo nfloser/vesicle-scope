@@ -72,6 +72,17 @@ def _parser() -> argparse.ArgumentParser:
     bundle_figure.add_argument("path", type=Path)
     bundle_figure.add_argument("--output", type=Path, required=True)
 
+    bundle_ensemble = bundle_commands.add_parser(
+        "ensemble",
+        help="Summarize an explicit empirical ensemble of completed run bundles.",
+    )
+    bundle_ensemble.add_argument(
+        "paths",
+        type=Path,
+        nargs="+",
+        help="Stored run bundles in the intended stable ensemble order.",
+    )
+
     engine = subparsers.add_parser(
         "engine",
         help="Inspect or build the pinned BioFVM transport engine.",
@@ -242,6 +253,40 @@ def _print_comparison(summary) -> None:
 
 
 
+
+def _print_empirical_quantity(name: str, summary, unit: str) -> None:
+    print(f"{name}_member_count: {summary.member_count}")
+    print(f"{name}_minimum: {summary.minimum:g} {unit}")
+    print(f"{name}_maximum: {summary.maximum:g} {unit}")
+    print(f"{name}_mean: {summary.mean:g} {unit}")
+    print(f"{name}_median: {summary.median:g} {unit}")
+    interval = summary.empirical_percentile_interval_95
+    if interval is None:
+        print(f"{name}_empirical_percentile_interval_95: unavailable")
+    else:
+        print(
+            f"{name}_empirical_percentile_interval_95: "
+            f"[{interval[0]:g}, {interval[1]:g}] {unit}"
+        )
+
+
+def _print_ensemble(summary) -> None:
+    print("interpretation: empirical stored-run ensemble; not a confidence interval")
+    print(f"quantity_unit: {summary.quantity_unit}")
+    print(f"member_count: {len(summary.member_experiment_ids)}")
+    print("member_experiment_ids: " + ", ".join(summary.member_experiment_ids))
+    _print_empirical_quantity(
+        "final_extracellular",
+        summary.final_extracellular,
+        summary.quantity_unit,
+    )
+    _print_empirical_quantity(
+        "final_internalized",
+        summary.final_internalized,
+        summary.quantity_unit,
+    )
+
+
 def _print_engine_status(status) -> None:
     print(f"physicell_release: {status.metadata.physicell_release}")
     print(f"physicell_commit: {status.metadata.physicell_commit}")
@@ -340,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     if args.command == "run-bundle":
-        from vesiclescope.analysis import compare_run_bundles
+        from vesiclescope.analysis import compare_run_bundles, summarize_run_ensemble
         from vesiclescope.run_bundles import read_run_bundle
 
         try:
@@ -362,6 +407,12 @@ def main(argv: list[str] | None = None) -> int:
                     args.output,
                 )
                 print(output)
+                return 0
+            if args.bundle_command == "ensemble":
+                summary = summarize_run_ensemble(
+                    tuple(read_run_bundle(path) for path in args.paths)
+                )
+                _print_ensemble(summary)
                 return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
