@@ -101,19 +101,19 @@ class RunEnsembleTests(unittest.TestCase):
         self.assertEqual(summary.final_extracellular.maximum, 5.0)
         self.assertEqual(summary.final_extracellular.mean, 3.0)
         self.assertEqual(summary.final_extracellular.median, 3.0)
-        self.assertIsNone(summary.final_extracellular.empirical_interval_95)
+        self.assertIsNone(summary.final_extracellular.empirical_percentile_interval_95)
         self.assertEqual(summary.final_internalized.mean, 7.0)
 
     def test_reports_documented_empirical_interval_only_for_large_enough_ensemble(self) -> None:
         bundles = tuple(
             bundle(i, extracellular=float(i), internalized=float(i))
-            for i in range(20)
+            for i in range(40)
         )
         summary = summarize_run_ensemble(bundles)
 
         self.assertEqual(
-            summary.final_extracellular.empirical_interval_95,
-            (0.47500000000000003, 18.525),
+            summary.final_extracellular.empirical_percentile_interval_95,
+            (0.9750000000000001, 38.025),
         )
 
     def test_single_member_is_valid_but_has_no_interval(self) -> None:
@@ -121,7 +121,7 @@ class RunEnsembleTests(unittest.TestCase):
             (bundle(1, extracellular=4.0, internalized=2.0),)
         )
         self.assertEqual(summary.final_extracellular.mean, 4.0)
-        self.assertIsNone(summary.final_extracellular.empirical_interval_95)
+        self.assertIsNone(summary.final_extracellular.empirical_percentile_interval_95)
 
     def test_rejects_empty_ensemble(self) -> None:
         with self.assertRaisesRegex(ValueError, "at least one"):
