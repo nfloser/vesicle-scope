@@ -3,6 +3,12 @@ name: Tests
 on:
   pull_request:
   push:
+    branches:
+      - main
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -47,6 +53,60 @@ jobs:
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+
+
+  release-wheel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel
+        run: |
+          python -m pip wheel --disable-pip-version-check --no-deps . --wheel-dir build/dist
+          test "$(find build/dist -name 'vesicle_scope-0.1.0-*.whl' | wc -l)" -eq 1
+
+      - name: Install wheel into a clean virtual environment
+        run: |
+          python -m venv build/release-venv
+          WHEEL="$(find build/dist -name 'vesicle_scope-0.1.0-*.whl' -print -quit)"
+          build/release-venv/bin/python -m pip install --disable-pip-version-check "$WHEEL"
+
+      - name: Verify release contents and installed product
+        run: |
+          build/release-venv/bin/vesiclescope --version | grep -F "vesiclescope 0.1.0"
+          build/release-venv/bin/vesiclescope --help
+          build/release-venv/bin/vesiclescope examples
+          build/release-venv/bin/vesiclescope engine status
+          build/release-venv/bin/vesiclescope experiment export-example diffusion-uptake-baseline --output build/release-example.json
+          build/release-venv/bin/vesiclescope experiment validate build/release-example.json
+          build/release-venv/bin/python - <<'PY'
+          from importlib import metadata, resources
+          import vesiclescope
+
+          assert vesiclescope.__version__ == "0.1.0"
+          assert metadata.version("vesicle-scope") == "0.1.0"
+
+          html = resources.files("vesiclescope.ui").joinpath("static/index.html")
+          assert html.is_file()
+          assert "not experimental evidence" in html.read_text(encoding="utf-8")
+
+          runner_source = resources.files("vesiclescope.engines.native").joinpath("transport_runner.cpp")
+          assert runner_source.is_file()
+          assert runner_source.stat().st_size > 1000
+          PY
+
+      - name: Upload release wheel candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-0.1.0-wheel
+          path: build/dist/*.whl
+          if-no-files-found: error
 
 
   biofvm-diffusion-benchmark:

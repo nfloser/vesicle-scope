@@ -10,9 +10,9 @@ The first milestone is research and architecture, not feature implementation. Be
 
 ## Status
 
-**Research baseline established; the synthetic transport/uptake/geometry pipeline includes verified finite donor and recipient footprints, engine-independent donor-boundary analysis, reproducible scientific figures, deterministic durable run bundles, and an external tumour-distance validation target with explicit readiness blockers.**
+**VesicleScope 0.1.0 is the first installable research-product release candidate.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, offline analysis, a CLI and a local interactive workspace.
 
-There is not yet a validated EV simulator in this repository. Any screenshots, benchmarks or numerical results added later must state whether they are analytical, synthetic, fitted, experimentally measured or simulated.
+VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
 See:
 
@@ -58,9 +58,9 @@ VesicleScope is designed around a few non-negotiable rules:
 - compare model classes when the model choice can change the biological conclusion;
 - reuse established scientific software instead of rebuilding solvers without a measured reason.
 
-## Planned v0.1
+## v0.1 scope
 
-The first implementation milestone is a verified continuum transport baseline in a bounded 2D tissue-scale domain with:
+Version 0.1 provides a verified continuum transport baseline in a bounded 2D tissue-scale domain with:
 
 - explicit physical slice thickness independent from numerical x/y resolution;
 - donor and recipient cells;
@@ -121,7 +121,7 @@ vesiclescope run diffusion-uptake-factor \
 
 The workflow writes a deterministic summary, one SVG interaction figure and nine durable run bundles. It is a controlled synthetic model-behaviour experiment and **not experimental evidence**.
 
-See [product readiness](docs/product-readiness.md) for the remaining work between this headless milestone and a finished interactive research product.
+See [product readiness](docs/product-readiness.md) and [v0.1.0 release notes](docs/releases/v0.1.0.md) for the supported product boundary and remaining scientific limitations.
 
 
 ## Local interactive workspace

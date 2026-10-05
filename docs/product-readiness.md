@@ -14,9 +14,11 @@ This document tracks the gap between the verified research core and a finished V
 - controlled multi-condition diffusion × uptake workflow;
 - installable Python package and headless `vesiclescope` CLI.
 
-## Remaining product gaps
+## v0.1.0 release assessment
 
-The installable CLI is a product milestone, not the finished product.
+The dataset-independent v0.1.0 product surface is now complete enough for a first Linux/Windows research release, subject to green release-candidate CI from the built wheel.
+
+The remaining items below are either usability/packaging follow-ups or scientific extensions that require their own evidence/data gates; they are not hidden placeholders in the released execution path.
 
 ### User-defined experiments
 
@@ -62,3 +64,28 @@ A production-quality VesicleScope release requires all dataset-independent produ
 8. free of known critical defects or placeholder behavior.
 
 External data-dependent validation may remain a documented blocker for stronger biological claims; it is not a reason to leave generic product mechanics unfinished.
+
+
+## Final dataset-independent gap audit for v0.1.0
+
+The release candidate is expected to satisfy the current release gate as follows:
+
+- **one scientific contract:** CLI, browser workspace and stored-run tools reuse the same experiment and run-bundle models;
+- **installable route:** standard Python wheel plus automated pinned BioFVM source/build path;
+- **end-to-end execution:** external experiment and local HTTP workspace paths execute the real pinned native runner in CI;
+- **tests:** unit, analytical, native integration, figure, Linux product, Windows product and HTTP end-to-end coverage are active;
+- **reproducibility:** exact VesicleScope revision, engine identity, numerics, parameter provenance and deterministic artifact digests are persisted;
+- **offline inspection:** completed runs can be validated, inspected, compared and rendered without solver reruns;
+- **documentation:** first-run, engine setup, experiment format, execution, stored-run analysis, research assumptions and release limitations are documented;
+- **scientific claims:** synthetic/numerical verification is explicitly separated from external biological validation;
+- **release artifact:** CI builds a 0.1.0 wheel, installs it into a clean environment and verifies CLI, UI asset, native runner source and experiment-document workflow.
+
+No known critical dataset-independent v0.1.0 product gap remains if that release-candidate CI passes.
+
+The following are intentionally outside the v0.1.0 release claim:
+
+- external biological validation beyond currently available/public context;
+- measured-data calibration and uncertainty inference;
+- particle/continuum model comparison;
+- macOS validation and prebuilt native-engine binaries;
+- medical, diagnostic or clinical use.
