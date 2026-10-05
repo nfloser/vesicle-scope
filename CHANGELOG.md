@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- package one VesicleScope experiment plus optional validated run bundles in a deterministic COMBINE/OMEX archive;
+- inspect OMEX projects without solver execution while reusing experiment/run integrity and scientific contracts;
+- explicitly defer SED-ML compatibility until the spatial BioFVM experiment has an honestly portable model/execution representation.
+
+
 ## 0.2.0
 
 Completes the current dataset-independent Linux/Windows VesicleScope research-product scope.
