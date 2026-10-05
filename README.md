@@ -122,6 +122,22 @@ The workflow writes a deterministic summary, one SVG interaction figure and nine
 
 See [product readiness](docs/product-readiness.md) for the remaining work between this headless milestone and a finished interactive research product.
 
+
+## Local interactive workspace
+
+The same validated experiment documents and deterministic run bundles used by the CLI are available through a loopback-only browser workspace.
+
+```bash
+vesiclescope workspace init ./workspace
+vesiclescope engine build
+vesiclescope ui \
+  --workspace ./workspace \
+  --runner ~/.cache/vesiclescope/engines/<reviewed-commit>/biofvm_transport_runner \
+  --revision "$(git rev-parse HEAD)"
+```
+
+The UI binds to `127.0.0.1` by default. It can create/import experiments, launch runs with explicit numerical settings, inspect stored spatial fields and time series, compare completed runs and download persisted JSON artifacts. It does not introduce a separate scientific execution path.
+
 ## Model-comparison direction
 
 A long-term goal is to run equivalent scenarios through continuum and discrete/stochastic representations and identify regimes where model choice materially changes predicted exposure, uptake, arrival time or communication range.
