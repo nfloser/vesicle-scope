@@ -164,6 +164,34 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                         app.import_experiment(name, document),
                     )
                     return
+                if parsed.path == "/api/derive":
+                    source_name = payload.get("source")
+                    output_name = payload.get("name")
+                    experiment_id = payload.get("experiment_id")
+                    if not isinstance(source_name, str):
+                        raise ValueError("derive source must be a string")
+                    if not isinstance(output_name, str):
+                        raise ValueError("derive name must be a string")
+                    if not isinstance(experiment_id, str):
+                        raise ValueError("derive experiment_id must be a string")
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.derive_synthetic_experiment(
+                            source_name=source_name,
+                            output_name=output_name,
+                            experiment_id=experiment_id,
+                            duration_min=payload.get("duration_min"),
+                            sample_every_min=payload.get("sample_every_min"),
+                            diffusion_value=payload.get("diffusion_value"),
+                            decay_value=payload.get("decay_value"),
+                            initial_concentration_value=payload.get(
+                                "initial_concentration_value"
+                            ),
+                            release_rates=payload.get("release_rates"),
+                            uptake_rates=payload.get("uptake_rates"),
+                        ),
+                    )
+                    return
                 if parsed.path == "/api/run":
                     experiment_name = payload.get("experiment")
                     run_name = payload.get("run_name")
