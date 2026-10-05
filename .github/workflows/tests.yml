@@ -73,6 +73,31 @@ jobs:
           path: build/runs/donor-boundary-run.json
           if-no-files-found: error
 
+      - name: Run synthetic diffusion × uptake factor experiment
+        env:
+          VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
+          VESICLESCOPE_REVISION: ${{ github.sha }}
+        run: >-
+          python -m scripts.run_diffusion_uptake_factor_experiment
+          --output-dir build/diffusion-uptake
+
+      - name: Verify diffusion × uptake artefacts
+        run: |
+          test -s build/diffusion-uptake/summary.json
+          test -s build/diffusion-uptake/diffusion-uptake.svg
+          test "$(find build/diffusion-uptake/runs -name '*.json' | wc -l)" -eq 9
+          grep -F '"schema": "vesiclescope.synthetic-diffusion-uptake-factor-summary"' build/diffusion-uptake/summary.json
+          grep -F '"scientific_status": "synthetic_benchmark"' build/diffusion-uptake/summary.json
+          grep -F "Synthetic diffusion × uptake factor experiment" build/diffusion-uptake/diffusion-uptake.svg
+          grep -F "not experimental evidence" build/diffusion-uptake/diffusion-uptake.svg
+
+      - name: Upload diffusion × uptake experiment
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-synthetic-diffusion-uptake-factor-experiment
+          path: build/diffusion-uptake
+          if-no-files-found: error
+
 
   population-figure:
     runs-on: ubuntu-latest
