@@ -51,6 +51,21 @@ jobs:
           assert "not experimental evidence" in html
           PY
 
+      - name: Syntax-check packaged browser client
+        run: |
+          python - <<'PY'
+          from importlib import resources
+          from pathlib import Path
+
+          html = resources.files("vesiclescope.ui").joinpath("static/index.html").read_text(encoding="utf-8")
+          if "<script>" not in html or "</script>" not in html:
+              raise SystemExit("packaged UI does not contain the expected inline script")
+          script = html.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+          Path("build").mkdir(exist_ok=True)
+          Path("build/ui-inline.js").write_text(script, encoding="utf-8", newline="\n")
+          PY
+          node --check build/ui-inline.js
+
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
@@ -76,6 +91,9 @@ jobs:
           python -m venv build/package-venv
           WHEEL="$(find build/dist -name 'vesicle_scope-*.whl' -print -quit)"
           build/package-venv/bin/python -m pip install --disable-pip-version-check "$WHEEL"
+
+      - name: Verify installed dependency consistency
+        run: build/package-venv/bin/python -m pip check
 
       - name: Verify package contents and installed product
         run: |
@@ -363,6 +381,10 @@ jobs:
       - name: Install VesicleScope
         shell: pwsh
         run: python -m pip install --disable-pip-version-check .
+
+      - name: Verify Windows dependency consistency
+        shell: pwsh
+        run: python -m pip check
 
       - name: Fetch reviewed PhysiCell release
         shell: pwsh
