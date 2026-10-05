@@ -32,11 +32,14 @@ REVISION = "a" * 40
 NUMERICS = BioFVMNumerics(grid_spacing_micron=10.0, time_step_min=0.1)
 
 
-def bundle_for(experiment) -> SimulationRunBundle:
+def bundle_for(
+    experiment,
+    numerics: BioFVMNumerics = NUMERICS,
+) -> SimulationRunBundle:
     grid = BioFVMGrid2D(
-        nx=round(experiment.domain.width_micron / NUMERICS.grid_spacing_micron),
-        ny=round(experiment.domain.height_micron / NUMERICS.grid_spacing_micron),
-        grid_spacing_micron=NUMERICS.grid_spacing_micron,
+        nx=round(experiment.domain.width_micron / numerics.grid_spacing_micron),
+        ny=round(experiment.domain.height_micron / numerics.grid_spacing_micron),
+        grid_spacing_micron=numerics.grid_spacing_micron,
         slice_thickness_micron=experiment.domain.slice_thickness_micron,
     )
     concentration = 0.001
@@ -94,7 +97,7 @@ def bundle_for(experiment) -> SimulationRunBundle:
     return SimulationRunBundle(
         vesiclescope_revision=REVISION,
         experiment=experiment,
-        numerics=NUMERICS,
+        numerics=numerics,
         result=result,
     )
 
@@ -213,22 +216,12 @@ class CombineBatchArchiveTests(unittest.TestCase):
             grid_spacing_micron=5.0,
             time_step_min=0.1,
         )
-        altered_grid = BioFVMGrid2D(
-            nx=round(
-                runs[0].experiment.domain.width_micron
-                / altered_numerics.grid_spacing_micron
-            ),
-            ny=round(
-                runs[0].experiment.domain.height_micron
-                / altered_numerics.grid_spacing_micron
-            ),
-            grid_spacing_micron=altered_numerics.grid_spacing_micron,
-            slice_thickness_micron=runs[0].experiment.domain.slice_thickness_micron,
-        )
-        # The run-bundle contract itself prevents changing numerics without a
-        # corresponding result grid, so it is enough to verify the batch layer
-        # rejects another valid run produced under different numerics in native E2E.
-        self.assertNotEqual(altered_grid.grid_spacing_micron, runs[0].result.grid.grid_spacing_micron)
+        altered_run = bundle_for(runs[0].experiment, altered_numerics)
+        with self.assertRaisesRegex(ValueError, "numerics"):
+            serialize_batch_combine_archive(
+                manifest,
+                (altered_run, runs[1]),
+            )
 
 
 if __name__ == "__main__":
