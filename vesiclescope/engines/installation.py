@@ -179,6 +179,7 @@ def _compile_command(
         "BioFVM_utilities.cpp",
         "BioFVM_basic_agent.cpp",
         "BioFVM_agent_container.cpp",
+        "BioFVM_matlab.cpp",
     ]
     return [
         compiler,
