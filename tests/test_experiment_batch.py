@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from vesiclescope.engines import BioFVMNumerics
 from vesiclescope.experiment_files import write_experiment_document
 from vesiclescope.scenarios import diffusion_uptake_factor_conditions
 from vesiclescope.workflows import run_experiment_batch
@@ -29,7 +30,7 @@ def fake_completed_result(output_path: Path):
         bundle_path=Path(output_path),
         bundle=SimpleNamespace(
             vesiclescope_revision=REVISION,
-            numerics=SimpleNamespace(
+            numerics=BioFVMNumerics(
                 grid_spacing_micron=10.0,
                 time_step_min=0.1,
             ),
@@ -98,7 +99,7 @@ class ExperimentBatchTests(unittest.TestCase):
                 bundle_path=output / "001.run.json",
                 bundle=SimpleNamespace(
                     vesiclescope_revision=REVISION,
-                    numerics=SimpleNamespace(
+                    numerics=BioFVMNumerics(
                         grid_spacing_micron=10.0,
                         time_step_min=0.1,
                     ),
