@@ -22,7 +22,7 @@ The remaining items below are either usability/packaging follow-ups or scientifi
 
 ### User-defined experiments
 
-A deterministic external experiment document is available for export, validation and inspection, and supported documents can now be executed directly through the installed CLI with explicit numerical settings. The remaining gap is a user-facing interactive editor rather than file editing.
+A deterministic external experiment document is available for export, validation and inspection, and supported documents can be executed directly through the installed CLI with explicit numerical settings. The local workspace now also provides a provenance-safe interactive editor for fully synthetic benchmarks: edits create a new immutable experiment, preserve units/geometry/synthetic evidence, and refuse evidence-backed parameters rather than silently carrying old provenance onto new values.
 
 ### Run inspection and comparison
 
@@ -36,7 +36,7 @@ The installed CLI can report engine readiness, fetch/verify the exact reviewed P
 
 A local browser-based workspace is now implemented on top of the same experiment documents, run bundles and execution/comparison services as the CLI. It is loopback-only by default, confines artifacts to explicit workspace directories and can create/import experiments, launch runs, inspect stored spatial/time-series outputs, compare runs and download persisted JSON artifacts.
 
-The loopback HTTP product path is now exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, executes it with explicit numerics, persists the deterministic run bundle, reopens normalized spatial/time-series output and downloads the same validated artifact. Remaining work is primarily usability validation of the browser interaction itself, macOS/prebuilt-engine packaging, and later scientific capabilities that require their own research gates.
+The loopback HTTP product path is exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, and the v0.2 path also derives a new synthetic variant through the same provenance-safe domain boundary, executes it with explicit numerics, persists the deterministic run bundle, reopens normalized spatial/time-series output and downloads the validated artifact. Remaining work is primarily broader browser usability validation, macOS/prebuilt-engine packaging, richer multi-run analysis and later scientific capabilities that require their own research gates.
 
 ### Uncertainty and calibration
 
