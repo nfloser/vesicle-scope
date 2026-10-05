@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from vesiclescope.engines import BioFVMNumerics
+from vesiclescope.engines import BioFVMNumerics, SpatialFieldSnapshot2D, TransportSample
 from vesiclescope.figures import (
     prepare_stored_run_figure_data,
     render_stored_run_figure,
@@ -39,14 +39,32 @@ class StoredRunFigureDataTests(unittest.TestCase):
 
     def test_requires_a_final_field_snapshot(self) -> None:
         original = bundle()
-        altered_result = replace(original.result, field_snapshots=())
-        with self.assertRaisesRegex(ValueError, "field snapshot"):
-            SimulationRunBundle(
-                vesiclescope_revision=original.vesiclescope_revision,
-                experiment=original.experiment,
-                numerics=original.numerics,
-                result=altered_result,
-            )
+        final_sample = original.result.samples[-1]
+        early_sample = TransportSample(
+            time_min=0.0,
+            mean_concentration=final_sample.mean_concentration,
+            min_concentration=final_sample.min_concentration,
+            max_concentration=final_sample.max_concentration,
+            integrated_field_quantity=final_sample.integrated_field_quantity,
+            internalized_field_quantity=0.0,
+        )
+        early_snapshot = SpatialFieldSnapshot2D(
+            time_min=0.0,
+            values=original.result.field_snapshots[-1].values,
+        )
+        altered_result = replace(
+            original.result,
+            samples=(early_sample, final_sample),
+            field_snapshots=(early_snapshot,),
+        )
+        altered_bundle = SimulationRunBundle(
+            vesiclescope_revision=original.vesiclescope_revision,
+            experiment=original.experiment,
+            numerics=original.numerics,
+            result=altered_result,
+        )
+        with self.assertRaisesRegex(ValueError, "final field snapshot"):
+            prepare_stored_run_figure_data(altered_bundle)
 
 
 @unittest.skipUnless(
