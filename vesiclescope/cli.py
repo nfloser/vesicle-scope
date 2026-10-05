@@ -98,6 +98,31 @@ def _parser() -> argparse.ArgumentParser:
         help="Fail instead of fetching when the PhysiCell checkout is missing.",
     )
 
+    workspace = subparsers.add_parser(
+        "workspace",
+        help="Initialize a local VesicleScope workspace.",
+    )
+    workspace_commands = workspace.add_subparsers(dest="workspace_command")
+    workspace_init = workspace_commands.add_parser(
+        "init",
+        help="Create experiments/ and runs/ directories.",
+    )
+    workspace_init.add_argument("path", type=Path)
+
+    ui = subparsers.add_parser(
+        "ui",
+        help="Start the loopback-only local VesicleScope workspace UI.",
+    )
+    ui.add_argument("--workspace", type=Path, required=True)
+    ui.add_argument("--runner", type=Path, required=True)
+    ui.add_argument("--revision", required=True)
+    ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Do not open the local UI in the default browser.",
+    )
+
     return parser
 
 
@@ -322,6 +347,39 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 _print_comparison(summary)
                 return 0
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            print(f"vesiclescope: {exc}", file=sys.stderr)
+            return 2
+
+    if args.command == "workspace":
+        from vesiclescope.ui.workspace import Workspace
+
+        try:
+            if args.workspace_command == "init":
+                workspace = Workspace(args.path).initialize()
+                print(workspace.root)
+                return 0
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            print(f"vesiclescope: {exc}", file=sys.stderr)
+            return 2
+
+    if args.command == "ui":
+        from vesiclescope.ui.app import WorkspaceApplication
+        from vesiclescope.ui.server import serve_ui
+        from vesiclescope.ui.workspace import Workspace
+
+        try:
+            app = WorkspaceApplication(
+                workspace=Workspace(args.workspace),
+                runner=args.runner,
+                revision=args.revision,
+            )
+            serve_ui(
+                app,
+                port=args.port,
+                open_browser=not args.no_browser,
+            )
+            return 0
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
             return 2
