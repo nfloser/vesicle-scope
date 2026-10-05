@@ -55,5 +55,40 @@ class CliTests(unittest.TestCase):
         self.assertIn("native runner does not exist", error.getvalue())
 
 
+    def test_experiment_export_validate_and_inspect(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "experiment.json"
+
+            export_output = StringIO()
+            with redirect_stdout(export_output):
+                export_status = main(
+                    [
+                        "experiment",
+                        "export-example",
+                        "diffusion-uptake-baseline",
+                        "--output",
+                        str(path),
+                    ]
+                )
+            self.assertEqual(export_status, 0)
+            self.assertTrue(path.is_file())
+
+            validate_output = StringIO()
+            with redirect_stdout(validate_output):
+                validate_status = main(["experiment", "validate", str(path)])
+            self.assertEqual(validate_status, 0)
+            self.assertIn("valid: synthetic.diffusion-uptake.d1.u1", validate_output.getvalue())
+
+            inspect_output = StringIO()
+            with redirect_stdout(inspect_output):
+                inspect_status = main(["experiment", "inspect", str(path)])
+            self.assertEqual(inspect_status, 0)
+            summary = inspect_output.getvalue()
+            self.assertIn("experiment_id: synthetic.diffusion-uptake.d1.u1", summary)
+            self.assertIn("release_sources: 1", summary)
+            self.assertIn("uptake_sinks: 8", summary)
+            self.assertIn("synthetic_benchmark", summary)
+
+
 if __name__ == "__main__":
     unittest.main()

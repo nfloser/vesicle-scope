@@ -20,7 +20,7 @@ The installable CLI is a product milestone, not the finished product.
 
 ### User-defined experiments
 
-Users still need a stable, validated external experiment/project format rather than only reviewed built-in scenarios. It must preserve parameter provenance and reject unsupported or ambiguous scientific inputs.
+A deterministic external experiment document is now available for export, validation, inspection and programmatic loading while preserving the existing provenance contract. The remaining gap is a user-facing editor plus execution of arbitrary supported loaded experiments without requiring Python code.
 
 ### Run inspection and comparison
 

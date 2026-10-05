@@ -468,6 +468,21 @@ def _decode_experiment(value: Any) -> TransportExperiment:
     )
 
 
+
+def encode_experiment_payload(experiment: TransportExperiment) -> dict[str, Any]:
+    """Encode one validated experiment using the durable run-bundle semantics."""
+
+    if not isinstance(experiment, TransportExperiment):
+        raise TypeError("experiment must be a TransportExperiment")
+    return _encode_experiment(experiment)
+
+
+def decode_experiment_payload(value: Any) -> TransportExperiment:
+    """Decode one experiment using the durable run-bundle semantics."""
+
+    return _decode_experiment(value)
+
+
 def _encode_numerics(numerics: BioFVMNumerics) -> dict[str, Any]:
     return {
         "grid_spacing_micron": numerics.grid_spacing_micron,

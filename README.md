@@ -20,6 +20,7 @@ See:
 - [architecture baseline](docs/architecture.md)
 - [product readiness](docs/product-readiness.md)
 - [deterministic simulation run bundles](docs/run-bundles.md)
+- [external experiment documents](docs/experiment-files.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)
 - [parameter provenance contract](docs/parameter-provenance.md)
 - [synthetic transport benchmark](docs/transport-benchmark.md)
@@ -97,6 +98,9 @@ VesicleScope now has an installable headless interface. The scientific core has 
 python -m pip install .
 vesiclescope --version
 vesiclescope examples
+vesiclescope experiment export-example diffusion-uptake-baseline --output experiment.json
+vesiclescope experiment validate experiment.json
+vesiclescope experiment inspect experiment.json
 ```
 
 To run the reviewed synthetic diffusion × uptake workflow with figures:
