@@ -15,6 +15,11 @@ import os
 import tempfile
 import zipfile
 
+from vesiclescope.batch_manifests import (
+    ExperimentBatchManifest,
+    deserialize_batch_manifest,
+    serialize_batch_manifest,
+)
 from vesiclescope.domain import TransportExperiment
 from vesiclescope.experiment_files import (
     deserialize_experiment_document,
@@ -36,6 +41,7 @@ MARKDOWN_MEDIA_TYPE_URI = "http://purl.org/NET/mediatypes/text/markdown"
 MANIFEST_NAME = "manifest.xml"
 EXPERIMENT_NAME = "experiment.json"
 README_NAME = "README.md"
+BATCH_MANIFEST_NAME = "batch-manifest.json"
 _ZIP_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 _MAX_ARCHIVE_MEMBERS = 1024
 _MAX_MEMBER_UNCOMPRESSED_BYTES = 128 * 1024 * 1024
@@ -47,6 +53,15 @@ class CombineArchiveProject:
     """Validated VesicleScope content recovered from one OMEX archive."""
 
     experiment: TransportExperiment
+    runs: tuple[SimulationRunBundle, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CombineBatchArchiveProject:
+    """Validated completed VesicleScope batch recovered from one OMEX archive."""
+
+    manifest: ExperimentBatchManifest
+    experiments: tuple[TransportExperiment, ...]
     runs: tuple[SimulationRunBundle, ...]
 
 
@@ -120,6 +135,99 @@ def _readme_bytes(
     return "\n".join(lines).encode("utf-8")
 
 
+def _batch_manifest_bytes(member_count: int) -> bytes:
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<omexManifest xmlns="{OMEX_MANIFEST_NAMESPACE}">',
+        f'  <content location="." format="{OMEX_NAMESPACE}"/>',
+        f'  <content location="./{MANIFEST_NAME}" format="{OMEX_MANIFEST_NAMESPACE}"/>',
+        f'  <content location="./{BATCH_MANIFEST_NAME}" format="{JSON_MEDIA_TYPE_URI}" master="true"/>',
+        f'  <content location="./{README_NAME}" format="{MARKDOWN_MEDIA_TYPE_URI}"/>',
+    ]
+    for index in range(1, member_count + 1):
+        lines.append(
+            f'  <content location="./experiments/member-{index:03d}.json" '
+            f'format="{JSON_MEDIA_TYPE_URI}"/>'
+        )
+        lines.append(
+            f'  <content location="./runs/member-{index:03d}.run.json" '
+            f'format="{JSON_MEDIA_TYPE_URI}"/>'
+        )
+    lines.append("</omexManifest>")
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
+def _batch_readme_bytes(
+    manifest: ExperimentBatchManifest,
+    experiments: tuple[TransportExperiment, ...],
+) -> bytes:
+    lines = [
+        "# VesicleScope COMBINE Batch Archive",
+        "",
+        "This OMEX file contains a completed explicit VesicleScope experiment batch.",
+        "It does not claim SED-ML compatibility for the VesicleScope BioFVM experiments.",
+        "",
+        f"- Members: {len(manifest.members)}",
+        f"- VesicleScope revision: {manifest.vesiclescope_revision}",
+        f"- Grid spacing: {manifest.numerics.grid_spacing_micron:g} micron",
+        f"- Time step: {manifest.numerics.time_step_min:g} min",
+        "",
+        "Member order is authoritative and comes from batch-manifest.json.",
+        "The batch is an explicit input set; no random sampling or biological distribution is implied.",
+        "",
+        "## Members",
+        "",
+    ]
+    for member, experiment in zip(manifest.members, experiments):
+        lines.append(
+            f"- {member.index:03d}: {experiment.experiment_id}; "
+            f"run digest {member.run_bundle_payload_sha256}"
+        )
+    lines.extend(
+        [
+            "",
+            "Simulation output is not experimental evidence by itself.",
+            "",
+        ]
+    )
+    return "\n".join(lines).encode("utf-8")
+
+
+def _validate_batch_inputs(
+    manifest: ExperimentBatchManifest,
+    runs: tuple[SimulationRunBundle, ...],
+) -> tuple[TransportExperiment, ...]:
+    if not isinstance(manifest, ExperimentBatchManifest):
+        raise TypeError("manifest must be an ExperimentBatchManifest")
+    if not isinstance(runs, tuple) or not all(
+        isinstance(bundle, SimulationRunBundle) for bundle in runs
+    ):
+        raise TypeError("runs must be a tuple of SimulationRunBundle objects")
+    if len(runs) != len(manifest.members):
+        raise ValueError("batch archive run count does not match the batch manifest")
+
+    experiments: list[TransportExperiment] = []
+    for member, bundle in zip(manifest.members, runs):
+        if bundle.experiment.experiment_id != member.experiment_id:
+            raise ValueError(
+                "batch archive run experiment_id does not match the batch manifest"
+            )
+        if bundle.vesiclescope_revision != manifest.vesiclescope_revision:
+            raise ValueError(
+                "batch archive run revision does not match the batch manifest"
+            )
+        if bundle.numerics != manifest.numerics:
+            raise ValueError(
+                "batch archive run numerics do not match the batch manifest"
+            )
+        if run_bundle_payload_sha256(bundle) != member.run_bundle_payload_sha256:
+            raise ValueError(
+                "batch archive run payload digest does not match the batch manifest"
+            )
+        experiments.append(bundle.experiment)
+    return tuple(experiments)
+
+
 def _zip_info(name: str) -> zipfile.ZipInfo:
     info = zipfile.ZipInfo(name, date_time=_ZIP_TIMESTAMP)
     info.compress_type = zipfile.ZIP_STORED
@@ -162,6 +270,71 @@ def serialize_combine_archive(
     return output.getvalue()
 
 
+def serialize_batch_combine_archive(
+    manifest: ExperimentBatchManifest,
+    runs: tuple[SimulationRunBundle, ...],
+) -> bytes:
+    """Serialize one completed batch as deterministic OMEX without solver execution."""
+
+    experiments = _validate_batch_inputs(manifest, runs)
+    members: list[tuple[str, bytes]] = [
+        (MANIFEST_NAME, _batch_manifest_bytes(len(runs))),
+        (README_NAME, _batch_readme_bytes(manifest, experiments)),
+        (BATCH_MANIFEST_NAME, serialize_batch_manifest(manifest).encode("utf-8")),
+    ]
+    for member, experiment, bundle in zip(manifest.members, experiments, runs):
+        index = member.index
+        members.append(
+            (
+                f"experiments/member-{index:03d}.json",
+                serialize_experiment_document(experiment).encode("utf-8"),
+            )
+        )
+        members.append(
+            (
+                f"runs/member-{index:03d}.run.json",
+                serialize_run_bundle(bundle),
+            )
+        )
+    members.sort(key=lambda item: item[0])
+
+    output = BytesIO()
+    with zipfile.ZipFile(output, mode="w", allowZip64=False) as archive:
+        for name, data in members:
+            archive.writestr(_zip_info(name), data)
+    return output.getvalue()
+
+
+def write_batch_combine_archive(
+    path: Path,
+    manifest: ExperimentBatchManifest,
+    runs: tuple[SimulationRunBundle, ...],
+) -> Path:
+    output = Path(path)
+    if output.exists() and output.is_dir():
+        raise ValueError("COMBINE batch archive output path must be a file")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    data = serialize_batch_combine_archive(manifest, runs)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            dir=output.parent,
+            prefix=f".{output.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_path = Path(handle.name)
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, output)
+    finally:
+        if temporary_path is not None and temporary_path.exists():
+            temporary_path.unlink()
+    return output
+
+
 def write_combine_archive(
     path: Path,
     experiment: TransportExperiment,
@@ -192,7 +365,10 @@ def write_combine_archive(
     return output
 
 
-def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...]) -> None:
+def _parse_manifest_entries(
+    manifest_data: bytes,
+    member_names: tuple[str, ...],
+) -> dict[str, tuple[str, str | None]]:
     try:
         root = ElementTree.fromstring(manifest_data)
     except ElementTree.ParseError as exc:
@@ -222,8 +398,6 @@ def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...]) -> N
         raise ValueError("COMBINE archive manifest does not declare manifest.xml")
     if entries[MANIFEST_NAME][0] != OMEX_MANIFEST_NAMESPACE:
         raise ValueError("manifest.xml has an incompatible COMBINE format")
-    if entries.get(EXPERIMENT_NAME) != (JSON_MEDIA_TYPE_URI, "true"):
-        raise ValueError("experiment.json must be the master JSON resource")
     if README_NAME not in entries:
         raise ValueError("COMBINE archive manifest does not declare README.md")
 
@@ -237,11 +411,25 @@ def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...]) -> N
             raise ValueError("COMBINE archive manifest contains an unsafe location")
         if location not in member_names:
             raise ValueError(f"COMBINE archive manifest declares missing member: {location}")
+    return entries
 
 
-def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
-    """Read and validate one VesicleScope COMBINE archive without solver execution."""
+def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...]) -> None:
+    entries = _parse_manifest_entries(manifest_data, member_names)
+    if entries.get(EXPERIMENT_NAME) != (JSON_MEDIA_TYPE_URI, "true"):
+        raise ValueError("experiment.json must be the master JSON resource")
 
+
+def _validate_batch_manifest_entries(
+    manifest_data: bytes,
+    member_names: tuple[str, ...],
+) -> None:
+    entries = _parse_manifest_entries(manifest_data, member_names)
+    if entries.get(BATCH_MANIFEST_NAME) != (JSON_MEDIA_TYPE_URI, "true"):
+        raise ValueError("batch-manifest.json must be the master JSON resource")
+
+
+def _open_validated_archive(data: bytes) -> zipfile.ZipFile:
     if not isinstance(data, bytes):
         raise TypeError("COMBINE archive data must be bytes")
     try:
@@ -249,8 +437,8 @@ def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
     except zipfile.BadZipFile as exc:
         raise ValueError("COMBINE archive is not a valid ZIP container") from exc
 
-    with archive:
-        infos = archive.infolist()
+    infos = archive.infolist()
+    try:
         if len(infos) > _MAX_ARCHIVE_MEMBERS:
             raise ValueError("COMBINE archive contains too many members")
         if any(info.is_dir() for info in infos):
@@ -261,7 +449,6 @@ def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
             raise ValueError("COMBINE archive member exceeds the size limit")
         if sum(info.file_size for info in infos) > _MAX_TOTAL_UNCOMPRESSED_BYTES:
             raise ValueError("COMBINE archive exceeds the total uncompressed size limit")
-
         names = tuple(info.filename for info in infos)
         if len(names) != len(set(names)):
             raise ValueError("COMBINE archive contains duplicate member names")
@@ -269,6 +456,16 @@ def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
             raise ValueError("COMBINE archive contains an unsafe member path")
         if MANIFEST_NAME not in names:
             raise ValueError("COMBINE archive is missing manifest.xml")
+    except Exception:
+        archive.close()
+        raise
+    return archive
+
+def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
+    """Read and validate one VesicleScope COMBINE archive without solver execution."""
+
+    with _open_validated_archive(data) as archive:
+        names = tuple(info.filename for info in archive.infolist())
         if EXPERIMENT_NAME not in names:
             raise ValueError("COMBINE archive is missing experiment.json")
 
@@ -291,6 +488,90 @@ def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
             if bundle.experiment != experiment:
                 raise ValueError("archived run bundle does not contain the archived experiment")
         return CombineArchiveProject(experiment=experiment, runs=runs)
+
+
+def deserialize_batch_combine_archive(data: bytes) -> CombineBatchArchiveProject:
+    """Read and validate a completed VesicleScope batch OMEX without execution."""
+
+    with _open_validated_archive(data) as archive:
+        names = tuple(info.filename for info in archive.infolist())
+        if BATCH_MANIFEST_NAME not in names:
+            raise ValueError("COMBINE batch archive is missing batch-manifest.json")
+        _validate_batch_manifest_entries(archive.read(MANIFEST_NAME), names)
+        try:
+            manifest_document = archive.read(BATCH_MANIFEST_NAME).decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("archived batch-manifest.json must be UTF-8") from exc
+        manifest = deserialize_batch_manifest(manifest_document)
+
+        expected_experiment_names = tuple(
+            f"experiments/member-{member.index:03d}.json"
+            for member in manifest.members
+        )
+        expected_run_names = tuple(
+            f"runs/member-{member.index:03d}.run.json"
+            for member in manifest.members
+        )
+        actual_experiment_names = tuple(
+            sorted(
+                name
+                for name in names
+                if name.startswith("experiments/") and name.endswith(".json")
+            )
+        )
+        actual_run_names = tuple(
+            sorted(
+                name
+                for name in names
+                if name.startswith("runs/") and name.endswith(".run.json")
+            )
+        )
+        if actual_experiment_names != expected_experiment_names:
+            raise ValueError("COMBINE batch archive experiment members do not match manifest")
+        if actual_run_names != expected_run_names:
+            raise ValueError("COMBINE batch archive run members do not match manifest")
+
+        experiments: list[TransportExperiment] = []
+        runs: list[SimulationRunBundle] = []
+        for member, experiment_name, run_name in zip(
+            manifest.members,
+            expected_experiment_names,
+            expected_run_names,
+        ):
+            try:
+                experiment_document = archive.read(experiment_name).decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("archived batch experiment must be UTF-8") from exc
+            experiment = deserialize_experiment_document(experiment_document)
+            bundle = deserialize_run_bundle(archive.read(run_name))
+            if experiment.experiment_id != member.experiment_id:
+                raise ValueError(
+                    "archived batch experiment_id does not match batch manifest"
+                )
+            if bundle.experiment != experiment:
+                raise ValueError(
+                    "archived batch run does not contain its archived experiment"
+                )
+            experiments.append(experiment)
+            runs.append(bundle)
+
+        validated_experiments = _validate_batch_inputs(manifest, tuple(runs))
+        if tuple(experiments) != validated_experiments:
+            raise ValueError("archived batch experiment documents do not match run bundles")
+        return CombineBatchArchiveProject(
+            manifest=manifest,
+            experiments=tuple(experiments),
+            runs=tuple(runs),
+        )
+
+
+def read_batch_combine_archive(path: Path) -> CombineBatchArchiveProject:
+    source = Path(path)
+    try:
+        data = source.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"cannot read COMBINE batch archive: {source}") from exc
+    return deserialize_batch_combine_archive(data)
 
 
 def read_combine_archive(path: Path) -> CombineArchiveProject:
