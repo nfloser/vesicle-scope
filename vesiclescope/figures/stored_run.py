@@ -53,6 +53,10 @@ def prepare_stored_run_figure_data(bundle: SimulationRunBundle) -> StoredRunFigu
 
     experiment = bundle.experiment
     result = bundle.result
+    if result.integrated_quantity_unit != result.internalized_quantity_unit:
+        raise ValueError(
+            "stored-run overview requires matching extracellular and internalized quantity units"
+        )
     final_snapshots = tuple(
         snapshot
         for snapshot in result.field_snapshots
