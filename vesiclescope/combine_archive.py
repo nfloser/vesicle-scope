@@ -461,6 +461,29 @@ def _open_validated_archive(data: bytes) -> zipfile.ZipFile:
         raise
     return archive
 
+def combine_archive_project_type(data: bytes) -> str:
+    """Return the VesicleScope project kind without executing or deserializing payloads."""
+
+    with _open_validated_archive(data) as archive:
+        names = set(info.filename for info in archive.infolist())
+        has_experiment = EXPERIMENT_NAME in names
+        has_batch = BATCH_MANIFEST_NAME in names
+        if has_experiment == has_batch:
+            raise ValueError(
+                "COMBINE archive must contain exactly one VesicleScope master project type"
+            )
+        return "batch" if has_batch else "experiment"
+
+
+def deserialize_any_combine_archive(
+    data: bytes,
+) -> CombineArchiveProject | CombineBatchArchiveProject:
+    kind = combine_archive_project_type(data)
+    if kind == "batch":
+        return deserialize_batch_combine_archive(data)
+    return deserialize_combine_archive(data)
+
+
 def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
     """Read and validate one VesicleScope COMBINE archive without solver execution."""
 
@@ -563,6 +586,17 @@ def deserialize_batch_combine_archive(data: bytes) -> CombineBatchArchiveProject
             experiments=tuple(experiments),
             runs=tuple(runs),
         )
+
+
+def read_any_combine_archive(
+    path: Path,
+) -> CombineArchiveProject | CombineBatchArchiveProject:
+    source = Path(path)
+    try:
+        data = source.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"cannot read COMBINE archive: {source}") from exc
+    return deserialize_any_combine_archive(data)
 
 
 def read_batch_combine_archive(path: Path) -> CombineBatchArchiveProject:
