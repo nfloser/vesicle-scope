@@ -1,0 +1,99 @@
+name: Publish VesicleScope 0.1.0
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-v0.1.0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: publish-vesiclescope-v0.1.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_COMMIT: c1888c539ea2809cac55a5237d3309cc4cd21e9d
+      RELEASE_TAG: v0.1.0
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify immutable release boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$RELEASE_COMMIT^{commit}"
+          test "$(git show "$RELEASE_COMMIT:pyproject.toml" | grep -F 'version = "0.1.0"' | wc -l)" -eq 1
+          git show "$RELEASE_COMMIT:docs/releases/v0.1.0.md" > /tmp/vesiclescope-v0.1.0-notes.md
+          grep -F "VesicleScope 0.1.0" /tmp/vesiclescope-v0.1.0-notes.md
+          grep -F "not a medical device" /tmp/vesiclescope-v0.1.0-notes.md
+
+      - name: Build and verify exact historical wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/dist
+          git worktree add --detach build/release-source "$RELEASE_COMMIT"
+          python -m pip wheel --disable-pip-version-check --no-deps             ./build/release-source --wheel-dir build/dist
+          WHEEL="$(find build/dist -name 'vesicle_scope-0.1.0-*.whl' -print -quit)"
+          test -n "$WHEEL"
+          test "$(find build/dist -name 'vesicle_scope-0.1.0-*.whl' | wc -l)" -eq 1
+          python -m venv build/release-venv
+          build/release-venv/bin/python -m pip install --disable-pip-version-check "$WHEEL"
+          build/release-venv/bin/vesiclescope --version | grep -F "vesiclescope 0.1.0"
+
+      - name: Verify or create release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if git rev-parse "$RELEASE_TAG^{commit}" >/dev/null 2>&1; then
+            EXISTING="$(git rev-parse "$RELEASE_TAG^{commit}")"
+            test "$EXISTING" = "$RELEASE_COMMIT"
+          else
+            git tag "$RELEASE_TAG" "$RELEASE_COMMIT"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+
+      - name: Publish or verify GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"               --json tagName,targetCommitish,url
+          else
+            gh release create "$RELEASE_TAG" build/dist/vesicle_scope-0.1.0-*.whl               --repo "$GITHUB_REPOSITORY"               --verify-tag               --title "VesicleScope 0.1.0"               --notes-file /tmp/vesiclescope-v0.1.0-notes.md
+          fi
+
+      - name: Close publication issue after verified release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_URL="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
+          gh issue close 69 --repo "$GITHUB_REPOSITORY"             --comment "Published and verified VesicleScope 0.1.0 from the fixed release commit `$RELEASE_COMMIT`: $RELEASE_URL"
+
+      - name: Upload published wheel for workflow traceability
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-v0.1.0-published-wheel
+          path: build/dist/vesicle_scope-0.1.0-*.whl
+          if-no-files-found: error
