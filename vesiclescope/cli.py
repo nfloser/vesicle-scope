@@ -23,6 +23,11 @@ def _parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("examples", help="List reviewed built-in synthetic examples.")
 
+    data = subparsers.add_parser("data", help="Audit local experimental data without simulation.")
+    data_commands = data.add_subparsers(dest="data_command", required=True)
+    mucus = data_commands.add_parser("audit-mucus", help="Audit the exact reviewed DRUM one-second MSD workbook.")
+    mucus.add_argument("path", type=Path)
+
     run = subparsers.add_parser("run", help="Run a reviewed built-in example.")
     run.add_argument("example", choices=("diffusion-uptake-factor",))
     run.add_argument("--runner", type=Path, required=True)
@@ -424,6 +429,17 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "examples":
         _print_examples()
+        return 0
+
+    if args.command == "data":
+        from vesiclescope.validation.mucus_data import audit_mucus_workbook
+
+        try:
+            report = audit_mucus_workbook(args.path)
+        except (OSError, ValueError) as exc:
+            print(f"vesiclescope: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False))
         return 0
 
     if args.command == "run":
