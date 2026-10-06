@@ -93,6 +93,13 @@ class MeasuredMucusDataTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'finite'):
                     mucus_data._number(value, 'synthetic measurement')
 
+    def test_optional_reader_has_actionable_error(self):
+        digest = hashlib.sha256(self.path.read_bytes()).hexdigest()
+        with patch.object(mucus_data, 'REVIEWED_SHA256', digest):
+            with patch.dict('sys.modules', {'openpyxl': None}):
+                with self.assertRaisesRegex(ValueError, 'optional reader'):
+                    mucus_data.audit_mucus_workbook(self.path)
+
     def test_unexpected_sheets_columns_and_invalid_ph_rejected(self):
         self.book.create_sheet('unexpected')
         with self.assertRaisesRegex(ValueError, 'inventory'):
