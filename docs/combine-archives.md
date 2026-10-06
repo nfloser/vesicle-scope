@@ -98,6 +98,29 @@ basenames; all other batch audit values are retained. Inspection rejects missing
 extra or duplicated members, mismatched experiments, altered digests and unsafe
 ZIP paths. The existing size and encryption restrictions apply.
 
-CLI inspection distinguishes batch and single-experiment projects. Browser
-import/export currently supports single-experiment projects only. Batch packaging
+CLI inspection distinguishes batch and single-experiment projects. Batch packaging
 does not imply a sampled biological distribution or SED-ML portability.
+
+## Browser batch exchange
+
+In **Completed Runs**, inspect a run and use **Add inspected run** to add it to
+**Ordered completed run filenames**. Arrange one filename per line in the desired
+member order, then select **Download batch OMEX**. The server validates the entire
+selection through the same batch archive contract as the CLI. Each experiment ID
+must be unique; all runs must share revision and numerical settings. This is an
+explicit selection of stored results, not a parameter sampling or batch execution
+feature. No solver is invoked.
+
+Use **Import experiment batch OMEX** in the Experiments panel to import an archive
+created by either interface. Every experiment and run is validated before writes
+begin. Imported filenames are collision-safe; file creation is exclusive, and a
+write failure rolls back newly created artifacts. Existing files are preserved.
+The response and ordered export field retain archive member order, and the first
+imported experiment is selected for inspection. The browser limit is 64 MB for
+both batch upload and download.
+
+The workspace stores imported experiments and runs as individual artifacts. It
+does not retain a separate batch-manifest file; re-export constructs an explicit
+selection manifest from authoritative run metadata, so additional custom batch
+metadata is not retained by a workspace round trip. The original OMEX remains the
+authoritative source for that extra metadata.

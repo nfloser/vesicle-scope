@@ -146,6 +146,9 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 if parsed.path == "/download/run":
                     self._send_artifact("run", self._query_one(query, "name"))
                     return
+                if parsed.path == "/download/batch-archive":
+                    self._send_archive_data(*app.export_batch_archive(query.get("run", [])))
+                    return
                 if parsed.path == "/download/archive":
                     self._send_archive(self._query_one(query, "experiment"))
                     return
@@ -169,7 +172,9 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
 
 
         def _send_archive(self, experiment_name: str) -> None:
-            filename, data = app.export_archive(experiment_name)
+            self._send_archive_data(*app.export_archive(experiment_name))
+
+        def _send_archive_data(self, filename: str, data: bytes) -> None:
             self.send_response(HTTPStatus.OK)
             self._security_headers()
             self.send_header("Content-Type", "application/zip")
@@ -185,6 +190,9 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
             parsed = urlsplit(self.path)
             try:
                 self._validate_host()
+                if parsed.path == "/api/batch-archive/import":
+                    self._send_json(HTTPStatus.CREATED, app.import_batch_archive(self._read_archive_body()))
+                    return
                 if parsed.path == "/api/archive/import":
                     self._send_json(
                         HTTPStatus.CREATED,
