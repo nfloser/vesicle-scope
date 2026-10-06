@@ -69,6 +69,11 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
+      - name: Install optional measured-data reader and test synthetic workbook audits
+        run: |
+          python -m pip install --disable-pip-version-check '.[data]'
+          python -m unittest discover -s tests -p test_measured_mucus_data.py -v
+
 
   package-wheel:
     runs-on: ubuntu-latest
@@ -404,4 +409,3 @@ jobs:
           vesiclescope experiment export-example diffusion-uptake-baseline --output build/windows-baseline.json
           vesiclescope experiment run build/windows-baseline.json --runner build/native/biofvm_transport_runner.exe --revision $env:VESICLESCOPE_REVISION --grid-spacing-micron 10 --time-step-min 0.1 --output build/windows-baseline.run.json
           vesiclescope run-bundle inspect build/windows-baseline.run.json
-

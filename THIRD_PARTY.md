@@ -88,3 +88,13 @@ The official source archive was downloaded and hashed separately from the develo
 ## External measurement deposits
 
 The [public EV data review](docs/research/public-ev-data-review.md) records Dryad CC0 metadata and separately downloaded DRUM CC BY-NC-ND 3.0 US originals. No raw data is vendored; different snapshots and different rights must not be conflated. These bacterial mucus measurements do not validate the tumor target.
+
+
+## openpyxl
+
+**Use:** optional read-only audit of the exact reviewed external MSD workbook.
+**Version:** 3.1.5, pinned in the `data` extra.
+**Upstream:** https://pypi.org/project/openpyxl/3.1.5/
+**License:** MIT; not vendored.
+
+No spreadsheet dependency is imported by the numerical core. The audit verifies the original byte digest before passing those exact bytes to the reader, disables external-link retention and never evaluates formulas. This is not a general untrusted workbook uploader; arbitrary files are rejected before parsing. Source measurement rights remain separately documented.
