@@ -79,3 +79,12 @@ At the reviewed commit:
 No Smoldyn dependency or distributed integration should be added until the exact applicable terms for the selected release/artifact are clarified.
 
 See [the particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md).
+
+
+### Official 2.75 release evidence (2026-10-06)
+
+The official source archive was downloaded and hashed separately from the development tree. Its author-owned native core has an express LGPL statement; the official page assigns GPL v3 to Python bindings and identifies additional component exceptions. See [the artifact-specific review](docs/research/smoldyn-2.75-license-review.md). A user-supplied standalone native executable is the narrowed candidate. This does not authorize vendoring, linking, required installation or redistribution, and does not resolve the development-tree metadata conflict.
+
+## External measurement deposits
+
+The [public EV data review](docs/research/public-ev-data-review.md) records Dryad CC0 metadata and separately downloaded DRUM CC BY-NC-ND 3.0 US originals. No raw data is vendored; different snapshots and different rights must not be conflated. These bacterial mucus measurements do not validate the tumor target.
