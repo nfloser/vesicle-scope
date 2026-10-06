@@ -12,6 +12,7 @@ from io import BytesIO
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
 import os
+import json
 import tempfile
 import zipfile
 
@@ -192,7 +193,7 @@ def write_combine_archive(
     return output
 
 
-def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...]) -> None:
+def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...], master_name: str = EXPERIMENT_NAME) -> None:
     try:
         root = ElementTree.fromstring(manifest_data)
     except ElementTree.ParseError as exc:
@@ -222,8 +223,8 @@ def _validate_manifest(manifest_data: bytes, member_names: tuple[str, ...]) -> N
         raise ValueError("COMBINE archive manifest does not declare manifest.xml")
     if entries[MANIFEST_NAME][0] != OMEX_MANIFEST_NAMESPACE:
         raise ValueError("manifest.xml has an incompatible COMBINE format")
-    if entries.get(EXPERIMENT_NAME) != (JSON_MEDIA_TYPE_URI, "true"):
-        raise ValueError("experiment.json must be the master JSON resource")
+    if entries.get(master_name) != (JSON_MEDIA_TYPE_URI, "true"):
+        raise ValueError(f"{master_name} must be the master JSON resource")
     if README_NAME not in entries:
         raise ValueError("COMBINE archive manifest does not declare README.md")
 
@@ -250,25 +251,7 @@ def deserialize_combine_archive(data: bytes) -> CombineArchiveProject:
         raise ValueError("COMBINE archive is not a valid ZIP container") from exc
 
     with archive:
-        infos = archive.infolist()
-        if len(infos) > _MAX_ARCHIVE_MEMBERS:
-            raise ValueError("COMBINE archive contains too many members")
-        if any(info.is_dir() for info in infos):
-            raise ValueError("COMBINE archive must not contain directory entries")
-        if any(info.flag_bits & 0x1 for info in infos):
-            raise ValueError("encrypted COMBINE archive members are not supported")
-        if any(info.file_size > _MAX_MEMBER_UNCOMPRESSED_BYTES for info in infos):
-            raise ValueError("COMBINE archive member exceeds the size limit")
-        if sum(info.file_size for info in infos) > _MAX_TOTAL_UNCOMPRESSED_BYTES:
-            raise ValueError("COMBINE archive exceeds the total uncompressed size limit")
-
-        names = tuple(info.filename for info in infos)
-        if len(names) != len(set(names)):
-            raise ValueError("COMBINE archive contains duplicate member names")
-        if not all(_member_name_is_safe(name) for name in names):
-            raise ValueError("COMBINE archive contains an unsafe member path")
-        if MANIFEST_NAME not in names:
-            raise ValueError("COMBINE archive is missing manifest.xml")
+        names = _validate_zip_members(archive)
         if EXPERIMENT_NAME not in names:
             raise ValueError("COMBINE archive is missing experiment.json")
 
@@ -299,4 +282,181 @@ def read_combine_archive(path: Path) -> CombineArchiveProject:
         data = source.read_bytes()
     except OSError as exc:
         raise ValueError(f"cannot read COMBINE archive: {source}") from exc
+    return deserialize_combine_archive(data)
+
+
+def _validate_zip_members(archive: zipfile.ZipFile) -> tuple[str, ...]:
+    infos = archive.infolist()
+    if len(infos) > _MAX_ARCHIVE_MEMBERS:
+        raise ValueError("COMBINE archive contains too many members")
+    if any(info.is_dir() for info in infos):
+        raise ValueError("COMBINE archive must not contain directory entries")
+    if any(info.flag_bits & 0x1 for info in infos):
+        raise ValueError("encrypted COMBINE archive members are not supported")
+    if any(info.file_size > _MAX_MEMBER_UNCOMPRESSED_BYTES for info in infos):
+        raise ValueError("COMBINE archive member exceeds the size limit")
+    if sum(info.file_size for info in infos) > _MAX_TOTAL_UNCOMPRESSED_BYTES:
+        raise ValueError("COMBINE archive exceeds the total uncompressed size limit")
+
+    names = tuple(info.filename for info in infos)
+    if len(names) != len(set(names)):
+        raise ValueError("COMBINE archive contains duplicate member names")
+    if not all(_member_name_is_safe(name) for name in names):
+        raise ValueError("COMBINE archive contains an unsafe member path")
+    if MANIFEST_NAME not in names:
+        raise ValueError("COMBINE archive is missing manifest.xml")
+    return names
+
+
+BATCH_MANIFEST_NAME = "batch-manifest.json"
+
+
+@dataclass(frozen=True, slots=True)
+class BatchCombineArchiveProject:
+    manifest: dict[str, object]
+    experiments: tuple[TransportExperiment, ...]
+    runs: tuple[SimulationRunBundle, ...]
+
+
+def _validate_batch(
+    manifest: dict[str, object],
+    experiments: tuple[TransportExperiment, ...],
+    runs: tuple[SimulationRunBundle, ...],
+) -> None:
+    if not isinstance(manifest, dict) or manifest.get('schema') != 'vesiclescope.experiment-batch' or type(manifest.get('version')) is not int or manifest['version'] != 1:
+        raise ValueError('unsupported experiment batch manifest')
+    members = manifest.get('members')
+    if not isinstance(members, list) or not members or len(members) != len(experiments) or len(members) != len(runs):
+        raise ValueError('batch members must match experiments and runs exactly')
+    seen_ids, seen_runs = set(), set()
+    for index, (member, experiment, run) in enumerate(zip(members, experiments, runs), 1):
+        if not isinstance(member, dict) or type(member.get('index')) is not int or member['index'] != index:
+            raise ValueError('batch member index must preserve consecutive input order')
+        if member.get('experiment_id') != experiment.experiment_id or run.experiment != experiment:
+            raise ValueError('batch experiment identity mismatch')
+        if experiment.experiment_id in seen_ids:
+            raise ValueError('duplicate batch experiment identity')
+        seen_ids.add(experiment.experiment_id)
+        for field in ('input_filename', 'run_filename'):
+            name = member.get(field)
+            if not _member_name_is_safe(name) or '/' in name:
+                raise ValueError('batch artifact filenames must be safe basenames')
+        if member['run_filename'] in seen_runs:
+            raise ValueError('duplicate batch run filename')
+        seen_runs.add(member['run_filename'])
+        if member.get('run_bundle_payload_sha256') != run_bundle_payload_sha256(run):
+            raise ValueError('batch run payload digest mismatch')
+        if manifest.get('vesiclescope_revision') != run.vesiclescope_revision or manifest.get('numerics') != {
+            'grid_spacing_micron': run.numerics.grid_spacing_micron,
+            'time_step_min': run.numerics.time_step_min,
+        }:
+            raise ValueError('batch revision or numerical settings mismatch')
+    if not isinstance(manifest.get('scientific_status'), str) or not manifest['scientific_status'].strip():
+        raise ValueError('batch scientific status is required')
+
+
+def serialize_batch_combine_archive(
+    manifest: dict[str, object],
+    experiments: tuple[TransportExperiment, ...],
+    runs: tuple[SimulationRunBundle, ...],
+) -> bytes:
+    """Package a completed explicit batch without executing its solver."""
+    _validate_batch(manifest, experiments, runs)
+    # Rewrite source filenames to stable embedded paths; retain all other audit data.
+    embedded = dict(manifest)
+    embedded['members'] = [dict(member, input_filename=f'member-{i:03d}.json',
+                                run_filename=f'member-{i:03d}.run.json')
+                           for i, member in enumerate(manifest['members'], 1)]
+    members = [(BATCH_MANIFEST_NAME, (json.dumps(embedded, sort_keys=True, ensure_ascii=False, allow_nan=False, indent=2)+'\n').encode()),
+               (README_NAME, b'# VesicleScope explicit batch\n\nMember order follows batch-manifest.json. No sampling or biological distribution is implied.\nVesicleScope-native experiments and runs preserve provenance and solver identity.\nSimulation outputs are not experimental evidence. SED-ML compatibility is not claimed.\n')]
+    for i, (experiment, run) in enumerate(zip(experiments, runs), 1):
+        members.extend([(f'experiments/member-{i:03d}.json', serialize_experiment_document(experiment).encode()),
+                        (f'runs/member-{i:03d}.run.json', serialize_run_bundle(run))])
+    root = ElementTree.Element('omexManifest', xmlns=OMEX_MANIFEST_NAMESPACE)
+    for name, format_uri in [('.', OMEX_NAMESPACE), (MANIFEST_NAME, OMEX_MANIFEST_NAMESPACE),
+                            *[(n, MARKDOWN_MEDIA_TYPE_URI if n == README_NAME else JSON_MEDIA_TYPE_URI) for n, _ in members]]:
+        attributes = dict(location='.' if name == '.' else './'+name, format=format_uri)
+        if name == BATCH_MANIFEST_NAME:
+            attributes['master'] = 'true'
+        ElementTree.SubElement(root, 'content', attributes)
+    members.append((MANIFEST_NAME, ElementTree.tostring(root, encoding='utf-8', xml_declaration=True)))
+    output = BytesIO()
+    with zipfile.ZipFile(output, 'w', allowZip64=False) as archive:
+        for name, payload in sorted(members):
+            archive.writestr(_zip_info(name), payload)
+    data = output.getvalue()
+    deserialize_batch_combine_archive(data)  # enforce reader limits on generated archives
+    return data
+
+
+def deserialize_batch_combine_archive(data: bytes) -> BatchCombineArchiveProject:
+    if not isinstance(data, bytes):
+        raise TypeError('COMBINE archive data must be bytes')
+    try:
+        with zipfile.ZipFile(BytesIO(data)) as archive:
+            names = _validate_zip_members(archive)
+            _validate_manifest(archive.read(MANIFEST_NAME), names, BATCH_MANIFEST_NAME)
+            manifest = json.loads(archive.read(BATCH_MANIFEST_NAME))
+            if not isinstance(manifest, dict) or not isinstance(manifest.get('members'), list):
+                raise ValueError('invalid batch manifest')
+            count = len(manifest['members'])
+            expected = {MANIFEST_NAME, README_NAME, BATCH_MANIFEST_NAME}
+            expected.update(f'experiments/member-{i:03d}.json' for i in range(1, count+1))
+            expected.update(f'runs/member-{i:03d}.run.json' for i in range(1, count+1))
+            if set(names) != expected:
+                raise ValueError('batch archive contains missing or extra members')
+            for i, member in enumerate(manifest['members'], 1):
+                if not isinstance(member, dict) or member.get('input_filename') != f'member-{i:03d}.json' or member.get('run_filename') != f'member-{i:03d}.run.json':
+                    raise ValueError('batch manifest artifact paths do not match ordered members')
+            experiments = tuple(deserialize_experiment_document(archive.read(f'experiments/member-{i:03d}.json').decode('utf-8')) for i in range(1, count+1))
+            runs = tuple(deserialize_run_bundle(archive.read(f'runs/member-{i:03d}.run.json')) for i in range(1, count+1))
+            _validate_batch(manifest, experiments, runs)
+            return BatchCombineArchiveProject(manifest, experiments, runs)
+    except (zipfile.BadZipFile, KeyError, UnicodeDecodeError) as exc:
+        raise ValueError('invalid batch COMBINE archive') from exc
+
+
+def write_batch_combine_archive(manifest_path: Path, output: Path) -> Path:
+    """Resolve completed runs next to their manifest; recover exact input from each run."""
+    from vesiclescope.run_bundles import read_run_bundle
+    manifest_path, output = Path(manifest_path), Path(output)
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    if not isinstance(manifest, dict) or not isinstance(manifest.get('members'), list):
+        raise ValueError('invalid batch manifest')
+    paths = []
+    for member in manifest['members']:
+        name = member.get('run_filename') if isinstance(member, dict) else None
+        if not _member_name_is_safe(name) or '/' in name:
+            raise ValueError('batch run filename must be a safe basename')
+        path = manifest_path.parent / name
+        if path.resolve().parent != manifest_path.parent.resolve():
+            raise ValueError('batch run must remain within manifest directory')
+        paths.append(path)
+    runs = tuple(read_run_bundle(path) for path in paths)
+    data = serialize_batch_combine_archive(manifest, tuple(run.experiment for run in runs), runs)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=output.parent, delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, output)
+    finally:
+        if temporary is not None and temporary.exists():
+            temporary.unlink()
+    return output
+
+
+def read_combine_project(path: Path) -> CombineArchiveProject | BatchCombineArchiveProject:
+    """Inspect either supported project kind through the same defensive reader."""
+    data = Path(path).read_bytes()
+    try:
+        with zipfile.ZipFile(BytesIO(data)) as archive:
+            names = _validate_zip_members(archive)
+    except zipfile.BadZipFile as exc:
+        raise ValueError("COMBINE archive is not a valid ZIP container") from exc
+    if BATCH_MANIFEST_NAME in names:
+        return deserialize_batch_combine_archive(data)
     return deserialize_combine_archive(data)

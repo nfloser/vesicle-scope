@@ -78,6 +78,12 @@ def _parser() -> argparse.ArgumentParser:
     archive_create.add_argument("runs", type=Path, nargs="*")
     archive_create.add_argument("--output", type=Path, required=True)
 
+    archive_batch = archive_commands.add_parser(
+        "create-batch", help="Package completed batch runs without simulation.",
+    )
+    archive_batch.add_argument("manifest", type=Path)
+    archive_batch.add_argument("--output", type=Path, required=True)
+
     archive_inspect = archive_commands.add_parser(
         "inspect",
         help="Validate and inspect a VesicleScope COMBINE archive without simulation.",
@@ -489,8 +495,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "archive":
         from vesiclescope.combine_archive import (
-            read_combine_archive,
             write_combine_archive,
+            write_batch_combine_archive,
+            read_combine_project,
+            BatchCombineArchiveProject,
         )
         from vesiclescope.experiment_files import read_experiment_document
         from vesiclescope.run_bundles import read_run_bundle
@@ -502,9 +510,17 @@ def main(argv: list[str] | None = None) -> int:
                 output = write_combine_archive(args.output, experiment, runs)
                 print(output)
                 return 0
+            if args.archive_command == "create-batch":
+                print(write_batch_combine_archive(args.manifest, args.output))
+                return 0
             if args.archive_command == "inspect":
-                project = read_combine_archive(args.path)
-                print(f"experiment_id: {project.experiment.experiment_id}")
+                project = read_combine_project(args.path)
+                if isinstance(project, BatchCombineArchiveProject):
+                    print("project_type: experiment-batch")
+                    print(f"experiments: {len(project.experiments)}")
+                else:
+                    print("project_type: single-experiment")
+                    print(f"experiment_id: {project.experiment.experiment_id}")
                 print(f"stored_runs: {len(project.runs)}")
                 print("container: COMBINE Archive / OMEX")
                 print("sedml_compatibility: not claimed")
