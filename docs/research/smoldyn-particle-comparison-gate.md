@@ -1,7 +1,7 @@
 # Smoldyn particle-comparison research gate
 
 **Issue:** #83  
-**Review date:** 2026-10-05  
+**Review date:** 2026-10-05; upstream pin and license discrepancy rechecked 2026-10-06
 **Upstream reviewed:** `ssandrews/Smoldyn` at commit `e21d6dd2c0411f5624b6da88c323597d6a92ee92`  
 **Status:** scientific comparison plan defined; integration blocked on upstream license clarification
 

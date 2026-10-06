@@ -10,7 +10,7 @@ Before a biological mechanism or parameter enters the software it must have expl
 
 ## Status
 
-**VesicleScope 0.2.0 is the current published research-product release; `main` is the 0.3 development line.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, a provenance-safe synthetic editor, explicit experiment batches with deterministic batch OMEX export, conservative stored-run ensemble summaries, rich offline run comparison, a CLI and a local interactive workspace.
+**VesicleScope 0.3.0 is the current research-product release boundary.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, a provenance-safe synthetic editor, explicit experiment batches with deterministic batch OMEX export, conservative stored-run ensemble summaries, rich offline run comparison, a CLI and a local interactive workspace.
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
@@ -99,6 +99,8 @@ Recipient circles are rendered from each scenario's declared 15 micron footprint
 
 Matplotlib is an optional visualization dependency; the numerical engine and core analysis layer do not depend on it. CI independently regenerates and validates the SVG.
 
+See [the short demonstration guide](docs/demo.md) for installation and a reproducible walkthrough.
+
 ## Install and first run
 
 VesicleScope now has an installable headless interface. The scientific core has no mandatory Python runtime dependency; figure generation remains optional.
@@ -127,7 +129,7 @@ vesiclescope run diffusion-uptake-factor \
 
 The workflow writes a deterministic summary, one SVG interaction figure and nine durable run bundles. It is a controlled synthetic model-behaviour experiment and **not experimental evidence**.
 
-See [product readiness](docs/product-readiness.md) and [v0.2.0 release notes](docs/releases/v0.2.0.md) for the supported product boundary and remaining scientific limitations.
+See [product readiness](docs/product-readiness.md) and [v0.3.0 release notes](docs/releases/v0.3.0.md) for the supported product boundary and remaining scientific limitations.
 
 
 ## Local interactive workspace
