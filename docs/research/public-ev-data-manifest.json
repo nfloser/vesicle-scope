@@ -1,0 +1,125 @@
+{
+  "review_date": "2026-10-06",
+  "publication_doi": "10.1038/s41522-025-00866-9",
+  "dryad": {
+    "doi": "10.5061/dryad.cvdncjth8",
+    "version_number": 3,
+    "version_id": 412881,
+    "license": "CC0-1.0",
+    "access_status": "Metadata retrieved; advertised CSV downloads returned HTTP 401/403; bytes not verified",
+    "files": [
+      {
+        "name": "bEV_diffusion_host_response_bEV_Characterization_data_clean.csv",
+        "size_bytes": 1700,
+        "repository_sha256": "ad9f38347db942b0089ff49a218c4d854ec6263d85fb888af622ae30325b4a15",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502285/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_Characterization_removed_outliers.csv",
+        "size_bytes": 957,
+        "repository_sha256": "24eccf7609fe09dc3d20f2ab127230d0397809171c90710c2554d1d2e4083933",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502287/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_Cytokine_data_clean.csv",
+        "size_bytes": 9307,
+        "repository_sha256": "325b7e795baedae22554f4301f80bace2994be3035c06627ccdb0d090cdbcb38",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502284/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_Cytokine_removed_outliers.csv",
+        "size_bytes": 5631,
+        "repository_sha256": "e9a76c436a399fb76f7642b444b5590e7c1c4e4ad232a3e47773018b4a5f4505",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502286/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_Histogram_data_clean.csv",
+        "size_bytes": 52531,
+        "repository_sha256": "2b6b0a65bf249c1b3db3ab0215ae5212ab73fa2f42ca331eca1184a827094002",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502280/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_Histogram_removed_outliers.csv",
+        "size_bytes": 49309,
+        "repository_sha256": "5d586e67ab481e31e91f9bc33bbbf4faa9575e6eea538ce851121e7710cf14dc",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502283/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_uptake_data_clean.csv",
+        "size_bytes": 5084,
+        "repository_sha256": "d92c03c4dedb4628c94eb573286277cb7b2395a1ac494d32b3be604da88bb802",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502278/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_uptake_removed_outliers.csv",
+        "size_bytes": 2597,
+        "repository_sha256": "09fb10afb12a6eacb0ba0c8bf2d2c73512ac91173bb7b349841b938451ecb29b",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502279/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_viability_data_clean.csv",
+        "size_bytes": 7472,
+        "repository_sha256": "bb3b39561539736eea65b05db400b684e28d5243dd403681394fe91015766894",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502282/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_bEV_viability_removed_outliers.csv",
+        "size_bytes": 4816,
+        "repository_sha256": "a2b0eb157fc66632c052c759d495696eb1a0be767005432b8293945aaac90e22",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502281/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_CVM_1sMSD.csv",
+        "size_bytes": 219034,
+        "repository_sha256": "51a0e40c634654dfafbe977b5ff3e12dbf6fb7c316358b24c6240efbc753ce22",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502276/download"
+      },
+      {
+        "name": "bEV_diffusion_host_response_CVM_SampleInfo.csv",
+        "size_bytes": 930,
+        "repository_sha256": "2b05330a4d5dec361361b06c046771610513b2667130659da21c90eac6b496a2",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502277/download"
+      },
+      {
+        "name": "README.md",
+        "size_bytes": 4597,
+        "repository_sha256": "e538bbc8798c1bcbd8a404ebfa8f018971571e349a5eba75d2529f015688e02c",
+        "locally_verified": false,
+        "download_url": "https://datadryad.org/api/v2/files/4502296/download"
+      }
+    ]
+  },
+  "drum": {
+    "doi": "10.13016/kkai-hwng",
+    "license": "CC-BY-NC-ND-3.0-US",
+    "license_url": "https://creativecommons.org/licenses/by-nc-nd/3.0/us/",
+    "files": [
+      {
+        "name": "2025_10_01 Data Figs2.xlsx",
+        "size_bytes": 276851,
+        "sha256": "df078620f5a9eb8a4005dadf2f179b4fe2196621a7daae0f8119efa0a7c0e957",
+        "locally_verified": true,
+        "download_url": "https://drum.lib.umd.edu/bitstreams/363698bf-f7dd-4622-bfb4-064f61dc1f1b/download"
+      },
+      {
+        "name": "2025_10_01 Data Figs1,3-6.xlsx",
+        "size_bytes": 87529,
+        "sha256": "0f68ef91a7975ab9433265ef99b21fdff2ea30e319ca8745bdedcabfd9a1ca94",
+        "locally_verified": true,
+        "download_url": "https://drum.lib.umd.edu/bitstreams/c55271e9-519a-4206-8b45-fe31082c8fef/download"
+      }
+    ]
+  }
+}

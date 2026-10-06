@@ -3,7 +3,7 @@
 **Issue:** #83  
 **Review date:** 2026-10-05; upstream pin and license discrepancy rechecked 2026-10-06
 **Upstream reviewed:** `ssandrews/Smoldyn` at commit `e21d6dd2c0411f5624b6da88c323597d6a92ee92`  
-**Status:** scientific comparison plan defined; integration blocked on upstream license clarification
+**Status:** scientific comparison plan defined; official 2.75 native candidate documented; distributed integration remains blocked
 
 ## Research question
 
@@ -261,3 +261,8 @@ The applicable Smoldyn distribution/license terms for the exact artifact Vesicle
 No particle-engine implementation or redistribution should proceed until this is clarified.
 
 Once that clarification exists, open a dedicated implementation issue for the diffusion-only particle adapter. Keep release/uptake comparison as a later research gate.
+
+
+## Artifact-specific follow-up (2026-10-06)
+
+The [official 2.75 archive review](smoldyn-2.75-license-review.md) supplies a verified archive hash and an express LGPL statement for the author-owned native core. It narrows the preferred candidate to a user-provided standalone native executable. The older development-tree conflict above remains applicable to that tree; Python/BioSimulators/container artifacts are not interchangeable with the reviewed native candidate. No dependency, adapter or redistribution is introduced. Bundling still requires exact build/component clearance.

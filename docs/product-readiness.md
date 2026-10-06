@@ -142,3 +142,10 @@ not completion of all long-term scientific objectives. The external Colombo raw
 measurement/mapping gate, Smoldyn license/equivalence gate, evidence-backed
 inference and unsupported platform work remain explicit. They cannot be closed
 by synthetic tests, release packaging or relabelling output as measured biology.
+
+
+## Public-data and license evidence update (2026-10-06)
+
+[Primary-data inventory](research/public-ev-data-review.md): two original bacterial EV/mucus workbooks were downloaded and hashed; a separate CC0 Dryad version was inventoried but CSV bytes were not obtained. Scientific validation status is unchanged because the experimental context and observation mapping differ from the tumor target.
+
+[Official Smoldyn 2.75 license evidence](research/smoldyn-2.75-license-review.md) narrows the candidate to a user-supplied native standalone executable. No bundled/runtime dependency is cleared or added.
