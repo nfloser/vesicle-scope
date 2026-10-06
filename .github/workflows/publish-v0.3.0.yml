@@ -1,0 +1,127 @@
+name: Publish VesicleScope 0.3.0
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/publish-v0.3.0.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-v0.3.0.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: publish-vesiclescope-v0.3.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: v0.3.0
+    steps:
+      - name: Check out exact release boundary
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify release content
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -F 'version = "0.3.0"' pyproject.toml | wc -l)" -eq 1
+          grep -F '__version__ = "0.3.0"' vesiclescope/__init__.py
+          grep -F "VesicleScope 0.3.0" docs/releases/v0.3.0.md
+          grep -F "not biologically validated" docs/releases/v0.3.0.md
+          grep -F "Smoldyn" docs/releases/v0.3.0.md
+          test -s CONTRIBUTING.md
+          test -s SECURITY.md
+
+      - name: Wait for complete validation at the exact release commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 40); do
+            RESULT="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$RELEASE_COMMIT&event=push&per_page=100" \
+              --jq '[.workflow_runs[] | select(.path == ".github/workflows/tests.yml")] | sort_by(.run_number) | last | if . == null then "pending" elif .status != "completed" then "pending" else .conclusion end')"
+            if [ "$RESULT" = "success" ]; then
+              exit 0
+            fi
+            if [ "$RESULT" != "pending" ]; then
+              echo "Release validation failed: $RESULT" >&2
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "Timed out waiting for exact-commit validation" >&2
+          exit 1
+
+      - name: Build and verify release wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/dist
+          python -m pip wheel --disable-pip-version-check --no-deps . --wheel-dir build/dist
+          WHEEL="$(find build/dist -name 'vesicle_scope-0.3.0-*.whl' -print -quit)"
+          test -n "$WHEEL"
+          test "$(find build/dist -name 'vesicle_scope-0.3.0-*.whl' | wc -l)" -eq 1
+          python -m venv build/release-venv
+          build/release-venv/bin/python -m pip install --disable-pip-version-check "$WHEEL"
+          build/release-venv/bin/python -m pip check
+          build/release-venv/bin/vesiclescope --version | grep -F "vesiclescope 0.3.0"
+          build/release-venv/bin/vesiclescope --help >/dev/null
+
+      - name: Verify or create release tag at this exact commit
+        shell: bash
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if git rev-parse "$RELEASE_TAG^{commit}" >/dev/null 2>&1; then
+            EXISTING="$(git rev-parse "$RELEASE_TAG^{commit}")"
+            test "$EXISTING" = "$RELEASE_COMMIT"
+          else
+            git tag "$RELEASE_TAG" "$RELEASE_COMMIT"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+
+      - name: Publish or verify GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json tagName,url
+            if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets \
+              --jq '.assets[].name' | grep -Fx 'vesicle_scope-0.3.0-py3-none-any.whl'; then
+              gh release upload "$RELEASE_TAG" build/dist/vesicle_scope-0.3.0-*.whl --repo "$GITHUB_REPOSITORY"
+            fi
+          else
+            gh release create "$RELEASE_TAG" build/dist/vesicle_scope-0.3.0-*.whl \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --title "VesicleScope 0.3.0" \
+              --notes-file docs/releases/v0.3.0.md
+          fi
+
+      - name: Upload published wheel for workflow traceability
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: vesiclescope-v0.3.0-published-wheel
+          path: build/dist/vesicle_scope-0.3.0-*.whl
+          if-no-files-found: error

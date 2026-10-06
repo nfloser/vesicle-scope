@@ -121,3 +121,24 @@ The following remain explicit research, data or platform-extension gates and are
 - medical, diagnostic and clinical use are outside product scope.
 
 Within that declared boundary, no known critical dataset-independent product gap remains for v0.2.0.
+
+## Final dataset-independent gap audit for v0.3.0
+
+The selected 0.3.0 scope adds standards-oriented project exchange to the completed
+0.2.0 continuum workflow. Single and ordered multi-experiment OMEX creation,
+inspection, CLI and browser exchange share the same validated experiment/run
+contracts. Batch import validates before writes, uses collision-safe exclusive
+creation and rolls back new artifacts after errors; existing files are preserved.
+Archive exchange does not invoke the solver or imply SED-ML portability.
+
+The [demonstration guide](demo.md) describes the supported installation and user
+workflow. The [release notes](releases/v0.3.0.md) state platform, metadata and
+scientific limitations. Release publication must wait for all exact-commit native,
+unit, package and figure CI checks and independently verify the installed wheel.
+
+No known critical gap remains in that selected dataset-independent scope after
+the release gate passes. This is a completed continuum research-product release,
+not completion of all long-term scientific objectives. The external Colombo raw
+measurement/mapping gate, Smoldyn license/equivalence gate, evidence-backed
+inference and unsupported platform work remain explicit. They cannot be closed
+by synthetic tests, release packaging or relabelling output as measured biology.
