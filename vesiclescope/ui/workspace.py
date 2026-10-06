@@ -9,6 +9,8 @@ import re
 from vesiclescope.combine_archive import (
     deserialize_combine_archive,
     serialize_combine_archive,
+    serialize_batch_combine_archive,
+    deserialize_batch_combine_archive,
 )
 from vesiclescope.experiment_editing import derive_synthetic_experiment
 from vesiclescope.experiment_files import (
@@ -17,7 +19,8 @@ from vesiclescope.experiment_files import (
     serialize_experiment_document,
     write_experiment_document,
 )
-from vesiclescope.run_bundles import read_run_bundle, write_run_bundle
+from vesiclescope.run_bundles import (read_run_bundle, write_run_bundle,
+    serialize_run_bundle, run_bundle_payload_sha256)
 from vesiclescope.scenarios import diffusion_uptake_factor_conditions
 from vesiclescope.workflows import run_external_experiment
 
@@ -128,6 +131,78 @@ class Workspace:
             if bundle.experiment == experiment:
                 runs.append(bundle)
         return serialize_combine_archive(experiment, tuple(runs))
+
+    def export_batch_archive(self, run_names: tuple[str, ...]) -> bytes:
+        """Package an explicit ordered selection, without rerunning simulations."""
+        if not isinstance(run_names, tuple) or not run_names:
+            raise ValueError("select at least one completed run for batch export")
+        if len(run_names) != len(set(run_names)):
+            raise ValueError("batch selection contains duplicate run names")
+        runs = tuple(self.read_run(name) for name in run_names)
+        manifest = {
+            "schema": "vesiclescope.experiment-batch",
+            "version": 1,
+            "scientific_status": "explicit input batch; no sampling or biological distribution implied",
+            "vesiclescope_revision": runs[0].vesiclescope_revision,
+            "numerics": {
+                "grid_spacing_micron": runs[0].numerics.grid_spacing_micron,
+                "time_step_min": runs[0].numerics.time_step_min,
+            },
+            "members": [
+                {
+                    "index": index,
+                    "input_filename": f"member-{index:03d}.json",
+                    "experiment_id": run.experiment.experiment_id,
+                    "run_filename": f"member-{index:03d}.run.json",
+                    "run_bundle_payload_sha256": run_bundle_payload_sha256(run),
+                }
+                for index, run in enumerate(runs, 1)
+            ],
+        }
+        return serialize_batch_combine_archive(
+            manifest, tuple(run.experiment for run in runs), runs,
+        )
+
+    def import_batch_archive(self, data: bytes) -> dict[str, object]:
+        """Validate before writing and roll back every newly created batch artifact."""
+        project = deserialize_batch_combine_archive(data)
+        self.initialize()
+        reserved: dict[Path, set[str]] = {
+            self.experiments_dir: set(), self.runs_dir: set(),
+        }
+        def reserve(directory: Path, stem: str) -> Path:
+            safe_stem = self._safe_import_stem(stem)
+            name = f"{safe_stem}.json"
+            suffix = 2
+            while name in reserved[directory] or self._safe_path(directory, name).exists():
+                name = f"{safe_stem}-{suffix}.json"
+                suffix += 1
+            reserved[directory].add(name)
+            return self._safe_path(directory, name)
+
+        experiments = []
+        runs = []
+        artifacts = []
+        for index, (experiment, run) in enumerate(zip(project.experiments, project.runs), 1):
+            experiment_path = reserve(self.experiments_dir, f"imported-{experiment.experiment_id}")
+            run_path = reserve(self.runs_dir, f"imported-{experiment.experiment_id}-run-{index:03d}")
+            experiments.append(experiment_path.name)
+            runs.append(run_path.name)
+            artifacts.extend([
+                (experiment_path, serialize_experiment_document(experiment).encode("utf-8")),
+                (run_path, serialize_run_bundle(run)),
+            ])
+        created = []
+        try:
+            for path, payload in artifacts:
+                with path.open("xb") as handle:
+                    created.append(path)
+                    handle.write(payload)
+        except Exception:
+            for path in reversed(created):
+                path.unlink(missing_ok=True)
+            raise
+        return {"project_type": "experiment-batch", "experiments": experiments, "runs": runs}
 
     def import_combine_archive(self, data: bytes) -> dict[str, object]:
         self.initialize()

@@ -245,6 +245,19 @@ class WorkspaceApplication:
         filename = re.sub(r"\.json\Z", "", experiment_name) + ".omex"
         return filename, data
 
+    def export_batch_archive(self, run_names: list[str]) -> tuple[str, bytes]:
+        if not isinstance(run_names, list) or not all(isinstance(name, str) for name in run_names):
+            raise ValueError("batch run selection must be a list of filenames")
+        data = self.workspace.export_batch_archive(tuple(run_names))
+        if len(data) > _MAX_COMBINE_ARCHIVE_BYTES:
+            raise ValueError("COMBINE batch archive exceeds 64 MB browser limit")
+        return "experiment-batch.omex", data
+
+    def import_batch_archive(self, data: bytes) -> dict[str, object]:
+        if not isinstance(data, bytes) or len(data) > _MAX_COMBINE_ARCHIVE_BYTES:
+            raise ValueError("COMBINE batch upload must be binary and at most 64 MB")
+        return self.workspace.import_batch_archive(data)
+
     def import_archive(self, data: bytes) -> dict[str, object]:
         if not isinstance(data, bytes):
             raise ValueError("COMBINE archive upload must be binary")
