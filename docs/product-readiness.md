@@ -149,3 +149,8 @@ by synthetic tests, release packaging or relabelling output as measured biology.
 [Primary-data inventory](research/public-ev-data-review.md): two original bacterial EV/mucus workbooks were downloaded and hashed; a separate CC0 Dryad version was inventoried but CSV bytes were not obtained. Scientific validation status is unchanged because the experimental context and observation mapping differ from the tumor target.
 
 [Official Smoldyn 2.75 license evidence](research/smoldyn-2.75-license-review.md) narrows the candidate to a user-supplied native standalone executable. No bundled/runtime dependency is cleared or added.
+
+
+## Executable measured-data audit (2026-10-06)
+
+The [local audit command](measured-data.md) now verifies and reads the actual mucus transport workbook without modifying it. Primary Figure 2 establishes µm² at one second. All ten samples and 80 groups remain separate. Stored-versus-recomputed mean differences are exposed and prevent automatic fitting; neither those differences nor unit mapping establish tumor validation. Noncommercial research use is explicitly declared, with source attribution and redistribution restrictions retained.

@@ -26,6 +26,7 @@ See:
 - [offline stored-run analysis](docs/stored-run-analysis.md)
 - [COMBINE / OMEX project archives](docs/combine-archives.md)
 - [OMEX-before-SED-ML interoperability decision](docs/research/combine-archive-interoperability.md)
+- [Local measured-data audit](docs/measured-data.md)
 - [Smoldyn particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md)
 - [interactive synthetic experiment editor](docs/synthetic-experiment-editor.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)

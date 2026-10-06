@@ -32,3 +32,8 @@ Sariano et al. 2023 (DOI 10.1002/jev2.12323) and Lenzini et al. 2020 (PMCID PMC7
 ## Next executable step
 
 Obtain the exact Dryad version's CSV bytes through its supported public download or authorized API, verify all repository hashes, audit units and replicate/exclusion structure, and define a mucus-specific observation model before fitting. No core CI job requires network access. A tumor validation still needs the matching raw measurements and fluorescence-to-model observation mapping.
+
+
+## Executable follow-up
+
+[The measured mucus audit](measured-mucus-audit.md) now records the primary Figure 2 unit mapping and actual-data acceptance. It exposes unresolved stored-versus-recomputed summary differences without assigning a diffusion coefficient or changing the tumor gate.

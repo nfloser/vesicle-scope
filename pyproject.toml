@@ -21,6 +21,7 @@ dependencies = []
 
 [project.optional-dependencies]
 figures = ["matplotlib==3.11.2"]
+data = ["openpyxl==3.1.5"]
 
 [project.scripts]
 vesiclescope = "vesiclescope.cli:main"
