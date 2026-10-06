@@ -58,3 +58,41 @@ The selected continuum workflow, reproducible artifacts, numerical checks,
 CLI/local workspace, stored-run analysis and archive exchange are integrated.
 External biological validation and the particle-engine comparison remain separate
 research gates. See [product readiness](product-readiness.md) for the exact boundary.
+
+## A useful next question: transport sensitivity
+
+Doubling donor release with all other inputs fixed checks linear scaling. It is
+not biological validation. A more informative synthetic experiment asks how
+transport changes spatial concentration and cumulative recipient uptake.
+
+Select `diffusion-uptake-baseline.json` each time and create two variants in the
+wide **Synthetic experiment editor** below the analysis panels:
+
+| Filename | Experiment ID | Diffusion [micron²/min] |
+| --- | --- | --- |
+| `slow-diffusion.json` | `synthetic.slow-diffusion` | 50 |
+| `fast-diffusion.json` | `synthetic.fast-diffusion` | 200 |
+
+Keep duration 20 min, sampling 5 min, decay 0, initial concentration 0,
+donor release 120 particle_equivalent/min and all eight uptake rates 0.5/min.
+Run each at 10 micron grid spacing and 0.1 min timestep with unique run filenames.
+The reviewed baseline diffusion is 100 micron²/min.
+
+In the full-width **Compare stored runs** panel, compare each variant against the
+baseline. Inspect cumulative internalized quantity, recorded time series and the
+compatible final concentration-field difference. Ask whether a changed diffusion
+coefficient changes uptake in this particular geometry and time window; do not
+assume that faster diffusion universally increases uptake. Individual field maps
+use their own colour scale, so use their extrema and the difference map rather
+than colour alone.
+
+This is a conditional model sensitivity study. The current UI reports total
+recipient uptake, not an automatic per-cell arrival-time or communication-range
+estimate. Research use additionally requires resolution/timestep checks and
+context-matched evidence for parameters and observables. Synthetic values are
+not biological defaults and these runs cannot establish treatment efficacy.
+
+Completed runs remain available at the top beside analysis; comparison and
+synthetic editing have wide dedicated sections. Batch export is in the expandable
+**Project exchange** section. Existing imports and result files keep the same
+contracts.
