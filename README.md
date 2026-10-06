@@ -10,7 +10,7 @@ Before a biological mechanism or parameter enters the software it must have expl
 
 ## Status
 
-**VesicleScope 0.2.0 is the current published research-product release; `main` is the 0.3 development line.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, a provenance-safe synthetic editor, explicit experiment batches, conservative stored-run ensemble summaries, rich offline run comparison, a CLI and a local interactive workspace.
+**VesicleScope 0.2.0 is the current published research-product release; `main` is the 0.3 development line.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, a provenance-safe synthetic editor, explicit experiment batches with deterministic batch OMEX export, conservative stored-run ensemble summaries, rich offline run comparison, a CLI and a local interactive workspace.
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 

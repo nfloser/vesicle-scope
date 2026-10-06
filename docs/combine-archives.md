@@ -74,3 +74,30 @@ For a selected experiment, **Download project OMEX** packages the stored experim
 The browser upload path is limited to 64 MB. This is a product-surface limit, separate from the archive reader's defensive uncompressed-size limits.
 
 The same scientific boundary applies in the browser: OMEX is a reproducible project container and **SED-ML compatibility is not claimed**.
+
+## Completed experiment batches
+
+Package all completed runs referenced by an explicit batch manifest:
+
+```bash
+vesiclescope archive create-batch results/batch-manifest.json --output batch.omex
+vesiclescope archive inspect batch.omex
+```
+
+The exporter resolves run filenames beside the manifest and obtains each exact
+experiment from its validated run bundle. Original experiment input files need
+not remain available after execution. It verifies consecutive member order,
+unique experiment IDs and run filenames, payload digests, revision and numerical
+settings. Paths cannot escape the manifest directory, including through symlinks.
+No solver is invoked.
+
+The archive contains `batch-manifest.json` as its master JSON resource and ordered
+`experiments/member-001.json` / `runs/member-001.run.json` pairs, plus the COMBINE
+manifest and README. Source filenames are normalized to deterministic archive
+basenames; all other batch audit values are retained. Inspection rejects missing,
+extra or duplicated members, mismatched experiments, altered digests and unsafe
+ZIP paths. The existing size and encryption restrictions apply.
+
+CLI inspection distinguishes batch and single-experiment projects. Browser
+import/export currently supports single-experiment projects only. Batch packaging
+does not imply a sampled biological distribution or SED-ML portability.
