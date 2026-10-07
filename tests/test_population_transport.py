@@ -174,6 +174,46 @@ class PerturbationExecutionTests(unittest.TestCase):
         self.assertEqual(resolved.applied_effects[0].base_value, 100.0)
         self.assertEqual(resolved.applied_effects[0].effective_value, 200.0)
 
+    def test_contradictory_direction_and_multiplier_are_rejected(self):
+        base = population_experiment()
+        exposure = BiologicalExposure(
+            identifier="stim",
+            compound_name="synthetic stimulus",
+            concentration=synthetic("stim.conc", 1.0, "a.u."),
+            target=ExposureTarget.DONOR_CELL_POPULATION,
+            start_min=0.0,
+            end_min=10.0,
+            evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
+        )
+        phenotype = EVPhenotype(
+            identifier="phenotype.cd9",
+            name="CD9 phenotype",
+            markers=(EVMarkerFeature(
+                identifier="cd9",
+                marker_name="CD9",
+                state=MarkerState.POSITIVE,
+                evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
+            ),),
+        )
+        effect = PerturbationEffect(
+            identifier="bad.release",
+            exposure_id="stim",
+            outcome=EffectOutcome.EV_RELEASE,
+            direction=EffectDirection.INCREASE,
+            evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
+            phenotype_id="phenotype.cd9",
+            model_mapping=ModelEffectMapping(
+                target=ModelEffectTarget.RELEASE_RATE,
+                operation=EffectOperation.MULTIPLY,
+                value=synthetic("release.factor", 0.5, "fold"),
+                target_identifier="donor",
+            ),
+        )
+        study = PerturbationStudy("study", (exposure,), (phenotype,), (effect,))
+
+        with self.assertRaisesRegex(ValueError, "increase effect"):
+            apply_model_effects(base, study)
+
     def test_unmapped_observation_never_changes_the_model(self):
         base = population_experiment()
         exposure = BiologicalExposure(
