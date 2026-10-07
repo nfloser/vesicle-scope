@@ -34,7 +34,10 @@ from vesiclescope.engines import (
     SpatialFieldSnapshot2D,
     TransportSample,
 )
-from vesiclescope.perturbation_execution import apply_model_effects
+from vesiclescope.perturbation_execution import (
+    AppliedModelEffect,
+    apply_model_effects,
+)
 from vesiclescope.population_experiment_files import (
     deserialize_population_experiment_document,
     serialize_population_experiment_document,
@@ -182,6 +185,7 @@ class PerturbationExecutionTests(unittest.TestCase):
             resolved.experiment.populations[1].transport.release_sources[0].release_rate.value,
             40.0,
         )
+        self.assertEqual(resolved.applied_effects[0].study_id, "study")
         self.assertEqual(resolved.applied_effects[0].base_value, 100.0)
         self.assertEqual(resolved.applied_effects[0].effective_value, 200.0)
 
@@ -312,17 +316,32 @@ class PopulationRunnerTests(unittest.TestCase):
         numerics = BioFVMNumerics(50.0, 0.5)
         experiment = population_experiment()
         result = run_population_transport(experiment, numerics, Path("runner"))
+        audit = AppliedModelEffect(
+            study_id="study",
+            effect_id="effect.release",
+            population_id="p.cd9",
+            target=ModelEffectTarget.RELEASE_RATE,
+            target_identifier="donor",
+            operation=EffectOperation.MULTIPLY,
+            base_value=100.0,
+            mapping_value=2.0,
+            effective_value=200.0,
+            unit="particle_equivalent/min",
+        )
         bundle = PopulationSimulationRunBundle(
-            vesiclescope_revision="a" * 40,
+            vesiclescope_revision="A" * 40,
             experiment=experiment,
             numerics=numerics,
             result=result,
+            applied_effects=(audit,),
         )
 
         encoded = serialize_population_run_bundle(bundle)
         restored = deserialize_population_run_bundle(encoded)
 
         self.assertEqual(restored, bundle)
+        self.assertEqual(restored.vesiclescope_revision, "a" * 40)
+        self.assertEqual(restored.applied_effects[0].effect_id, "effect.release")
         self.assertEqual(
             restored.result.populations[1].result.field_snapshots[-1].values,
             (1.0, 1.0, 1.0, 1.0),
