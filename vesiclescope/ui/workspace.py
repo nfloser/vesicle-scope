@@ -32,11 +32,18 @@ from vesiclescope.population_run_bundles import (
     deserialize_population_run_bundle,
     read_population_run_bundle,
     serialize_population_run_bundle,
+    write_population_run_bundle,
 )
 from vesiclescope.run_bundles import (read_run_bundle, write_run_bundle,
     serialize_run_bundle, run_bundle_payload_sha256)
 from vesiclescope.scenarios import diffusion_uptake_factor_conditions
-from vesiclescope.workflows import run_external_experiment
+from vesiclescope.engines import BioFVMNumerics
+from vesiclescope.workflows import (
+    PopulationTransportSpec,
+    resolve_perturbation_transport,
+    run_external_experiment,
+    run_population_transport,
+)
 
 
 _SAFE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\.json\Z")
@@ -392,6 +399,68 @@ class Workspace:
 
     def read_run(self, name: str):
         return read_run_bundle(self.run_path(name))
+
+    def execute_population_study(
+        self,
+        *,
+        perturbation_name: str,
+        population_experiments: dict[str, str],
+        run_name: str,
+        runner: Path,
+        revision: str,
+        grid_spacing_micron: float,
+        time_step_min: float,
+    ) -> Path:
+        self.initialize()
+        if not isinstance(population_experiments, dict) or not population_experiments:
+            raise ValueError(
+                "population_experiments must map at least one phenotype to an experiment"
+            )
+        if not all(
+            isinstance(phenotype_id, str)
+            and phenotype_id.strip()
+            and isinstance(experiment_name, str)
+            and experiment_name.strip()
+            for phenotype_id, experiment_name in population_experiments.items()
+        ):
+            raise ValueError(
+                "population_experiments must contain non-blank phenotype and experiment names"
+            )
+
+        output = self.population_run_path(run_name)
+        if output.exists():
+            raise ValueError(f"population run already exists: {run_name}")
+
+        study = self.read_perturbation(perturbation_name)
+        declared = {item.identifier for item in study.phenotypes}
+        unknown = sorted(set(population_experiments) - declared)
+        if unknown:
+            raise ValueError(
+                "population mapping references unknown study phenotypes: "
+                + ", ".join(unknown)
+            )
+
+        specs = tuple(
+            PopulationTransportSpec(
+                phenotype_id=phenotype.identifier,
+                experiment=self.read_experiment(
+                    population_experiments[phenotype.identifier]
+                ),
+            )
+            for phenotype in study.phenotypes
+            if phenotype.identifier in population_experiments
+        )
+        resolved = resolve_perturbation_transport(study, specs)
+        completed = run_population_transport(
+            resolved,
+            BioFVMNumerics(
+                grid_spacing_micron=grid_spacing_micron,
+                time_step_min=time_step_min,
+            ),
+            runner,
+            revision,
+        )
+        return write_population_run_bundle(output, completed)
 
     def execute_experiment(
         self,
