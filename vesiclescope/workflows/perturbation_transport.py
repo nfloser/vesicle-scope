@@ -426,3 +426,199 @@ def resolve_perturbation_transport(
         populations=tuple(resolved),
         unexecuted_effects=tuple(unassigned),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class PopulationRunRecord:
+    """Completed reproducible run for one phenotype-specific population."""
+
+    phenotype_id: str
+    baseline_experiment: TransportExperiment
+    effects: tuple[EffectExecutionAudit, ...]
+    run_bundle: SimulationRunBundle
+
+    @property
+    def effective_experiment(self) -> TransportExperiment:
+        return self.run_bundle.experiment
+
+    @property
+    def result(self) -> BioFVMRunResult:
+        return self.run_bundle.result
+
+
+@dataclass(frozen=True, slots=True)
+class PopulationTransportRun:
+    """Completed independently transported EV populations for one study."""
+
+    study: PerturbationStudy
+    populations: tuple[PopulationRunRecord, ...]
+    unexecuted_effects: tuple[EffectExecutionAudit, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.study, PerturbationStudy):
+            raise TypeError("study must be a PerturbationStudy")
+        if not isinstance(self.populations, tuple) or not self.populations:
+            raise ValueError("populations must be a non-empty tuple")
+        if not all(isinstance(item, PopulationRunRecord) for item in self.populations):
+            raise TypeError("populations must contain PopulationRunRecord objects")
+        identifiers = tuple(item.phenotype_id for item in self.populations)
+        if len(set(identifiers)) != len(identifiers):
+            raise ValueError("population run phenotype identifiers must be unique")
+        if not isinstance(self.unexecuted_effects, tuple):
+            raise TypeError("unexecuted_effects must be a tuple")
+
+
+def _same_times(left: tuple[float, ...], right: tuple[float, ...]) -> bool:
+    return len(left) == len(right) and all(
+        math.isclose(a, b, rel_tol=0.0, abs_tol=1e-9)
+        for a, b in zip(left, right)
+    )
+
+
+def _validate_composable_results(records: tuple[PopulationRunRecord, ...]) -> None:
+    first = records[0].result
+    first_sample_times = tuple(item.time_min for item in first.samples)
+    first_field_times = tuple(item.time_min for item in first.field_snapshots)
+
+    for record in records[1:]:
+        result = record.result
+        if result.concentration_unit != first.concentration_unit:
+            raise ValueError("population results must use the same concentration unit")
+        if result.integrated_quantity_unit != first.integrated_quantity_unit:
+            raise ValueError(
+                "population results must use the same integrated quantity unit"
+            )
+        if result.internalized_quantity_unit != first.internalized_quantity_unit:
+            raise ValueError(
+                "population results must use the same internalized quantity unit"
+            )
+        if result.engine != first.engine:
+            raise ValueError("population results must use the same engine identity")
+        if result.grid != first.grid:
+            raise ValueError("population results must use the same numerical grid")
+        if not _same_times(
+            first_sample_times,
+            tuple(item.time_min for item in result.samples),
+        ):
+            raise ValueError("population results must use identical sample times")
+        if not _same_times(
+            first_field_times,
+            tuple(item.time_min for item in result.field_snapshots),
+        ):
+            raise ValueError("population results must use identical field snapshot times")
+        if len(result.samples) != len(result.field_snapshots):
+            raise ValueError(
+                "population results require one field snapshot per summary sample"
+            )
+
+
+def run_population_transport(
+    resolved: ResolvedPerturbationTransport,
+    numerics: BioFVMNumerics,
+    runner: Path | str,
+    vesiclescope_revision: str,
+) -> PopulationTransportRun:
+    """Execute each phenotype as an independent BioFVM substrate-equivalent run.
+
+    The current native runner is intentionally left unchanged. Independent EV
+    populations are executed separately through the already verified single-
+    population adapter and may be composed only when grid, time, units and
+    engine identity are exactly compatible. This does not model interactions
+    between EV populations.
+    """
+
+    if not isinstance(resolved, ResolvedPerturbationTransport):
+        raise TypeError("resolved must be a ResolvedPerturbationTransport")
+    if not isinstance(numerics, BioFVMNumerics):
+        raise TypeError("numerics must be BioFVMNumerics")
+
+    executable = Path(runner)
+    records: list[PopulationRunRecord] = []
+    for population in resolved.populations:
+        result = run_transport(population.effective_experiment, numerics, executable)
+        bundle = SimulationRunBundle(
+            vesiclescope_revision=vesiclescope_revision,
+            experiment=population.effective_experiment,
+            numerics=numerics,
+            result=result,
+        )
+        records.append(
+            PopulationRunRecord(
+                phenotype_id=population.phenotype_id,
+                baseline_experiment=population.baseline_experiment,
+                effects=population.effects,
+                run_bundle=bundle,
+            )
+        )
+
+    completed = tuple(records)
+    _validate_composable_results(completed)
+    return PopulationTransportRun(
+        study=resolved.study,
+        populations=completed,
+        unexecuted_effects=resolved.unexecuted_effects,
+    )
+
+
+def aggregate_population_fields(
+    run: PopulationTransportRun,
+) -> tuple[SpatialFieldSnapshot2D, ...]:
+    """Return pointwise total extracellular fields without discarding child fields."""
+
+    if not isinstance(run, PopulationTransportRun):
+        raise TypeError("run must be a PopulationTransportRun")
+    _validate_composable_results(run.populations)
+
+    first = run.populations[0].result
+    snapshots: list[SpatialFieldSnapshot2D] = []
+    for index, first_snapshot in enumerate(first.field_snapshots):
+        values = tuple(
+            sum(
+                record.result.field_snapshots[index].values[value_index]
+                for record in run.populations
+            )
+            for value_index in range(len(first_snapshot.values))
+        )
+        snapshots.append(
+            SpatialFieldSnapshot2D(
+                time_min=first_snapshot.time_min,
+                values=values,
+            )
+        )
+    return tuple(snapshots)
+
+
+def aggregate_population_samples(
+    run: PopulationTransportRun,
+) -> tuple[TransportSample, ...]:
+    """Return total EV transport summaries derived from compatible child results."""
+
+    fields = aggregate_population_fields(run)
+    first = run.populations[0].result
+    samples: list[TransportSample] = []
+
+    for index, field in enumerate(fields):
+        values = field.values
+        samples.append(
+            TransportSample(
+                time_min=field.time_min,
+                mean_concentration=sum(values) / len(values),
+                min_concentration=min(values),
+                max_concentration=max(values),
+                integrated_field_quantity=sum(
+                    record.result.samples[index].integrated_field_quantity
+                    for record in run.populations
+                ),
+                internalized_field_quantity=sum(
+                    record.result.samples[index].internalized_field_quantity
+                    for record in run.populations
+                ),
+            )
+        )
+
+    if not _same_times(
+        tuple(item.time_min for item in first.samples),
+        tuple(item.time_min for item in samples),
+    ):
+        raise ValueError("aggregate sample times do not match population samples")
+    return tuple(samples)
