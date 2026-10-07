@@ -107,7 +107,11 @@ instead of inventing one.
 
 ## Explicit model mapping
 
-`ModelEffectMapping` is optional and is not executed by this issue.
+`ModelEffectMapping` is optional. The follow-up execution layer in issue #99
+executes only explicit mappings to release rate, uptake rate or decay rate after
+checking phenotype assignment, target identifier, operation, units and reported
+effect direction. Marker/cargo and phenotype-fraction mappings remain
+annotations.
 
 When present it records:
 
@@ -117,9 +121,10 @@ When present it records:
 - a provenance-bearing value;
 - an optional target identifier.
 
-Issue #99 is responsible for deciding which mappings are executable,
-validating units/semantics, applying them to explicit populations and
-verifying numerical behavior.
+Issue #99 implements that execution boundary using independently transported
+EV populations and the existing verified BioFVM adapter. It does not infer a
+response curve from hormone identity or concentration. See
+[executable phenotype-specific perturbation transport](perturbation-transport-execution.md).
 
 ## Relationship to longitudinal blood measurements
 
