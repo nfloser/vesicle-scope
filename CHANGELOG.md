@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- add evidence-aware longitudinal blood/plasma EV measurement and hormone/stimulus phenotype contracts;
+- execute independent marker/cargo-defined EV populations through the verified BioFVM path with auditable explicit perturbation mappings;
+- persist reproducible phenotype-specific fields and uptake series in deterministic population run bundles;
 - package one VesicleScope experiment plus optional validated run bundles in a deterministic COMBINE/OMEX archive;
 - inspect OMEX projects without solver execution while reusing experiment/run integrity and scientific contracts;
 - import and export COMBINE/OMEX projects through the local browser workspace without a separate scientific path;
