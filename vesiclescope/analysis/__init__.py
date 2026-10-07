@@ -24,6 +24,12 @@ from .donor_boundary import (
     distance_from_circular_donor_boundary,
     fixed_width_distance_edges,
 )
+from .measurement_comparison import (
+    MeasurementPredictionMatch,
+    MeasurementPredictionTarget,
+    PredictionObservable,
+    compare_measurements_to_prediction,
+)
 from .recipient_population import (
     DistanceBinSummary,
     PLANAR_DENSITY_UNIT,
@@ -34,6 +40,10 @@ from .recipient_population import (
 )
 
 __all__ = [
+    "MeasurementPredictionMatch",
+    "MeasurementPredictionTarget",
+    "PredictionObservable",
+    "compare_measurements_to_prediction",
     "DetailedRunComparison",
     "RunComparisonSummary",
     "SpatialDifferenceSummary",
