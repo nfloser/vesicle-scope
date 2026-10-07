@@ -5,26 +5,47 @@
       "limitations": [
         "Synthetic demonstration only; values are not biological evidence."
       ],
-      "preanalytics": {
-        "anticoagulant": "EDTA",
-        "centrifugation_steps": [
-          {
-            "duration_min": 15.0,
-            "relative_centrifugal_force_g": 2500.0,
-            "retained_fraction": "supernatant",
-            "temperature_c": null
-          }
-        ],
-        "collection_to_processing_min": 20.0,
-        "hemolysis_assessment": "synthetic example; not measured",
-        "limitations": [
-          "Synthetic demonstration only; values are not biological evidence."
-        ],
-        "residual_platelet_count_per_ul": null,
-        "sample_id": "synthetic-sample-001",
-        "specimen": "plasma"
-      },
       "reference_time_description": "Minutes relative to the declared stimulation reference.",
+      "samples": [
+        {
+          "anticoagulant": "EDTA",
+          "centrifugation_steps": [
+            {
+              "duration_min": 15.0,
+              "relative_centrifugal_force_g": 2500.0,
+              "retained_fraction": "supernatant",
+              "temperature_c": null
+            }
+          ],
+          "collection_to_processing_min": 20.0,
+          "hemolysis_assessment": "synthetic example; not measured",
+          "limitations": [
+            "Synthetic demonstration only; values are not biological evidence."
+          ],
+          "residual_platelet_count_per_ul": null,
+          "sample_id": "synthetic-control-000",
+          "specimen": "plasma"
+        },
+        {
+          "anticoagulant": "EDTA",
+          "centrifugation_steps": [
+            {
+              "duration_min": 15.0,
+              "relative_centrifugal_force_g": 2500.0,
+              "retained_fraction": "supernatant",
+              "temperature_c": null
+            }
+          ],
+          "collection_to_processing_min": 20.0,
+          "hemolysis_assessment": "synthetic example; not measured",
+          "limitations": [
+            "Synthetic demonstration only; values are not biological evidence."
+          ],
+          "residual_platelet_count_per_ul": null,
+          "sample_id": "synthetic-stimulus-015",
+          "specimen": "plasma"
+        }
+      ],
       "timepoints": [
         {
           "biological_replicate_id": null,
@@ -59,6 +80,7 @@
               "value": 200000000.0
             }
           ],
+          "sample_id": "synthetic-control-000",
           "time_min": 0.0
         },
         {
@@ -94,12 +116,13 @@
               "value": 270000000.0
             }
           ],
+          "sample_id": "synthetic-stimulus-015",
           "time_min": 15.0
         }
       ]
     }
   },
-  "payload_sha256": "3064e4c4a82814aaf11be387405aeb448832dc5a0cb4b0e2b9473444e94a8797",
+  "payload_sha256": "a284a4995254381904ef29eeb565af71d56da5f9eacdeec951895d3e60e39fa6",
   "schema": "vesiclescope.ev-measurements",
   "version": 1
 }
