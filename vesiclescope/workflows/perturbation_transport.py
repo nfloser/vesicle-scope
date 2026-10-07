@@ -11,10 +11,12 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import Enum
 import math
+from pathlib import Path
 
 from vesiclescope.domain import (
     EffectDirection,
     EffectOperation,
+    EffectOutcome,
     ModelEffectTarget,
     PerturbationEffect,
     PerturbationStudy,
@@ -25,6 +27,14 @@ from vesiclescope.domain import (
     ScientificParameter,
     TransportExperiment,
 )
+from vesiclescope.engines import (
+    BioFVMNumerics,
+    BioFVMRunResult,
+    SpatialFieldSnapshot2D,
+    TransportSample,
+    run_transport,
+)
+from vesiclescope.run_bundles import SimulationRunBundle
 
 
 class EffectExecutionStatus(str, Enum):
