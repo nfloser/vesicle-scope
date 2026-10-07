@@ -440,15 +440,31 @@ class Workspace:
                 + ", ".join(unknown)
             )
 
+        selected_experiments = {
+            phenotype_id: self.read_experiment(experiment_name)
+            for phenotype_id, experiment_name in population_experiments.items()
+        }
+        if study.transport_experiment_ids:
+            declared_experiment_ids = set(study.transport_experiment_ids)
+            mismatched = sorted(
+                experiment.experiment_id
+                for experiment in selected_experiments.values()
+                if experiment.experiment_id not in declared_experiment_ids
+            )
+            if mismatched:
+                raise ValueError(
+                    "population mapping uses transport experiments not declared "
+                    "by the perturbation study: "
+                    + ", ".join(mismatched)
+                )
+
         specs = tuple(
             PopulationTransportSpec(
                 phenotype_id=phenotype.identifier,
-                experiment=self.read_experiment(
-                    population_experiments[phenotype.identifier]
-                ),
+                experiment=selected_experiments[phenotype.identifier],
             )
             for phenotype in study.phenotypes
-            if phenotype.identifier in population_experiments
+            if phenotype.identifier in selected_experiments
         )
         resolved = resolve_perturbation_transport(study, specs)
         completed = run_population_transport(
