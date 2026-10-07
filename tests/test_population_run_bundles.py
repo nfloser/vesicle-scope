@@ -10,6 +10,7 @@ from vesiclescope.domain import (
     ExposureTarget,
     MarkerState,
     PerturbationStudy,
+    PointUptakeSink,
     RectangularDomain2D,
     ScientificParameter,
     TransportExperiment,
@@ -19,6 +20,8 @@ from vesiclescope.engines import (
     BioFVMGrid2D,
     BioFVMNumerics,
     BioFVMRunResult,
+    RecipientUptakeSample,
+    RecipientUptakeSeries,
     SpatialFieldSnapshot2D,
     TransportSample,
 )
@@ -58,6 +61,15 @@ def experiment(identifier: str) -> TransportExperiment:
             1.0,
             "particle_equivalent/micron^3",
         ),
+        uptake_sinks=(
+            PointUptakeSink(
+                identifier="recipient",
+                x_micron=5.0,
+                y_micron=5.0,
+                effective_volume_micron3=1000.0,
+                uptake_rate=p(f"{identifier}.uptake", 0.1, "1/min"),
+            ),
+        ),
     )
 
 
@@ -65,6 +77,7 @@ def result(identifier: str, value: float) -> BioFVMRunResult:
     grid = BioFVMGrid2D(2, 2, 10.0, 10.0)
     field = (value, value, value, value)
     integrated = sum(field) * 1000.0
+    internalized = (0.0, value / 10.0)
     samples = tuple(
         TransportSample(
             time_min=time,
@@ -72,9 +85,9 @@ def result(identifier: str, value: float) -> BioFVMRunResult:
             min_concentration=value,
             max_concentration=value,
             integrated_field_quantity=integrated,
-            internalized_field_quantity=0.0,
+            internalized_field_quantity=internalized[index],
         )
-        for time in (0.0, 1.0)
+        for index, time in enumerate((0.0, 1.0))
     )
     fields = tuple(
         SpatialFieldSnapshot2D(time_min=time, values=field)
@@ -94,7 +107,22 @@ def result(identifier: str, value: float) -> BioFVMRunResult:
         grid=grid,
         samples=samples,
         field_snapshots=fields,
-        recipient_uptake_series=(),
+        recipient_uptake_series=(
+            RecipientUptakeSeries(
+                identifier="recipient",
+                x_micron=5.0,
+                y_micron=5.0,
+                effective_volume_micron3=1000.0,
+                uptake_rate_per_min=0.1,
+                samples=tuple(
+                    RecipientUptakeSample(
+                        time_min=time,
+                        internalized_field_quantity=internalized[index],
+                    )
+                    for index, time in enumerate((0.0, 1.0))
+                ),
+            ),
+        ),
     )
 
 
@@ -174,6 +202,13 @@ class PopulationRunBundleTests(unittest.TestCase):
         self.assertEqual(
             restored.populations[1].run_bundle.result.field_snapshots[-1].values,
             (2.0, 2.0, 2.0, 2.0),
+        )
+        self.assertEqual(
+            restored.populations[1]
+            .run_bundle.result.recipient_uptake_series[0]
+            .samples[-1]
+            .internalized_field_quantity,
+            0.2,
         )
 
     def test_integrity_digest_rejects_tampering(self) -> None:
