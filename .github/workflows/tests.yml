@@ -161,7 +161,9 @@ jobs:
       - name: Verify transport, finite recipients, fields and populations
         env:
           VESICLESCOPE_BIOFVM_RUNNER: build/native/biofvm_transport_runner
-        run: python -m unittest discover -s tests -p test_biofvm_integration.py -v
+        run: |
+          python -m unittest discover -s tests -p test_biofvm_integration.py -v
+          python -m unittest discover -s tests -p test_population_transport_integration.py -v
 
       - name: Exercise local workspace end to end
         env:
