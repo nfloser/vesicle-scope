@@ -131,6 +131,21 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                     name = self._query_one(query, "name")
                     self._send_json(HTTPStatus.OK, app.experiment(name))
                     return
+                if parsed.path == "/api/measurement":
+                    name = self._query_one(query, "name")
+                    self._send_json(HTTPStatus.OK, app.measurement(name))
+                    return
+                if parsed.path == "/api/perturbation":
+                    name = self._query_one(query, "name")
+                    self._send_json(HTTPStatus.OK, app.perturbation(name))
+                    return
+                if parsed.path == "/api/population-run":
+                    name = self._query_one(query, "name")
+                    self._send_json(
+                        HTTPStatus.OK,
+                        app.population_run(name, include_fields=True),
+                    )
+                    return
                 if parsed.path == "/api/run":
                     name = self._query_one(query, "name")
                     self._send_json(HTTPStatus.OK, app.run(name, include_field=True))
@@ -145,6 +160,15 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                     return
                 if parsed.path == "/download/run":
                     self._send_artifact("run", self._query_one(query, "name"))
+                    return
+                if parsed.path == "/download/measurement":
+                    self._send_artifact("measurement", self._query_one(query, "name"))
+                    return
+                if parsed.path == "/download/perturbation":
+                    self._send_artifact("perturbation", self._query_one(query, "name"))
+                    return
+                if parsed.path == "/download/population-run":
+                    self._send_artifact("population-run", self._query_one(query, "name"))
                     return
                 if parsed.path == "/download/batch-archive":
                     self._send_archive_data(*app.export_batch_archive(query.get("run", [])))
@@ -214,6 +238,26 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                         app.import_experiment(name, document),
                     )
                     return
+                if parsed.path == "/api/measurement/import":
+                    name = payload.get("name")
+                    document = payload.get("document")
+                    if not isinstance(name, str):
+                        raise ValueError("measurement import name must be a string")
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.import_measurement(name, document),
+                    )
+                    return
+                if parsed.path == "/api/perturbation/import":
+                    name = payload.get("name")
+                    document = payload.get("document")
+                    if not isinstance(name, str):
+                        raise ValueError("perturbation import name must be a string")
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.import_perturbation(name, document),
+                    )
+                    return
                 if parsed.path == "/api/derive":
                     source_name = payload.get("source")
                     output_name = payload.get("name")
@@ -256,6 +300,52 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                             run_name=run_name,
                             grid_spacing_micron=payload.get("grid_spacing_micron"),
                             time_step_min=payload.get("time_step_min"),
+                        ),
+                    )
+                    return
+                if parsed.path == "/api/population-run":
+                    perturbation_name = payload.get("perturbation")
+                    run_name = payload.get("run_name")
+                    population_experiments = payload.get("population_experiments")
+                    if not isinstance(perturbation_name, str):
+                        raise ValueError("perturbation must be a string")
+                    if not isinstance(run_name, str):
+                        raise ValueError("run_name must be a string")
+                    if not isinstance(population_experiments, dict):
+                        raise ValueError("population_experiments must be an object")
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.execute_population_study(
+                            perturbation_name=perturbation_name,
+                            population_experiments=population_experiments,
+                            run_name=run_name,
+                            grid_spacing_micron=payload.get("grid_spacing_micron"),
+                            time_step_min=payload.get("time_step_min"),
+                        ),
+                    )
+                    return
+                if parsed.path == "/api/measurement-comparison":
+                    measurement_name = payload.get("measurement")
+                    population_run_name = payload.get("population_run")
+                    condition_id = payload.get("condition_id")
+                    population = payload.get("population")
+                    targets = payload.get("targets")
+                    if not isinstance(measurement_name, str):
+                        raise ValueError("measurement must be a string")
+                    if not isinstance(population_run_name, str):
+                        raise ValueError("population_run must be a string")
+                    if not isinstance(condition_id, str):
+                        raise ValueError("condition_id must be a string")
+                    if not isinstance(population, str):
+                        raise ValueError("population must be a string")
+                    self._send_json(
+                        HTTPStatus.OK,
+                        app.compare_measurement_prediction(
+                            measurement_name=measurement_name,
+                            population_run_name=population_run_name,
+                            condition_id=condition_id,
+                            population=population,
+                            targets=targets,
                         ),
                     )
                     return
