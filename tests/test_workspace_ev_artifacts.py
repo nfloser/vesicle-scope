@@ -1,8 +1,11 @@
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from threading import Thread
+from types import SimpleNamespace
+from unittest.mock import patch
 from urllib.request import Request, urlopen
 
 from vesiclescope.domain import (
@@ -272,6 +275,72 @@ class WorkspaceEVArtifactTests(unittest.TestCase):
                 server.shutdown()
                 server.server_close()
                 thread.join(timeout=2)
+
+    def test_population_execution_honors_declared_transport_experiment_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Workspace(Path(directory)).initialize()
+            workspace.create_baseline_experiment("baseline.json")
+            constrained = replace(
+                perturbation_study(),
+                transport_experiment_ids=("some-other-experiment",),
+            )
+            workspace.import_perturbation(
+                "constrained.study.json",
+                serialize_perturbation_document(constrained),
+            )
+
+            with self.assertRaisesRegex(ValueError, "not declared"):
+                workspace.execute_population_study(
+                    perturbation_name="constrained.study.json",
+                    population_experiments={"cd9-positive": "baseline.json"},
+                    run_name="should-not-exist.json",
+                    runner=Path(directory) / "unused-runner",
+                    revision="c" * 40,
+                    grid_spacing_micron=10.0,
+                    time_step_min=0.1,
+                )
+
+            self.assertEqual(workspace.list_population_run_names(), ())
+
+    def test_measurement_comparison_rejects_dataset_not_declared_by_study(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workspace = Workspace(root / "workspace").initialize()
+            runner = root / "runner"
+            runner.write_text("", encoding="utf-8")
+            app = WorkspaceApplication(workspace, runner, "d" * 40)
+            fake_run = SimpleNamespace(
+                study=SimpleNamespace(
+                    study_id="different-study",
+                    measurement_dataset_ids=("different-dataset",),
+                )
+            )
+
+            with (
+                patch.object(
+                    Workspace,
+                    "read_population_run",
+                    return_value=fake_run,
+                ),
+                patch.object(
+                    Workspace,
+                    "read_measurement",
+                    return_value=measurement_dataset(),
+                ),
+            ):
+                with self.assertRaisesRegex(ValueError, "not declared"):
+                    app.compare_measurement_prediction(
+                        measurement_name="measurement.json",
+                        population_run_name="population-run.json",
+                        condition_id="control",
+                        population="total",
+                        targets=[
+                            {
+                                "observation_identifier": "nta.total",
+                                "observable": "mean_concentration",
+                            }
+                        ],
+                    )
 
     def test_application_state_surfaces_scientific_artifacts_without_relabelling_them_as_runs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
