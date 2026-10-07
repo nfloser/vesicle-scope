@@ -698,6 +698,15 @@ class WorkspaceApplication:
             )
 
         run = self.workspace.read_population_run(population_run_name)
+        dataset = self.workspace.read_measurement(measurement_name)
+        if (
+            run.study.measurement_dataset_ids
+            and dataset.dataset_id not in run.study.measurement_dataset_ids
+        ):
+            raise ValueError(
+                f"measurement dataset {dataset.dataset_id!r} is not declared by "
+                f"perturbation study {run.study.study_id!r}"
+            )
         if population == "total":
             result = _aggregate_result(run)
         else:
@@ -713,7 +722,7 @@ class WorkspaceApplication:
             result = matches[0]
 
         compared = compare_measurements_to_prediction(
-            self.workspace.read_measurement(measurement_name),
+            dataset,
             condition_id,
             result,
             tuple(parsed_targets),
