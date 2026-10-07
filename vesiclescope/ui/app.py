@@ -12,6 +12,7 @@ from vesiclescope.analysis import (
     compare_measurements_to_prediction,
     compare_run_bundles_detailed,
 )
+from vesiclescope.domain import MeasurementKind
 from vesiclescope.engines import BioFVMRunResult
 from vesiclescope.workflows import (
     aggregate_population_fields,
@@ -121,6 +122,20 @@ def _context_summary(context) -> dict[str, object] | None:
     }
 
 
+def _measurement_display_group(kind: MeasurementKind) -> str:
+    if kind in {
+        MeasurementKind.MARKER_POSITIVE_EVENT_CONCENTRATION,
+        MeasurementKind.MARKER_SIGNAL,
+    }:
+        return "marker_defined"
+    if kind in {
+        MeasurementKind.CARGO_CONCENTRATION,
+        MeasurementKind.CARGO_SIGNAL,
+    }:
+        return "cargo"
+    return "total_or_unmarked"
+
+
 def _measurement_summary(dataset) -> dict[str, object]:
     return {
         "dataset_id": dataset.dataset_id,
@@ -163,7 +178,11 @@ def _measurement_summary(dataset) -> dict[str, object]:
                         "method": observation.method,
                         "detection_semantics": observation.detection_semantics,
                         "markers": list(observation.markers),
-                        "marker_defined": bool(observation.markers),
+                        "display_group": _measurement_display_group(observation.kind),
+                        "marker_defined": (
+                            _measurement_display_group(observation.kind)
+                            == "marker_defined"
+                        ),
                         "technical_replicates": observation.technical_replicates,
                         "standard_deviation": observation.standard_deviation,
                         "notes": list(observation.notes),
