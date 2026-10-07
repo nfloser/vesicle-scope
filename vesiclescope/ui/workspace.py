@@ -19,6 +19,20 @@ from vesiclescope.experiment_files import (
     serialize_experiment_document,
     write_experiment_document,
 )
+from vesiclescope.measurement_files import (
+    deserialize_measurement_document,
+    read_measurement_document,
+    serialize_measurement_document,
+)
+from vesiclescope.perturbation_files import (
+    deserialize_perturbation_document,
+    serialize_perturbation_document,
+)
+from vesiclescope.population_run_bundles import (
+    deserialize_population_run_bundle,
+    read_population_run_bundle,
+    serialize_population_run_bundle,
+)
 from vesiclescope.run_bundles import (read_run_bundle, write_run_bundle,
     serialize_run_bundle, run_bundle_payload_sha256)
 from vesiclescope.scenarios import diffusion_uptake_factor_conditions
@@ -44,9 +58,27 @@ class Workspace:
     def runs_dir(self) -> Path:
         return self.root / "runs"
 
+    @property
+    def measurements_dir(self) -> Path:
+        return self.root / "measurements"
+
+    @property
+    def perturbations_dir(self) -> Path:
+        return self.root / "perturbations"
+
+    @property
+    def population_runs_dir(self) -> Path:
+        return self.root / "population-runs"
+
     def initialize(self) -> "Workspace":
-        self.experiments_dir.mkdir(parents=True, exist_ok=True)
-        self.runs_dir.mkdir(parents=True, exist_ok=True)
+        for directory in (
+            self.experiments_dir,
+            self.runs_dir,
+            self.measurements_dir,
+            self.perturbations_dir,
+            self.population_runs_dir,
+        ):
+            directory.mkdir(parents=True, exist_ok=True)
         return self
 
     def _safe_path(self, directory: Path, name: str) -> Path:
@@ -66,6 +98,15 @@ class Workspace:
     def run_path(self, name: str) -> Path:
         return self._safe_path(self.runs_dir, name)
 
+    def measurement_path(self, name: str) -> Path:
+        return self._safe_path(self.measurements_dir, name)
+
+    def perturbation_path(self, name: str) -> Path:
+        return self._safe_path(self.perturbations_dir, name)
+
+    def population_run_path(self, name: str) -> Path:
+        return self._safe_path(self.population_runs_dir, name)
+
     def list_experiment_names(self) -> tuple[str, ...]:
         self.initialize()
         return tuple(sorted(path.name for path in self.experiments_dir.glob("*.json")))
@@ -73,6 +114,18 @@ class Workspace:
     def list_run_names(self) -> tuple[str, ...]:
         self.initialize()
         return tuple(sorted(path.name for path in self.runs_dir.glob("*.json")))
+
+    def list_measurement_names(self) -> tuple[str, ...]:
+        self.initialize()
+        return tuple(sorted(path.name for path in self.measurements_dir.glob("*.json")))
+
+    def list_perturbation_names(self) -> tuple[str, ...]:
+        self.initialize()
+        return tuple(sorted(path.name for path in self.perturbations_dir.glob("*.json")))
+
+    def list_population_run_names(self) -> tuple[str, ...]:
+        self.initialize()
+        return tuple(sorted(path.name for path in self.population_runs_dir.glob("*.json")))
 
     def create_baseline_experiment(
         self,
@@ -103,6 +156,55 @@ class Workspace:
         return output
 
 
+
+    def import_measurement(self, name: str, document: str) -> Path:
+        self.initialize()
+        output = self.measurement_path(name)
+        if output.exists():
+            raise ValueError(f"measurement dataset already exists: {name}")
+        dataset = deserialize_measurement_document(document)
+        output.write_text(
+            serialize_measurement_document(dataset),
+            encoding="utf-8",
+            newline="\n",
+        )
+        return output
+
+    def import_perturbation(self, name: str, document: str) -> Path:
+        self.initialize()
+        output = self.perturbation_path(name)
+        if output.exists():
+            raise ValueError(f"perturbation study already exists: {name}")
+        study = deserialize_perturbation_document(document)
+        output.write_text(
+            serialize_perturbation_document(study),
+            encoding="utf-8",
+            newline="\n",
+        )
+        return output
+
+    def import_population_run(self, name: str, document: bytes | str) -> Path:
+        self.initialize()
+        output = self.population_run_path(name)
+        if output.exists():
+            raise ValueError(f"population run already exists: {name}")
+        run = deserialize_population_run_bundle(document)
+        output.write_bytes(serialize_population_run_bundle(run))
+        return output
+
+    def read_measurement(self, name: str):
+        return read_measurement_document(self.measurement_path(name))
+
+    def read_perturbation(self, name: str):
+        path = self.perturbation_path(name)
+        try:
+            document = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ValueError(f"cannot read perturbation document: {path}") from exc
+        return deserialize_perturbation_document(document)
+
+    def read_population_run(self, name: str):
+        return read_population_run_bundle(self.population_run_path(name))
 
     def _safe_import_stem(self, stem: str) -> str:
         safe_stem = re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("._-")
