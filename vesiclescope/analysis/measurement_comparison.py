@@ -113,6 +113,8 @@ def compare_measurements_to_prediction(
     condition = condition_id.strip()
     if not isinstance(result, BioFVMRunResult):
         raise TypeError("result must be a BioFVMRunResult")
+    if not result.samples:
+        raise ValueError("result must contain at least one stored sample")
     if not isinstance(targets, tuple) or not targets:
         raise ValueError("targets must be a non-empty tuple")
     if not all(isinstance(item, MeasurementPredictionTarget) for item in targets):
