@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+from pathlib import Path
+import tempfile
 from typing import Any
 
 from vesiclescope.domain import (
@@ -238,3 +241,47 @@ def deserialize_measurement_document(text: str) -> LongitudinalEVDataset:
         return _decode_dataset(payload["dataset"])
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError(f"invalid measurement dataset: {exc}") from exc
+
+
+def write_measurement_document(
+    path: Path,
+    dataset: LongitudinalEVDataset,
+) -> Path:
+    """Atomically write one deterministic longitudinal EV measurement dataset."""
+
+    output = Path(path)
+    if output.exists() and output.is_dir():
+        raise ValueError("measurement output path must be a file")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    text = serialize_measurement_document(dataset)
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{output.name}.",
+        suffix=".tmp",
+        dir=output.parent,
+        text=True,
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, output)
+    except BaseException:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+        raise
+    return output
+
+
+def read_measurement_document(path: Path) -> LongitudinalEVDataset:
+    """Read and validate one longitudinal EV measurement document."""
+
+    source = Path(path)
+    try:
+        text = source.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"cannot read measurement document: {source}") from exc
+    return deserialize_measurement_document(text)
