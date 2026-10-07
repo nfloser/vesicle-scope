@@ -122,6 +122,23 @@ Examples:
 - Saftics A et al. Single Extracellular VEsicle Nanoscopy. Journal of
   Extracellular Vesicles. 2023. DOI: 10.1002/jev2.12346.
 
+## Initial marker-panel direction
+
+The product does not hard-code one mandatory marker panel. It stores arbitrary
+measured marker combinations and their assay semantics.
+
+For the first blood/stress demonstration, useful measured views include the
+common EV-associated tetraspanins CD9, CD63 and CD81 plus explicitly
+contextual/lineage-associated markers when the assay provides them. A recent
+human acute-stress IFCM study used 23 antibodies and observed informative
+time-dependent behavior in markers including CD9, CD13, CD14, CD16, CD41,
+CD44, CD63 and HLA-DR. CD41 is particularly relevant to platelet-associated
+events in blood-derived samples.
+
+These labels remain assay phenotypes. VesicleScope must not equate a marker
+with a unique cellular origin without sufficient co-staining or supporting
+evidence.
+
 ## Longitudinal stimulation experiments
 
 A stimulation experiment must identify the biologically responsive system.
