@@ -25,6 +25,10 @@ from .perturbations import (
     PerturbationEffect,
     PerturbationStudy,
 )
+from .populations import (
+    EVPopulationExperiment,
+    EVPopulationTransport,
+)
 from .parameters import (
     EvidenceCategory,
     EvidenceSource,
@@ -47,6 +51,8 @@ from .transport import (
 )
 
 __all__ = [
+    "EVPopulationExperiment",
+    "EVPopulationTransport",
     "BiologicalExposure",
     "CargoClass",
     "EffectDirection",
