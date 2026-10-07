@@ -1,5 +1,30 @@
 """Core scientific domain contracts."""
 
+from .measurements import (
+    AssayObservation,
+    BloodEVPreanalytics,
+    CentrifugationStep,
+    LongitudinalEVDataset,
+    MeasurementKind,
+    MeasurementTimepoint,
+    SpecimenKind,
+)
+from .perturbations import (
+    BiologicalExposure,
+    CargoClass,
+    EffectDirection,
+    EffectOperation,
+    EffectOutcome,
+    EVCargoFeature,
+    EVMarkerFeature,
+    EVPhenotype,
+    ExposureTarget,
+    MarkerState,
+    ModelEffectMapping,
+    ModelEffectTarget,
+    PerturbationEffect,
+    PerturbationStudy,
+)
 from .parameters import (
     EvidenceCategory,
     EvidenceSource,
@@ -22,12 +47,32 @@ from .transport import (
 )
 
 __all__ = [
+    "BiologicalExposure",
+    "CargoClass",
+    "EffectDirection",
+    "EffectOperation",
+    "EffectOutcome",
+    "EVCargoFeature",
+    "EVMarkerFeature",
+    "EVPhenotype",
+    "ExposureTarget",
+    "MarkerState",
+    "ModelEffectMapping",
+    "ModelEffectTarget",
+    "PerturbationEffect",
+    "PerturbationStudy",
+    "AssayObservation",
+    "BloodEVPreanalytics",
     "BoundaryCondition",
+    "CentrifugationStep",
     "CircularReleaseSource",
     "CircularUptakeSink",
     "DIFFUSION_UNIT",
     "EvidenceCategory",
     "EvidenceSource",
+    "LongitudinalEVDataset",
+    "MeasurementKind",
+    "MeasurementTimepoint",
     "ParameterContext",
     "PointReleaseSource",
     "PointUptakeSink",
@@ -36,6 +81,7 @@ __all__ = [
     "ReleaseSource",
     "RectangularDomain2D",
     "ScientificParameter",
+    "SpecimenKind",
     "TransportExperiment",
     "UptakeSink",
 ]

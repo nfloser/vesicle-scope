@@ -1,0 +1,128 @@
+{
+  "payload": {
+    "dataset": {
+      "dataset_id": "synthetic.longitudinal-ev-demo",
+      "limitations": [
+        "Synthetic demonstration only; values are not biological evidence."
+      ],
+      "reference_time_description": "Minutes relative to the declared stimulation reference.",
+      "samples": [
+        {
+          "anticoagulant": "EDTA",
+          "centrifugation_steps": [
+            {
+              "duration_min": 15.0,
+              "relative_centrifugal_force_g": 2500.0,
+              "retained_fraction": "supernatant",
+              "temperature_c": null
+            }
+          ],
+          "collection_to_processing_min": 20.0,
+          "hemolysis_assessment": "synthetic example; not measured",
+          "limitations": [
+            "Synthetic demonstration only; values are not biological evidence."
+          ],
+          "residual_platelet_count_per_ul": null,
+          "sample_id": "synthetic-control-000",
+          "specimen": "plasma"
+        },
+        {
+          "anticoagulant": "EDTA",
+          "centrifugation_steps": [
+            {
+              "duration_min": 15.0,
+              "relative_centrifugal_force_g": 2500.0,
+              "retained_fraction": "supernatant",
+              "temperature_c": null
+            }
+          ],
+          "collection_to_processing_min": 20.0,
+          "hemolysis_assessment": "synthetic example; not measured",
+          "limitations": [
+            "Synthetic demonstration only; values are not biological evidence."
+          ],
+          "residual_platelet_count_per_ul": null,
+          "sample_id": "synthetic-stimulus-015",
+          "specimen": "plasma"
+        }
+      ],
+      "timepoints": [
+        {
+          "biological_replicate_id": null,
+          "condition_id": "control",
+          "observations": [
+            {
+              "detection_semantics": "Scatter-mode particle concentration; not asserted to equal EV concentration.",
+              "identifier": "nta.particles",
+              "kind": "particle_concentration",
+              "markers": [],
+              "method": "NTA",
+              "notes": [],
+              "scientific_name": "particle concentration",
+              "standard_deviation": 1000000000.0,
+              "technical_replicates": 3,
+              "unit": "particle/mL",
+              "value": 12000000000.0
+            },
+            {
+              "detection_semantics": "Marker-positive single-particle events under the declared capture/detection settings.",
+              "identifier": "spiris.cd9",
+              "kind": "marker_positive_event_concentration",
+              "markers": [
+                "CD9"
+              ],
+              "method": "SP-IRIS",
+              "notes": [],
+              "scientific_name": "CD9-positive event concentration",
+              "standard_deviation": 15000000.0,
+              "technical_replicates": 3,
+              "unit": "event/mL",
+              "value": 200000000.0
+            }
+          ],
+          "sample_id": "synthetic-control-000",
+          "time_min": 0.0
+        },
+        {
+          "biological_replicate_id": null,
+          "condition_id": "stimulus",
+          "observations": [
+            {
+              "detection_semantics": "Scatter-mode particle concentration; not asserted to equal EV concentration.",
+              "identifier": "nta.particles",
+              "kind": "particle_concentration",
+              "markers": [],
+              "method": "NTA",
+              "notes": [],
+              "scientific_name": "particle concentration",
+              "standard_deviation": 1350000000.0,
+              "technical_replicates": 3,
+              "unit": "particle/mL",
+              "value": 16200000000.0
+            },
+            {
+              "detection_semantics": "Marker-positive single-particle events under the declared capture/detection settings.",
+              "identifier": "spiris.cd9",
+              "kind": "marker_positive_event_concentration",
+              "markers": [
+                "CD9"
+              ],
+              "method": "SP-IRIS",
+              "notes": [],
+              "scientific_name": "CD9-positive event concentration",
+              "standard_deviation": 20250000.0,
+              "technical_replicates": 3,
+              "unit": "event/mL",
+              "value": 270000000.0
+            }
+          ],
+          "sample_id": "synthetic-stimulus-015",
+          "time_min": 15.0
+        }
+      ]
+    }
+  },
+  "payload_sha256": "a284a4995254381904ef29eeb565af71d56da5f9eacdeec951895d3e60e39fa6",
+  "schema": "vesiclescope.ev-measurements",
+  "version": 1
+}
