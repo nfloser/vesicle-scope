@@ -9,6 +9,22 @@ from .measurements import (
     MeasurementTimepoint,
     SpecimenKind,
 )
+from .perturbations import (
+    BiologicalExposure,
+    CargoClass,
+    EffectDirection,
+    EffectOperation,
+    EffectOutcome,
+    EVCargoFeature,
+    EVMarkerFeature,
+    EVPhenotype,
+    ExposureTarget,
+    MarkerState,
+    ModelEffectMapping,
+    ModelEffectTarget,
+    PerturbationEffect,
+    PerturbationStudy,
+)
 from .parameters import (
     EvidenceCategory,
     EvidenceSource,
@@ -31,6 +47,20 @@ from .transport import (
 )
 
 __all__ = [
+    "BiologicalExposure",
+    "CargoClass",
+    "EffectDirection",
+    "EffectOperation",
+    "EffectOutcome",
+    "EVCargoFeature",
+    "EVMarkerFeature",
+    "EVPhenotype",
+    "ExposureTarget",
+    "MarkerState",
+    "ModelEffectMapping",
+    "ModelEffectTarget",
+    "PerturbationEffect",
+    "PerturbationStudy",
     "AssayObservation",
     "BloodEVPreanalytics",
     "BoundaryCondition",
