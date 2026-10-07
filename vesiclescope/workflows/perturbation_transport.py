@@ -391,6 +391,18 @@ def resolve_perturbation_transport(
                     f"mapping but reported direction is {declared_effect.direction.value!r}"
                 )
 
+            expected_outcome = {
+                ModelEffectTarget.RELEASE_RATE: EffectOutcome.EV_RELEASE,
+                ModelEffectTarget.UPTAKE_RATE: EffectOutcome.EV_UPTAKE,
+                ModelEffectTarget.DECAY_RATE: EffectOutcome.EV_CLEARANCE,
+            }[mapping.target]
+            if declared_effect.outcome is not expected_outcome:
+                raise ValueError(
+                    f"effect {declared_effect.identifier!r} outcome "
+                    f"{declared_effect.outcome.value!r} cannot execute as "
+                    f"{mapping.target.value!r}"
+                )
+
             key = (mapping.target, mapping.target_identifier)
             if key in claimed_targets:
                 raise ValueError(
