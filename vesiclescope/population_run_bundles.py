@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import tempfile
 from typing import Any
 
@@ -17,6 +18,7 @@ from vesiclescope.run_bundles import (
     deserialize_run_bundle,
     serialize_run_bundle,
 )
+from vesiclescope.perturbation_execution import AppliedModelEffect
 from vesiclescope.workflows.population_transport import (
     EVPopulationRunResult,
     PopulationTransportResult,
@@ -25,6 +27,7 @@ from vesiclescope.workflows.population_transport import (
 
 POPULATION_RUN_BUNDLE_SCHEMA = "vesiclescope.population-simulation-run"
 POPULATION_RUN_BUNDLE_VERSION = 1
+_SHA_RE = re.compile(r"(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64})\Z")
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,10 +38,21 @@ class PopulationSimulationRunBundle:
     experiment: EVPopulationExperiment
     numerics: BioFVMNumerics
     result: EVPopulationRunResult
+    applied_effects: tuple[AppliedModelEffect, ...] = ()
 
     def __post_init__(self) -> None:
-        if not isinstance(self.vesiclescope_revision, str) or not self.vesiclescope_revision.strip():
-            raise ValueError("vesiclescope_revision must be non-blank")
+        if (
+            not isinstance(self.vesiclescope_revision, str)
+            or _SHA_RE.fullmatch(self.vesiclescope_revision.strip()) is None
+        ):
+            raise ValueError(
+                "vesiclescope_revision must be a 40- or 64-character hexadecimal commit SHA"
+            )
+        object.__setattr__(
+            self,
+            "vesiclescope_revision",
+            self.vesiclescope_revision.strip().lower(),
+        )
         if not isinstance(self.experiment, EVPopulationExperiment):
             raise TypeError("experiment must be an EVPopulationExperiment")
         if not isinstance(self.numerics, BioFVMNumerics):
@@ -57,6 +71,19 @@ class PopulationSimulationRunBundle:
         )
         if observed != expected:
             raise ValueError("population results must match configured populations")
+        if not isinstance(self.applied_effects, tuple) or not all(
+            isinstance(item, AppliedModelEffect) for item in self.applied_effects
+        ):
+            raise TypeError("applied_effects must contain AppliedModelEffect objects")
+        population_ids = {item.population_id for item in self.experiment.populations}
+        unknown_population_ids = sorted(
+            {item.population_id for item in self.applied_effects} - population_ids
+        )
+        if unknown_population_ids:
+            raise ValueError(
+                "applied effects reference unknown populations: "
+                + ", ".join(unknown_population_ids)
+            )
 
 
 def _canonical(payload: Any) -> bytes:
@@ -96,6 +123,21 @@ def _payload(bundle: PopulationSimulationRunBundle) -> dict[str, Any]:
         "vesiclescope_revision": bundle.vesiclescope_revision,
         "experiment_id": bundle.experiment.experiment_id,
         "population_runs": population_runs,
+        "applied_effects": [
+            {
+                "study_id": item.study_id,
+                "effect_id": item.effect_id,
+                "population_id": item.population_id,
+                "target": item.target.value,
+                "target_identifier": item.target_identifier,
+                "operation": item.operation.value,
+                "base_value": item.base_value,
+                "mapping_value": item.mapping_value,
+                "effective_value": item.effective_value,
+                "unit": item.unit,
+            }
+            for item in bundle.applied_effects
+        ],
     }
 
 
@@ -202,11 +244,33 @@ def deserialize_population_run_bundle(
         )
         if numerics is None:
             raise ValueError("population run bundle is empty")
+        applied_effects = tuple(
+            AppliedModelEffect(
+                study_id=item["study_id"],
+                effect_id=item["effect_id"],
+                population_id=item["population_id"],
+                target=__import__(
+                    "vesiclescope.domain",
+                    fromlist=["ModelEffectTarget"],
+                ).ModelEffectTarget(item["target"]),
+                target_identifier=item.get("target_identifier"),
+                operation=__import__(
+                    "vesiclescope.domain",
+                    fromlist=["EffectOperation"],
+                ).EffectOperation(item["operation"]),
+                base_value=item["base_value"],
+                mapping_value=item["mapping_value"],
+                effective_value=item["effective_value"],
+                unit=item["unit"],
+            )
+            for item in payload.get("applied_effects", [])
+        )
         return PopulationSimulationRunBundle(
             vesiclescope_revision=revision,
             experiment=experiment,
             numerics=numerics,
             result=result,
+            applied_effects=applied_effects,
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ValueError(f"invalid population run bundle: {exc}") from exc
