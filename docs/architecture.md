@@ -303,6 +303,30 @@ bundles therefore remain unchanged.
 
 See [hormone/stimulus perturbation and EV phenotype model](research/hormone-ev-perturbation-model.md).
 
+
+## Independent EV phenotype population composition
+
+`EVPopulationExperiment` composes multiple marker/cargo phenotype identities
+without changing the existing `TransportExperiment` or native BioFVM result
+protocol. Each phenotype owns a complete transport experiment and is run
+through the same pinned single-population solver path.
+
+The composition is valid only for populations with no cross-population
+reaction. Shared domain, duration, sampling, boundary and concentration units
+are enforced. Separate fields and uptake series remain primary outputs; a
+total-EV field is a derived voxel-wise sum.
+
+`perturbation_execution` may derive transport variants only from explicit
+`ModelEffectMapping` records. The first executable mappings are checked
+multipliers for release, uptake and decay. Observed marker/cargo changes with
+no executable mapping remain inert model metadata.
+
+`population_run_bundles` persists each phenotype result by embedding the
+existing deterministic single-run bundle, preserving all established engine,
+grid, parameter and field validation.
+
+See [phenotype-specific EV population transport](research/phenotype-population-transport.md).
+
 ## External measured-data audit boundary
 
 `vesiclescope.validation.mucus_data` reads only the digest-pinned external DRUM workbook via optional openpyxl. It produces provenance-bearing measurement audits for the CLI, with explicit sample nesting, species/particle identity and contextual units. It does not modify `TransportExperiment` or feed estimates into the engine. Originals and derived measurements remain outside the repository. See [local measured-data audit](measured-data.md).
