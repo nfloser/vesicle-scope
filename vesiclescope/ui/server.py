@@ -131,6 +131,14 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                     name = self._query_one(query, "name")
                     self._send_json(HTTPStatus.OK, app.experiment(name))
                     return
+                if parsed.path == "/api/measurement":
+                    name = self._query_one(query, "name")
+                    self._send_json(HTTPStatus.OK, app.measurement(name))
+                    return
+                if parsed.path == "/api/perturbation":
+                    name = self._query_one(query, "name")
+                    self._send_json(HTTPStatus.OK, app.perturbation(name))
+                    return
                 if parsed.path == "/api/run":
                     name = self._query_one(query, "name")
                     self._send_json(HTTPStatus.OK, app.run(name, include_field=True))
@@ -212,6 +220,26 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                     self._send_json(
                         HTTPStatus.CREATED,
                         app.import_experiment(name, document),
+                    )
+                    return
+                if parsed.path == "/api/measurement/import":
+                    name = payload.get("name")
+                    document = payload.get("document")
+                    if not isinstance(name, str):
+                        raise ValueError("measurement import name must be a string")
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.import_measurement(name, document),
+                    )
+                    return
+                if parsed.path == "/api/perturbation/import":
+                    name = payload.get("name")
+                    document = payload.get("document")
+                    if not isinstance(name, str):
+                        raise ValueError("perturbation import name must be a string")
+                    self._send_json(
+                        HTTPStatus.CREATED,
+                        app.import_perturbation(name, document),
                     )
                     return
                 if parsed.path == "/api/derive":
