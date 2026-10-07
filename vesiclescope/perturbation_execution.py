@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from vesiclescope.domain import (
+    EffectDirection,
     EffectOperation,
+    EffectOutcome,
     EvidenceCategory,
     EVPopulationExperiment,
     EVPopulationTransport,
@@ -99,7 +101,17 @@ def _multiply_parameter(
     if mapping.value.value < 0.0:
         raise ValueError("multiplicative perturbation factor must be non-negative")
 
-    effective_value = base.value * mapping.value.value
+    factor = mapping.value.value
+    if effect.direction is EffectDirection.INCREASE and factor <= 1.0:
+        raise ValueError("increase effect requires a multiplicative factor greater than one")
+    if effect.direction is EffectDirection.DECREASE and not (0.0 <= factor < 1.0):
+        raise ValueError("decrease effect requires a multiplicative factor below one")
+    if effect.direction is EffectDirection.NO_CHANGE and factor != 1.0:
+        raise ValueError("no-change effect requires a multiplicative factor of one")
+    if effect.direction in {EffectDirection.MIXED, EffectDirection.UNKNOWN}:
+        raise ValueError("mixed or unknown effect direction cannot use one scalar mapping")
+
+    effective_value = base.value * factor
     parameter = _effective_parameter(base, effect, effective_value)
     return parameter, AppliedModelEffect(
         effect_id=effect.identifier,
@@ -123,6 +135,17 @@ def _apply_one(
         raise ValueError("effect has no model mapping")
 
     transport = population.transport
+
+    expected_outcome = {
+        ModelEffectTarget.RELEASE_RATE: EffectOutcome.EV_RELEASE,
+        ModelEffectTarget.UPTAKE_RATE: EffectOutcome.EV_UPTAKE,
+        ModelEffectTarget.DECAY_RATE: EffectOutcome.EV_CLEARANCE,
+    }.get(mapping.target)
+    if expected_outcome is not None and effect.outcome is not expected_outcome:
+        raise ValueError(
+            f"model target {mapping.target.value!r} is incompatible with "
+            f"effect outcome {effect.outcome.value!r}"
+        )
 
     if mapping.target is ModelEffectTarget.RELEASE_RATE:
         if mapping.target_identifier is None:
