@@ -1,5 +1,14 @@
 """Core scientific domain contracts."""
 
+from .measurements import (
+    AssayObservation,
+    BloodEVPreanalytics,
+    CentrifugationStep,
+    LongitudinalEVDataset,
+    MeasurementKind,
+    MeasurementTimepoint,
+    SpecimenKind,
+)
 from .parameters import (
     EvidenceCategory,
     EvidenceSource,
@@ -22,12 +31,18 @@ from .transport import (
 )
 
 __all__ = [
+    "AssayObservation",
+    "BloodEVPreanalytics",
     "BoundaryCondition",
+    "CentrifugationStep",
     "CircularReleaseSource",
     "CircularUptakeSink",
     "DIFFUSION_UNIT",
     "EvidenceCategory",
     "EvidenceSource",
+    "LongitudinalEVDataset",
+    "MeasurementKind",
+    "MeasurementTimepoint",
     "ParameterContext",
     "PointReleaseSource",
     "PointUptakeSink",
@@ -36,6 +51,7 @@ __all__ = [
     "ReleaseSource",
     "RectangularDomain2D",
     "ScientificParameter",
+    "SpecimenKind",
     "TransportExperiment",
     "UptakeSink",
 ]

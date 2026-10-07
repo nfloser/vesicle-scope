@@ -249,6 +249,40 @@ The headless generator runs the pinned BioFVM adapter, derives public population
 Durable normalized-result serialization is now implemented through the deterministic VesicleScope v0.1 run bundle because validation/model-comparison workflows need completed runs independently of immediate figure generation. The format preserves experiment provenance, numerics, exact engine identity, normalized fields and recipient uptake series with a payload digest. It is MIASE-informed but deliberately does not claim SED-ML/OMEX compatibility while the spatial BioFVM model lacks a complete standard model representation. Binary storage remains deferred until measured data volume or performance justifies it.
 
 
+
+## Blood/plasma EV measurement boundary
+
+Longitudinal blood-derived EV measurements are a separate scientific boundary
+from `TransportExperiment` and `ScientificParameter`.
+
+`vesiclescope.domain.measurements` records sample pre-analytics,
+centrifugation history, assay semantics, marker-defined observations,
+replicates and explicit condition-relative time points.
+`vesiclescope.measurement_files` persists those records in a deterministic,
+integrity-protected document.
+
+The separation is deliberate:
+
+```text
+measured assay observation
+        |
+        v
+measurement dataset
+        |
+        v
+explicit future calibration / validation adapter
+        |
+        v
+model parameter or model-vs-data comparison
+```
+
+A particle concentration, marker fluorescence signal or marker-positive event
+count must never become a transport parameter by implicit assignment. Blood
+pre-analytical metadata also remain attached to the measurement rather than
+being treated as solver configuration.
+
+See [blood-derived longitudinal EV measurement workflow](research/blood-ev-longitudinal-workflow.md).
+
 ## External measured-data audit boundary
 
 `vesiclescope.validation.mucus_data` reads only the digest-pinned external DRUM workbook via optional openpyxl. It produces provenance-bearing measurement audits for the CLI, with explicit sample nesting, species/particle identity and contextual units. It does not modify `TransportExperiment` or feed estimates into the engine. Originals and derived measurements remain outside the repository. See [local measured-data audit](measured-data.md).

@@ -27,6 +27,7 @@ See:
 - [COMBINE / OMEX project archives](docs/combine-archives.md)
 - [OMEX-before-SED-ML interoperability decision](docs/research/combine-archive-interoperability.md)
 - [Local measured-data audit](docs/measured-data.md)
+- [blood-derived longitudinal EV measurement workflow](docs/research/blood-ev-longitudinal-workflow.md)
 - [Smoldyn particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md)
 - [interactive synthetic experiment editor](docs/synthetic-experiment-editor.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)
