@@ -44,6 +44,21 @@ def literature_parameter(
     )
 
 
+def synthetic_parameter(
+    identifier: str,
+    value: float,
+    unit: str,
+) -> ScientificParameter:
+    return ScientificParameter(
+        identifier=identifier,
+        scientific_name=identifier.replace(".", " "),
+        value=value,
+        unit=unit,
+        evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
+        limitations=("Synthetic mapping test; not biological evidence.",),
+    )
+
+
 class ExposureContractTests(unittest.TestCase):
     def test_records_time_bounded_hormone_exposure(self) -> None:
         exposure = BiologicalExposure(
@@ -186,20 +201,18 @@ class PerturbationEffectTests(unittest.TestCase):
             evidence=EvidenceCategory.MEASURED_RELATED_CONTEXT,
             source=EvidenceSource("PMID:35832088"),
             phenotype_id="af-small-ev",
-            magnitude=literature_parameter(
+            magnitude=synthetic_parameter(
                 "effect.release.fold",
                 1.5,
                 "fold",
-                "PMID:35832088",
             ),
             model_mapping=ModelEffectMapping(
                 target=ModelEffectTarget.RELEASE_RATE,
                 operation=EffectOperation.MULTIPLY,
-                value=literature_parameter(
+                value=synthetic_parameter(
                     "mapping.release.multiplier",
                     1.5,
                     "fold",
-                    "PMID:35832088",
                 ),
             ),
             limitations=("Illustrative mapping; source-specific context must be preserved.",),
