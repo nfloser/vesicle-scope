@@ -1,6 +1,9 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from threading import Thread
+from urllib.request import Request, urlopen
 
 from vesiclescope.domain import (
     AssayObservation,
@@ -22,6 +25,7 @@ from vesiclescope.domain import (
 from vesiclescope.measurement_files import serialize_measurement_document
 from vesiclescope.perturbation_files import serialize_perturbation_document
 from vesiclescope.ui.app import WorkspaceApplication
+from vesiclescope.ui.server import create_server
 from vesiclescope.ui.workspace import Workspace
 
 
@@ -180,6 +184,86 @@ class WorkspaceEVArtifactTests(unittest.TestCase):
                 workspace.perturbation_path("/tmp/escape.json")
             with self.assertRaises(ValueError):
                 workspace.population_run_path("no-extension")
+
+    def test_loopback_api_imports_and_inspects_measurement_and_perturbation_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workspace = Workspace(root / "workspace").initialize()
+            runner = root / "runner"
+            runner.write_text("", encoding="utf-8")
+            app = WorkspaceApplication(workspace, runner, "b" * 40)
+            server = create_server(app, port=0)
+            _, port = server.server_address
+            base = f"http://127.0.0.1:{port}"
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                for path, name, document in (
+                    (
+                        "/api/measurement/import",
+                        "stress.measurements.json",
+                        serialize_measurement_document(measurement_dataset()),
+                    ),
+                    (
+                        "/api/perturbation/import",
+                        "stress.study.json",
+                        serialize_perturbation_document(perturbation_study()),
+                    ),
+                ):
+                    request = Request(
+                        base + path,
+                        method="POST",
+                        data=json.dumps(
+                            {"name": name, "document": document}
+                        ).encode("utf-8"),
+                        headers={"Content-Type": "application/json"},
+                    )
+                    with urlopen(request, timeout=30) as response:
+                        self.assertEqual(response.status, 201)
+
+                with urlopen(
+                    f"{base}/api/measurement?name=stress.measurements.json",
+                    timeout=30,
+                ) as response:
+                    measured = json.loads(response.read().decode("utf-8"))
+                self.assertEqual(measured["dataset_id"], "stress-panel")
+                self.assertEqual(measured["samples"][0]["specimen"], "plasma")
+                observations = measured["timepoints"][0]["observations"]
+                self.assertFalse(observations[0]["marker_defined"])
+                self.assertTrue(observations[1]["marker_defined"])
+                self.assertEqual(observations[1]["markers"], ["CD9"])
+
+                with urlopen(
+                    f"{base}/api/perturbation?name=stress.study.json",
+                    timeout=30,
+                ) as response:
+                    study = json.loads(response.read().decode("utf-8"))
+                self.assertEqual(study["study_id"], "stress-panel-stimulation")
+                self.assertEqual(study["exposures"][0]["compound_name"], "cortisol")
+                self.assertEqual(
+                    study["exposures"][0]["source"]["identifier"],
+                    "PMID:123456",
+                )
+                self.assertEqual(study["phenotypes"][0]["markers"][0]["state"], "positive")
+                self.assertIn(
+                    "No phenotype fraction",
+                    study["phenotypes"][0]["limitations"][0],
+                )
+
+                with urlopen(f"{base}/api/state", timeout=30) as response:
+                    state = json.loads(response.read().decode("utf-8"))
+                self.assertEqual(
+                    [item["name"] for item in state["measurements"]],
+                    ["stress.measurements.json"],
+                )
+                self.assertEqual(
+                    [item["name"] for item in state["perturbations"]],
+                    ["stress.study.json"],
+                )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
 
     def test_application_state_surfaces_scientific_artifacts_without_relabelling_them_as_runs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
