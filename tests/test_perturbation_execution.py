@@ -151,10 +151,14 @@ def effect(
             value=parameter(f"{identifier}.mapping", value, unit),
             target_identifier=target_identifier,
         )
+    outcome = {
+        ModelEffectTarget.UPTAKE_RATE: EffectOutcome.EV_UPTAKE,
+        ModelEffectTarget.DECAY_RATE: EffectOutcome.EV_CLEARANCE,
+    }.get(target, EffectOutcome.EV_RELEASE)
     return PerturbationEffect(
         identifier=identifier,
         exposure_id="stimulus",
-        outcome=EffectOutcome.EV_RELEASE,
+        outcome=outcome,
         direction=direction,
         evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
         phenotype_id=phenotype_id,
@@ -385,6 +389,24 @@ class PerturbationExecutionTests(unittest.TestCase):
                 ),
                 self.specs(),
             )
+
+    def test_rejects_outcome_to_transport_target_mismatch(self) -> None:
+        mismatched = PerturbationEffect(
+            identifier="mismatched-outcome",
+            exposure_id="stimulus",
+            outcome=EffectOutcome.EV_UPTAKE,
+            direction=EffectDirection.INCREASE,
+            evidence=EvidenceCategory.SYNTHETIC_BENCHMARK,
+            phenotype_id="population-a",
+            model_mapping=ModelEffectMapping(
+                target=ModelEffectTarget.RELEASE_RATE,
+                operation=EffectOperation.MULTIPLY,
+                value=parameter("mismatched.mapping", 2.0, "fold"),
+                target_identifier="donor",
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "outcome"):
+            resolve_perturbation_transport(study(mismatched), self.specs())
 
     def test_rejects_two_effects_that_target_the_same_transport_parameter(self) -> None:
         first = effect(
