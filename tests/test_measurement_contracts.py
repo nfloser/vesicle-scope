@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+import tempfile
 import unittest
 
 from vesiclescope.domain import (
@@ -12,7 +14,9 @@ from vesiclescope.domain import (
 )
 from vesiclescope.measurement_files import (
     deserialize_measurement_document,
+    read_measurement_document,
     serialize_measurement_document,
+    write_measurement_document,
 )
 
 
@@ -242,6 +246,19 @@ class MeasurementDocumentTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "digest"):
             deserialize_measurement_document(json.dumps(document))
+
+    def test_filesystem_round_trip_is_exact(self) -> None:
+        dataset = self.make_dataset()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "measurements.json"
+            returned = write_measurement_document(path, dataset)
+
+            self.assertEqual(returned, path)
+            self.assertEqual(read_measurement_document(path), dataset)
+            self.assertEqual(
+                path.read_text(encoding="utf-8"),
+                serialize_measurement_document(dataset),
+            )
 
 
 if __name__ == "__main__":
