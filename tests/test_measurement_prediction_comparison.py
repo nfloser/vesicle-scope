@@ -155,6 +155,33 @@ class MeasurementPredictionComparisonTests(unittest.TestCase):
         self.assertIsNone(incompatible.residual_prediction_minus_measurement)
         self.assertEqual(incompatible.predicted_value, 2.0)
 
+    def test_rejects_result_without_stored_prediction_samples(self) -> None:
+        populated = result()
+        empty = BioFVMRunResult(
+            experiment_id=populated.experiment_id,
+            concentration_unit=populated.concentration_unit,
+            integrated_quantity_unit=populated.integrated_quantity_unit,
+            internalized_quantity_unit=populated.internalized_quantity_unit,
+            engine=populated.engine,
+            grid=populated.grid,
+            samples=(),
+            field_snapshots=(),
+            recipient_uptake_series=(),
+        )
+
+        with self.assertRaisesRegex(ValueError, "stored sample"):
+            compare_measurements_to_prediction(
+                dataset(),
+                "stimulated",
+                empty,
+                (
+                    MeasurementPredictionTarget(
+                        observation_identifier="ev-events",
+                        observable=PredictionObservable.MEAN_CONCENTRATION,
+                    ),
+                ),
+            )
+
     def test_does_not_match_other_conditions(self) -> None:
         self.assertEqual(
             compare_measurements_to_prediction(
