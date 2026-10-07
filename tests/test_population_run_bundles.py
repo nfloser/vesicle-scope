@@ -211,6 +211,42 @@ class PopulationRunBundleTests(unittest.TestCase):
             0.2,
         )
 
+    def test_rejects_record_whose_baseline_and_effective_experiment_ids_differ(self) -> None:
+        run = population_run()
+        original = run.populations[0]
+        different_baseline = experiment("different-baseline")
+
+        with self.assertRaisesRegex(ValueError, "experiment"):
+            PopulationRunRecord(
+                phenotype_id=original.phenotype_id,
+                baseline_experiment=different_baseline,
+                effects=original.effects,
+                run_bundle=original.run_bundle,
+            )
+
+    def test_rejects_population_identifier_not_declared_by_study(self) -> None:
+        run = population_run()
+        original = run.populations[0]
+        unknown_experiment = experiment("unknown-population")
+        unknown_record = PopulationRunRecord(
+            phenotype_id="unknown-population",
+            baseline_experiment=unknown_experiment,
+            effects=(),
+            run_bundle=SimulationRunBundle(
+                vesiclescope_revision="f" * 40,
+                experiment=unknown_experiment,
+                numerics=BioFVMNumerics(10.0, 0.1),
+                result=result("unknown-population", 1.0),
+            ),
+        )
+
+        with self.assertRaisesRegex(ValueError, "study phenotype"):
+            PopulationTransportRun(
+                study=run.study,
+                populations=(unknown_record,),
+                unexecuted_effects=(),
+            )
+
     def test_integrity_digest_rejects_tampering(self) -> None:
         document = json.loads(serialize_population_run_bundle(population_run()))
         document["payload"]["populations"][0]["phenotype_id"] = "tampered"
