@@ -54,9 +54,12 @@ class EVPopulationExperiment:
             raise TypeError("populations must contain EVPopulationTransport objects")
 
         population_ids = tuple(item.population_id for item in self.populations)
+        phenotype_ids = tuple(item.phenotype_id for item in self.populations)
         transport_ids = tuple(item.transport.experiment_id for item in self.populations)
         if len(set(population_ids)) != len(population_ids):
             raise ValueError("population identifiers must be unique")
+        if len(set(phenotype_ids)) != len(phenotype_ids):
+            raise ValueError("phenotype identifiers must be unique across simulated populations")
         if len(set(transport_ids)) != len(transport_ids):
             raise ValueError("population transport experiment identifiers must be unique")
 
