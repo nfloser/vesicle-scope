@@ -11,7 +11,12 @@ import re
 import tempfile
 from typing import Any
 
-from vesiclescope.domain import EVPopulationExperiment, EVPopulationTransport
+from vesiclescope.domain import (
+    EffectOperation,
+    EVPopulationExperiment,
+    EVPopulationTransport,
+    ModelEffectTarget,
+)
 from vesiclescope.engines import BioFVMNumerics
 from vesiclescope.run_bundles import (
     SimulationRunBundle,
@@ -249,15 +254,9 @@ def deserialize_population_run_bundle(
                 study_id=item["study_id"],
                 effect_id=item["effect_id"],
                 population_id=item["population_id"],
-                target=__import__(
-                    "vesiclescope.domain",
-                    fromlist=["ModelEffectTarget"],
-                ).ModelEffectTarget(item["target"]),
+                target=ModelEffectTarget(item["target"]),
                 target_identifier=item.get("target_identifier"),
-                operation=__import__(
-                    "vesiclescope.domain",
-                    fromlist=["EffectOperation"],
-                ).EffectOperation(item["operation"]),
+                operation=EffectOperation(item["operation"]),
                 base_value=item["base_value"],
                 mapping_value=item["mapping_value"],
                 effective_value=item["effective_value"],
