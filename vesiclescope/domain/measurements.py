@@ -239,8 +239,9 @@ class AssayObservation:
 
 @dataclass(frozen=True, slots=True)
 class MeasurementTimepoint:
-    """A set of observations at one condition-relative time."""
+    """A set of observations from one declared sample at one relative time."""
 
+    sample_id: str
     condition_id: str
     time_min: float
     observations: tuple[AssayObservation, ...]
@@ -249,10 +250,15 @@ class MeasurementTimepoint:
     def __post_init__(self) -> None:
         object.__setattr__(
             self,
+            "sample_id",
+            _required_text(self.sample_id, "sample_id"),
+        )
+        object.__setattr__(
+            self,
             "condition_id",
             _required_text(self.condition_id, "condition_id"),
         )
-        object.__setattr__(self, "time_min", _non_negative(self.time_min, "time_min"))
+        object.__setattr__(self, "time_min", _real(self.time_min, "time_min"))
         object.__setattr__(
             self,
             "biological_replicate_id",
@@ -272,7 +278,7 @@ class LongitudinalEVDataset:
     """Longitudinal measured EV-related data kept separate from model parameters."""
 
     dataset_id: str
-    preanalytics: BloodEVPreanalytics
+    samples: tuple[BloodEVPreanalytics, ...]
     timepoints: tuple[MeasurementTimepoint, ...]
     reference_time_description: str = "Minutes from the declared experimental reference."
     limitations: tuple[str, ...] = ()
@@ -283,12 +289,25 @@ class LongitudinalEVDataset:
             "dataset_id",
             _required_text(self.dataset_id, "dataset_id"),
         )
-        if not isinstance(self.preanalytics, BloodEVPreanalytics):
-            raise TypeError("preanalytics must be a BloodEVPreanalytics object")
+        if not isinstance(self.samples, tuple) or not self.samples:
+            raise ValueError("samples must be a non-empty tuple")
+        if not all(isinstance(item, BloodEVPreanalytics) for item in self.samples):
+            raise TypeError("samples must contain BloodEVPreanalytics objects")
+        sample_ids = tuple(item.sample_id for item in self.samples)
+        if len(set(sample_ids)) != len(sample_ids):
+            raise ValueError("sample identifiers must be unique")
         if not isinstance(self.timepoints, tuple) or not self.timepoints:
             raise ValueError("timepoints must be a non-empty tuple")
         if not all(isinstance(item, MeasurementTimepoint) for item in self.timepoints):
             raise TypeError("timepoints must contain MeasurementTimepoint objects")
+        unknown_sample_ids = sorted(
+            {item.sample_id for item in self.timepoints} - set(sample_ids)
+        )
+        if unknown_sample_ids:
+            raise ValueError(
+                "timepoints reference unknown sample identifiers: "
+                + ", ".join(unknown_sample_ids)
+            )
         keys = tuple(
             (
                 item.condition_id,
