@@ -885,8 +885,17 @@ class WorkspaceApplication:
             path = self.workspace.experiment_path(name)
         elif kind == "run":
             path = self.workspace.run_path(name)
+        elif kind == "measurement":
+            path = self.workspace.measurement_path(name)
+        elif kind == "perturbation":
+            path = self.workspace.perturbation_path(name)
+        elif kind == "population-run":
+            path = self.workspace.population_run_path(name)
         else:
-            raise ValueError("artifact kind must be experiment or run")
+            raise ValueError(
+                "artifact kind must be experiment, run, measurement, perturbation "
+                "or population-run"
+            )
         if not path.is_file():
             raise ValueError(f"artifact does not exist: {name}")
         return path
