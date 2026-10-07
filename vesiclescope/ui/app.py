@@ -88,6 +88,186 @@ def _experiment_summary(experiment) -> dict[str, object]:
     }
 
 
+def _source_summary(source) -> dict[str, object] | None:
+    if source is None:
+        return None
+    return {
+        "identifier": source.identifier,
+        "location": source.location,
+    }
+
+
+def _context_summary(context) -> dict[str, object] | None:
+    if context is None:
+        return None
+    return {
+        "species": context.species,
+        "tissue": context.tissue,
+        "cell_type": context.cell_type,
+        "cell_line": context.cell_line,
+        "ev_preparation": context.ev_preparation,
+        "measurement_method": context.measurement_method,
+        "experimental_conditions": context.experimental_conditions,
+    }
+
+
+def _measurement_summary(dataset) -> dict[str, object]:
+    return {
+        "dataset_id": dataset.dataset_id,
+        "reference_time_description": dataset.reference_time_description,
+        "limitations": list(dataset.limitations),
+        "samples": [
+            {
+                "sample_id": sample.sample_id,
+                "specimen": sample.specimen.value,
+                "anticoagulant": sample.anticoagulant,
+                "collection_to_processing_min": sample.collection_to_processing_min,
+                "centrifugation_steps": [
+                    {
+                        "relative_centrifugal_force_g": step.relative_centrifugal_force_g,
+                        "duration_min": step.duration_min,
+                        "retained_fraction": step.retained_fraction,
+                        "temperature_c": step.temperature_c,
+                    }
+                    for step in sample.centrifugation_steps
+                ],
+                "residual_platelet_count_per_ul": sample.residual_platelet_count_per_ul,
+                "hemolysis_assessment": sample.hemolysis_assessment,
+                "limitations": list(sample.limitations),
+            }
+            for sample in dataset.samples
+        ],
+        "timepoints": [
+            {
+                "sample_id": timepoint.sample_id,
+                "condition_id": timepoint.condition_id,
+                "time_min": timepoint.time_min,
+                "biological_replicate_id": timepoint.biological_replicate_id,
+                "observations": [
+                    {
+                        "identifier": observation.identifier,
+                        "scientific_name": observation.scientific_name,
+                        "kind": observation.kind.value,
+                        "value": observation.value,
+                        "unit": observation.unit,
+                        "method": observation.method,
+                        "detection_semantics": observation.detection_semantics,
+                        "markers": list(observation.markers),
+                        "marker_defined": bool(observation.markers),
+                        "technical_replicates": observation.technical_replicates,
+                        "standard_deviation": observation.standard_deviation,
+                        "notes": list(observation.notes),
+                    }
+                    for observation in timepoint.observations
+                ],
+            }
+            for timepoint in dataset.timepoints
+        ],
+    }
+
+
+def _parameter_summary(parameter) -> dict[str, object] | None:
+    if parameter is None:
+        return None
+    return {
+        "identifier": parameter.identifier,
+        "scientific_name": parameter.scientific_name,
+        "value": parameter.value,
+        "unit": parameter.unit,
+        "evidence": parameter.evidence.value,
+        "source": _source_summary(parameter.source),
+        "context": _context_summary(parameter.context),
+        "assumptions": list(parameter.assumptions),
+        "limitations": list(parameter.limitations),
+    }
+
+
+def _perturbation_summary(study) -> dict[str, object]:
+    return {
+        "study_id": study.study_id,
+        "measurement_dataset_ids": list(study.measurement_dataset_ids),
+        "transport_experiment_ids": list(study.transport_experiment_ids),
+        "limitations": list(study.limitations),
+        "exposures": [
+            {
+                "identifier": exposure.identifier,
+                "compound_name": exposure.compound_name,
+                "concentration": _parameter_summary(exposure.concentration),
+                "target": exposure.target.value,
+                "start_min": exposure.start_min,
+                "end_min": exposure.end_min,
+                "evidence": exposure.evidence.value,
+                "source": _source_summary(exposure.source),
+                "context": _context_summary(exposure.context),
+                "assumptions": list(exposure.assumptions),
+                "limitations": list(exposure.limitations),
+            }
+            for exposure in study.exposures
+        ],
+        "phenotypes": [
+            {
+                "identifier": phenotype.identifier,
+                "name": phenotype.name,
+                "context": _context_summary(phenotype.context),
+                "limitations": list(phenotype.limitations),
+                "markers": [
+                    {
+                        "identifier": marker.identifier,
+                        "marker_name": marker.marker_name,
+                        "state": marker.state.value,
+                        "evidence": marker.evidence.value,
+                        "source": _source_summary(marker.source),
+                        "context": _context_summary(marker.context),
+                        "limitations": list(marker.limitations),
+                    }
+                    for marker in phenotype.markers
+                ],
+                "cargo": [
+                    {
+                        "identifier": cargo.identifier,
+                        "molecule_name": cargo.molecule_name,
+                        "cargo_class": cargo.cargo_class.value,
+                        "evidence": cargo.evidence.value,
+                        "source": _source_summary(cargo.source),
+                        "context": _context_summary(cargo.context),
+                        "abundance": _parameter_summary(cargo.abundance),
+                        "qualitative_state": cargo.qualitative_state,
+                        "limitations": list(cargo.limitations),
+                    }
+                    for cargo in phenotype.cargo
+                ],
+            }
+            for phenotype in study.phenotypes
+        ],
+        "effects": [
+            {
+                "identifier": effect.identifier,
+                "exposure_id": effect.exposure_id,
+                "outcome": effect.outcome.value,
+                "direction": effect.direction.value,
+                "evidence": effect.evidence.value,
+                "source": _source_summary(effect.source),
+                "context": _context_summary(effect.context),
+                "phenotype_id": effect.phenotype_id,
+                "feature_id": effect.feature_id,
+                "magnitude": _parameter_summary(effect.magnitude),
+                "model_mapping": (
+                    {
+                        "target": effect.model_mapping.target.value,
+                        "operation": effect.model_mapping.operation.value,
+                        "value": _parameter_summary(effect.model_mapping.value),
+                        "target_identifier": effect.model_mapping.target_identifier,
+                    }
+                    if effect.model_mapping is not None
+                    else None
+                ),
+                "limitations": list(effect.limitations),
+            }
+            for effect in study.effects
+        ],
+    }
+
+
 def _run_summary(bundle, *, include_field: bool) -> dict[str, object]:
     result = bundle.result
     final = result.samples[-1]
@@ -169,6 +349,60 @@ class WorkspaceApplication:
             except Exception as exc:
                 experiments.append({"name": name, "valid": False, "error": str(exc)})
 
+        measurements: list[dict[str, object]] = []
+        for name in self.workspace.list_measurement_names():
+            try:
+                dataset = self.workspace.read_measurement(name)
+                measurements.append(
+                    {
+                        "name": name,
+                        "valid": True,
+                        "dataset_id": dataset.dataset_id,
+                        "samples": len(dataset.samples),
+                        "timepoints": len(dataset.timepoints),
+                    }
+                )
+            except Exception as exc:
+                measurements.append(
+                    {"name": name, "valid": False, "error": str(exc)}
+                )
+
+        perturbations: list[dict[str, object]] = []
+        for name in self.workspace.list_perturbation_names():
+            try:
+                study = self.workspace.read_perturbation(name)
+                perturbations.append(
+                    {
+                        "name": name,
+                        "valid": True,
+                        "study_id": study.study_id,
+                        "exposures": len(study.exposures),
+                        "phenotypes": len(study.phenotypes),
+                        "effects": len(study.effects),
+                    }
+                )
+            except Exception as exc:
+                perturbations.append(
+                    {"name": name, "valid": False, "error": str(exc)}
+                )
+
+        population_runs: list[dict[str, object]] = []
+        for name in self.workspace.list_population_run_names():
+            try:
+                run = self.workspace.read_population_run(name)
+                population_runs.append(
+                    {
+                        "name": name,
+                        "valid": True,
+                        "study_id": run.study.study_id,
+                        "populations": [item.phenotype_id for item in run.populations],
+                    }
+                )
+            except Exception as exc:
+                population_runs.append(
+                    {"name": name, "valid": False, "error": str(exc)}
+                )
+
         runs: list[dict[str, object]] = []
         for name in self.workspace.list_run_names():
             try:
@@ -190,7 +424,32 @@ class WorkspaceApplication:
             "revision": self.revision,
             "experiments": experiments,
             "runs": runs,
+            "measurements": measurements,
+            "perturbations": perturbations,
+            "population_runs": population_runs,
         }
+
+    def import_measurement(self, name: str, document: str) -> dict[str, object]:
+        if not isinstance(document, str):
+            raise ValueError("measurement document must be text")
+        if len(document.encode("utf-8")) > 2_000_000:
+            raise ValueError("measurement document exceeds 2 MB")
+        path = self.workspace.import_measurement(name, document)
+        return {"name": path.name}
+
+    def import_perturbation(self, name: str, document: str) -> dict[str, object]:
+        if not isinstance(document, str):
+            raise ValueError("perturbation document must be text")
+        if len(document.encode("utf-8")) > 2_000_000:
+            raise ValueError("perturbation document exceeds 2 MB")
+        path = self.workspace.import_perturbation(name, document)
+        return {"name": path.name}
+
+    def measurement(self, name: str) -> dict[str, object]:
+        return _measurement_summary(self.workspace.read_measurement(name))
+
+    def perturbation(self, name: str) -> dict[str, object]:
+        return _perturbation_summary(self.workspace.read_perturbation(name))
 
     def create_baseline(self, name: str) -> dict[str, object]:
         path = self.workspace.create_baseline_experiment(name)
