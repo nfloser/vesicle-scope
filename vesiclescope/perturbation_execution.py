@@ -22,6 +22,7 @@ from vesiclescope.domain import (
 class AppliedModelEffect:
     """Audit record for one numerical perturbation mapping."""
 
+    study_id: str
     effect_id: str
     population_id: str
     target: ModelEffectTarget
@@ -88,6 +89,7 @@ def _effective_parameter(
 def _multiply_parameter(
     base: ScientificParameter,
     effect: PerturbationEffect,
+    study_id: str,
 ) -> tuple[ScientificParameter, AppliedModelEffect]:
     mapping = effect.model_mapping
     if mapping is None:
@@ -114,6 +116,7 @@ def _multiply_parameter(
     effective_value = base.value * factor
     parameter = _effective_parameter(base, effect, effective_value)
     return parameter, AppliedModelEffect(
+        study_id=study_id,
         effect_id=effect.identifier,
         population_id="",
         target=mapping.target,
@@ -129,6 +132,7 @@ def _multiply_parameter(
 def _apply_one(
     population: EVPopulationTransport,
     effect: PerturbationEffect,
+    study_id: str,
 ) -> tuple[EVPopulationTransport, AppliedModelEffect]:
     mapping = effect.model_mapping
     if mapping is None:
@@ -162,7 +166,7 @@ def _apply_one(
             )
         index = matches[0]
         source = transport.release_sources[index]
-        effective, audit = _multiply_parameter(source.release_rate, effect)
+        effective, audit = _multiply_parameter(source.release_rate, effect, study_id)
         sources = list(transport.release_sources)
         sources[index] = replace(source, release_rate=effective)
         updated = replace(transport, release_sources=tuple(sources))
@@ -182,7 +186,7 @@ def _apply_one(
             )
         index = matches[0]
         sink = transport.uptake_sinks[index]
-        effective, audit = _multiply_parameter(sink.uptake_rate, effect)
+        effective, audit = _multiply_parameter(sink.uptake_rate, effect, study_id)
         sinks = list(transport.uptake_sinks)
         sinks[index] = replace(sink, uptake_rate=effective)
         updated = replace(transport, uptake_sinks=tuple(sinks))
@@ -190,7 +194,7 @@ def _apply_one(
     elif mapping.target is ModelEffectTarget.DECAY_RATE:
         if mapping.target_identifier is not None:
             raise ValueError("decay-rate mapping must not set target_identifier")
-        effective, audit = _multiply_parameter(transport.decay, effect)
+        effective, audit = _multiply_parameter(transport.decay, effect, study_id)
         updated = replace(transport, decay=effective)
 
     else:
@@ -233,7 +237,11 @@ def apply_model_effects(
                 f"mapped effect {effect.identifier!r} references phenotype "
                 f"{effect.phenotype_id!r} that is not simulated"
             )
-        population, audit = _apply_one(populations[population_index], effect)
+        population, audit = _apply_one(
+            populations[population_index],
+            effect,
+            study.study_id,
+        )
         populations[population_index] = population
         applied.append(audit)
 
