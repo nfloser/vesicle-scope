@@ -154,3 +154,26 @@ by synthetic tests, release packaging or relabelling output as measured biology.
 ## Executable measured-data audit (2026-10-06)
 
 The [local audit command](measured-data.md) now verifies and reads the actual mucus transport workbook without modifying it. Primary Figure 2 establishes µm² at one second. All ten samples and 80 groups remain separate. Stored-versus-recomputed mean differences are exposed and prevent automatic fitting; neither those differences nor unit mapping establish tumor validation. Noncommercial research use is explicitly declared, with source attribution and redistribution restrictions retained.
+
+
+## Executable EV perturbation extension (2026-10-07)
+
+The dataset-independent scientific core can now resolve explicit perturbation
+mappings into phenotype-specific release, uptake and decay inputs and execute
+multiple independent EV populations through the existing verified BioFVM
+single-population path. Marker/cargo evidence and unmapped qualitative effects
+remain annotations rather than implicit solver behavior.
+
+A deterministic multi-population run bundle preserves the perturbation study,
+baseline experiments, mapping audits and the existing complete child run bundle
+for each phenotype. An explicit measured-versus-predicted adapter aligns only
+exact stored time points and never copies an observed assay value into a model
+parameter.
+
+The two-population native verification gate checks cumulative release mass
+balance and final integrated quantity across grid/timestep refinement. This does
+not close biological calibration: real blood/plasma assay outputs still require
+context-matched observation models and measured data before quantitative
+validation claims are justified.
+
+See [executable phenotype-specific perturbation transport](research/perturbation-transport-execution.md).
