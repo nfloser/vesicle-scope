@@ -283,6 +283,26 @@ being treated as solver configuration.
 
 See [blood-derived longitudinal EV measurement workflow](research/blood-ev-longitudinal-workflow.md).
 
+
+## Perturbation and EV phenotype evidence boundary
+
+`vesiclescope.domain.perturbations` describes time-bounded exposures,
+EV marker/cargo phenotypes and evidence-backed outcomes without changing
+`TransportExperiment` by itself.
+
+An optional `ModelEffectMapping` records an explicit intended mapping to a
+release, uptake, decay, phenotype-fraction or cargo model quantity. Mapping
+presence is metadata until an execution layer validates and applies it. This
+keeps literature statements such as "release increased" distinct from an
+unsupported numerical multiplier.
+
+The deterministic perturbation-study document can reference measurement
+dataset IDs and transport experiment IDs while preserving those formats as
+independent versioned contracts. Existing v0.3 experiment documents and run
+bundles therefore remain unchanged.
+
+See [hormone/stimulus perturbation and EV phenotype model](research/hormone-ev-perturbation-model.md).
+
 ## External measured-data audit boundary
 
 `vesiclescope.validation.mucus_data` reads only the digest-pinned external DRUM workbook via optional openpyxl. It produces provenance-bearing measurement audits for the CLI, with explicit sample nesting, species/particle identity and contextual units. It does not modify `TransportExperiment` or feed estimates into the engine. Originals and derived measurements remain outside the repository. See [local measured-data audit](measured-data.md).
