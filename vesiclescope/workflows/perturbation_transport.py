@@ -459,6 +459,30 @@ class PopulationRunRecord:
     effects: tuple[EffectExecutionAudit, ...]
     run_bundle: SimulationRunBundle
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.phenotype_id, str) or not self.phenotype_id.strip():
+            raise ValueError("phenotype_id must be a non-blank string")
+        object.__setattr__(self, "phenotype_id", self.phenotype_id.strip())
+        if not isinstance(self.baseline_experiment, TransportExperiment):
+            raise TypeError("baseline_experiment must be a TransportExperiment")
+        if not isinstance(self.effects, tuple) or not all(
+            isinstance(item, EffectExecutionAudit) for item in self.effects
+        ):
+            raise TypeError("effects must be a tuple of EffectExecutionAudit objects")
+        if not isinstance(self.run_bundle, SimulationRunBundle):
+            raise TypeError("run_bundle must be a SimulationRunBundle")
+        if (
+            self.baseline_experiment.experiment_id
+            != self.run_bundle.experiment.experiment_id
+        ):
+            raise ValueError(
+                "baseline and effective run experiments must keep the same experiment id"
+            )
+        if any(item.phenotype_id != self.phenotype_id for item in self.effects):
+            raise ValueError(
+                "population effect audits must reference the record phenotype"
+            )
+
     @property
     def effective_experiment(self) -> TransportExperiment:
         return self.run_bundle.experiment
@@ -486,8 +510,20 @@ class PopulationTransportRun:
         identifiers = tuple(item.phenotype_id for item in self.populations)
         if len(set(identifiers)) != len(identifiers):
             raise ValueError("population run phenotype identifiers must be unique")
-        if not isinstance(self.unexecuted_effects, tuple):
-            raise TypeError("unexecuted_effects must be a tuple")
+        study_phenotypes = {item.identifier for item in self.study.phenotypes}
+        unknown = sorted(set(identifiers) - study_phenotypes)
+        if unknown:
+            raise ValueError(
+                "population run references an unknown study phenotype: "
+                + ", ".join(unknown)
+            )
+        if not isinstance(self.unexecuted_effects, tuple) or not all(
+            isinstance(item, EffectExecutionAudit)
+            for item in self.unexecuted_effects
+        ):
+            raise TypeError(
+                "unexecuted_effects must be a tuple of EffectExecutionAudit objects"
+            )
 
 
 def _same_times(left: tuple[float, ...], right: tuple[float, ...]) -> bool:
