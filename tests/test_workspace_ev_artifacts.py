@@ -230,7 +230,15 @@ class WorkspaceEVArtifactTests(unittest.TestCase):
                 self.assertEqual(measured["samples"][0]["specimen"], "plasma")
                 observations = measured["timepoints"][0]["observations"]
                 self.assertFalse(observations[0]["marker_defined"])
+                self.assertEqual(
+                    observations[0]["display_group"],
+                    "total_or_unmarked",
+                )
                 self.assertTrue(observations[1]["marker_defined"])
+                self.assertEqual(
+                    observations[1]["display_group"],
+                    "marker_defined",
+                )
                 self.assertEqual(observations[1]["markers"], ["CD9"])
 
                 with urlopen(
