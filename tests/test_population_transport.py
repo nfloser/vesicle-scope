@@ -35,6 +35,11 @@ from vesiclescope.engines import (
     TransportSample,
 )
 from vesiclescope.perturbation_execution import apply_model_effects
+from vesiclescope.population_run_bundles import (
+    PopulationSimulationRunBundle,
+    deserialize_population_run_bundle,
+    serialize_population_run_bundle,
+)
 from vesiclescope.workflows.population_transport import (
     run_population_transport,
     sum_population_fields,
@@ -245,6 +250,32 @@ class PopulationRunnerTests(unittest.TestCase):
         self.assertEqual(result.populations[1].phenotype_id, "phenotype.cd63")
         combined = sum_population_fields(result)
         self.assertEqual(combined[-1].values, (3.0, 3.0))
+
+
+    @patch("vesiclescope.workflows.population_transport.run_transport")
+    def test_population_run_bundle_round_trips_separate_population_results(self, mocked):
+        mocked.side_effect = (
+            self.result("transport.cd9", (0.0, 1.0, 2.0)),
+            self.result("transport.cd63", (0.0, 0.5, 1.0)),
+        )
+        numerics = BioFVMNumerics(50.0, 0.5)
+        experiment = population_experiment()
+        result = run_population_transport(experiment, numerics, Path("runner"))
+        bundle = PopulationSimulationRunBundle(
+            vesiclescope_revision="a" * 40,
+            experiment=experiment,
+            numerics=numerics,
+            result=result,
+        )
+
+        encoded = serialize_population_run_bundle(bundle)
+        restored = deserialize_population_run_bundle(encoded)
+
+        self.assertEqual(restored, bundle)
+        self.assertEqual(
+            restored.result.populations[1].result.field_snapshots[-1].values,
+            (1.0, 1.0),
+        )
 
 
 if __name__ == "__main__":
