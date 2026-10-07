@@ -306,3 +306,37 @@ See [hormone/stimulus perturbation and EV phenotype model](research/hormone-ev-p
 ## External measured-data audit boundary
 
 `vesiclescope.validation.mucus_data` reads only the digest-pinned external DRUM workbook via optional openpyxl. It produces provenance-bearing measurement audits for the CLI, with explicit sample nesting, species/particle identity and contextual units. It does not modify `TransportExperiment` or feed estimates into the engine. Originals and derived measurements remain outside the repository. See [local measured-data audit](measured-data.md).
+
+
+## Executable independent EV populations and perturbation mappings
+
+The perturbation evidence boundary now has a deliberately narrow execution
+layer in `vesiclescope.workflows.perturbation_transport`.
+
+One `EVPhenotype` is paired explicitly with one baseline
+`TransportExperiment`. Only an explicit, unit-compatible
+`ModelEffectMapping` may transform release, uptake or decay. Qualitative
+effects, marker/cargo annotations and phenotype fractions remain non-executable
+annotations. Effects without a phenotype are not broadcast.
+
+Multiple EV populations are implemented as independent executions through the
+existing single-population BioFVM adapter. Results may be composed only when
+engine identity, units, grid and stored time axes match exactly. The total field
+is a derived pointwise sum; all child fields and recipient-uptake series remain
+available independently.
+
+This composition strategy does not claim population coupling, phenotype
+conversion, shared receptor competition or hormone-response kinetics. Those
+would require new biological mechanisms and verification rather than UI logic.
+
+The deterministic population-run bundle nests the complete perturbation study,
+the original per-population baseline experiment, effect-execution audits and
+the existing v1 simulation run bundle for every effective population. Existing
+single-population experiment/run formats are unchanged.
+
+Measured longitudinal assays remain outside the solver. The explicit
+measurement-comparison adapter aligns observations only to exact stored
+simulation times and computes a residual only when units already match. It does
+not interpolate, convert units or calibrate parameters.
+
+See [executable phenotype-specific perturbation transport](research/perturbation-transport-execution.md).
