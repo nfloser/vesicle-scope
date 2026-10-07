@@ -51,6 +51,12 @@ plasma is used, collection-to-processing delay, each declared centrifugation
 step, residual platelet count when measured, haemolysis assessment when
 available and explicit limitations.
 
+A longitudinal dataset may contain multiple blood/plasma samples. Every
+measurement time point references its exact sample identifier so a baseline
+draw, post-stimulation draw or ex-vivo aliquot does not silently inherit the
+identity of another specimen. Relative time may be negative when a measurement
+precedes the declared stimulation reference.
+
 This is not a prescribed clinical or laboratory protocol. It is a provenance
 contract for recording the protocol actually used.
 
