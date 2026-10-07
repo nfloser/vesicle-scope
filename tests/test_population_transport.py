@@ -252,13 +252,13 @@ class PerturbationExecutionTests(unittest.TestCase):
 
 class PopulationRunnerTests(unittest.TestCase):
     def result(self, experiment_id, values):
-        grid = BioFVMGrid2D(2, 1, 50.0, 20.0)
+        grid = BioFVMGrid2D(2, 2, 50.0, 20.0)
         samples = tuple(
-            TransportSample(t, v, v, v, v*100000.0, 0.0)
+            TransportSample(t, v, v, v, v*200000.0, 0.0)
             for t, v in ((0.0, values[0]), (5.0, values[1]), (10.0, values[2]))
         )
         fields = tuple(
-            SpatialFieldSnapshot2D(t, (v, v))
+            SpatialFieldSnapshot2D(t, (v, v, v, v))
             for t, v in ((0.0, values[0]), (5.0, values[1]), (10.0, values[2]))
         )
         return BioFVMRunResult(
@@ -289,7 +289,7 @@ class PopulationRunnerTests(unittest.TestCase):
         self.assertEqual(result.populations[0].phenotype_id, "phenotype.cd9")
         self.assertEqual(result.populations[1].phenotype_id, "phenotype.cd63")
         combined = sum_population_fields(result)
-        self.assertEqual(combined[-1].values, (3.0, 3.0))
+        self.assertEqual(combined[-1].values, (3.0, 3.0, 3.0, 3.0))
 
 
     @patch("vesiclescope.workflows.population_transport.run_transport")
@@ -314,7 +314,7 @@ class PopulationRunnerTests(unittest.TestCase):
         self.assertEqual(restored, bundle)
         self.assertEqual(
             restored.result.populations[1].result.field_snapshots[-1].values,
-            (1.0, 1.0),
+            (1.0, 1.0, 1.0, 1.0),
         )
 
 
