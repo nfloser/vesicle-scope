@@ -6,7 +6,17 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from vesiclescope.analysis import compare_run_bundles_detailed
+from vesiclescope.analysis import (
+    MeasurementPredictionTarget,
+    PredictionObservable,
+    compare_measurements_to_prediction,
+    compare_run_bundles_detailed,
+)
+from vesiclescope.engines import BioFVMRunResult
+from vesiclescope.workflows import (
+    aggregate_population_fields,
+    aggregate_population_samples,
+)
 from vesiclescope.ui.workspace import Workspace
 
 
@@ -268,6 +278,146 @@ def _perturbation_summary(study) -> dict[str, object]:
     }
 
 
+def _effect_execution_summary(effect) -> dict[str, object]:
+    return {
+        "effect_id": effect.effect_id,
+        "exposure_id": effect.exposure_id,
+        "phenotype_id": effect.phenotype_id,
+        "direction": effect.direction.value,
+        "status": effect.status.value,
+        "reason": effect.reason,
+        "model_target": effect.model_target.value if effect.model_target else None,
+        "target_identifier": effect.target_identifier,
+        "operation": effect.operation.value if effect.operation else None,
+        "mapping_parameter_id": effect.mapping_parameter_id,
+        "mapping_evidence": effect.mapping_evidence,
+        "mapping_source_id": effect.mapping_source_id,
+        "baseline_value": effect.baseline_value,
+        "effective_value": effect.effective_value,
+        "unit": effect.unit,
+    }
+
+
+def _population_result_summary(record, *, include_fields: bool) -> dict[str, object]:
+    result = record.result
+    payload: dict[str, object] = {
+        "phenotype_id": record.phenotype_id,
+        "baseline_experiment": _experiment_summary(record.baseline_experiment),
+        "effective_experiment": _experiment_summary(record.effective_experiment),
+        "effects": [_effect_execution_summary(item) for item in record.effects],
+        "engine": {
+            "name": result.engine.engine,
+            "physicell_release": result.engine.physicell_release,
+            "physicell_commit": result.engine.physicell_commit,
+            "biofvm_version": result.engine.biofvm_version,
+        },
+        "grid": {
+            "nx": result.grid.nx,
+            "ny": result.grid.ny,
+            "grid_spacing_micron": result.grid.grid_spacing_micron,
+            "slice_thickness_micron": result.grid.slice_thickness_micron,
+        },
+        "concentration_unit": result.concentration_unit,
+        "quantity_unit": result.integrated_quantity_unit,
+        "samples": [
+            {
+                "time_min": sample.time_min,
+                "extracellular_quantity": sample.integrated_field_quantity,
+                "internalized_quantity": sample.internalized_field_quantity,
+                "mean_concentration": sample.mean_concentration,
+                "min_concentration": sample.min_concentration,
+                "max_concentration": sample.max_concentration,
+            }
+            for sample in result.samples
+        ],
+        "recipient_uptake": [
+            {
+                "identifier": series.identifier,
+                "x_micron": series.x_micron,
+                "y_micron": series.y_micron,
+                "effective_volume_micron3": series.effective_volume_micron3,
+                "uptake_rate_per_min": series.uptake_rate_per_min,
+                "samples": [
+                    {
+                        "time_min": sample.time_min,
+                        "internalized_quantity": sample.internalized_field_quantity,
+                    }
+                    for sample in series.samples
+                ],
+            }
+            for series in result.recipient_uptake_series
+        ],
+    }
+    if include_fields:
+        payload["fields"] = [
+            {
+                "time_min": snapshot.time_min,
+                "values": list(snapshot.values),
+            }
+            for snapshot in result.field_snapshots
+        ]
+    return payload
+
+
+def _aggregate_result(run) -> BioFVMRunResult:
+    first = run.populations[0].result
+    return BioFVMRunResult(
+        experiment_id=f"{run.study.study_id}.aggregate",
+        concentration_unit=first.concentration_unit,
+        integrated_quantity_unit=first.integrated_quantity_unit,
+        internalized_quantity_unit=first.internalized_quantity_unit,
+        engine=first.engine,
+        grid=first.grid,
+        samples=aggregate_population_samples(run),
+        field_snapshots=aggregate_population_fields(run),
+        recipient_uptake_series=(),
+    )
+
+
+def _population_run_summary(run, *, include_fields: bool) -> dict[str, object]:
+    aggregate = _aggregate_result(run)
+    payload: dict[str, object] = {
+        "study": _perturbation_summary(run.study),
+        "unexecuted_effects": [
+            _effect_execution_summary(item) for item in run.unexecuted_effects
+        ],
+        "populations": [
+            _population_result_summary(item, include_fields=include_fields)
+            for item in run.populations
+        ],
+        "aggregate": {
+            "concentration_unit": aggregate.concentration_unit,
+            "quantity_unit": aggregate.integrated_quantity_unit,
+            "grid": {
+                "nx": aggregate.grid.nx,
+                "ny": aggregate.grid.ny,
+                "grid_spacing_micron": aggregate.grid.grid_spacing_micron,
+                "slice_thickness_micron": aggregate.grid.slice_thickness_micron,
+            },
+            "samples": [
+                {
+                    "time_min": sample.time_min,
+                    "extracellular_quantity": sample.integrated_field_quantity,
+                    "internalized_quantity": sample.internalized_field_quantity,
+                    "mean_concentration": sample.mean_concentration,
+                    "min_concentration": sample.min_concentration,
+                    "max_concentration": sample.max_concentration,
+                }
+                for sample in aggregate.samples
+            ],
+        },
+    }
+    if include_fields:
+        payload["aggregate"]["fields"] = [
+            {
+                "time_min": snapshot.time_min,
+                "values": list(snapshot.values),
+            }
+            for snapshot in aggregate.field_snapshots
+        ]
+    return payload
+
+
 def _run_summary(bundle, *, include_field: bool) -> dict[str, object]:
     result = bundle.result
     final = result.samples[-1]
@@ -450,6 +600,130 @@ class WorkspaceApplication:
 
     def perturbation(self, name: str) -> dict[str, object]:
         return _perturbation_summary(self.workspace.read_perturbation(name))
+
+    def import_population_run(
+        self,
+        name: str,
+        document: str,
+    ) -> dict[str, object]:
+        if not isinstance(document, str):
+            raise ValueError("population run document must be text")
+        if len(document.encode("utf-8")) > 16_000_000:
+            raise ValueError("population run document exceeds 16 MB")
+        path = self.workspace.import_population_run(name, document)
+        return {"name": path.name}
+
+    def population_run(
+        self,
+        name: str,
+        *,
+        include_fields: bool = True,
+    ) -> dict[str, object]:
+        return _population_run_summary(
+            self.workspace.read_population_run(name),
+            include_fields=include_fields,
+        )
+
+    def execute_population_study(
+        self,
+        *,
+        perturbation_name: str,
+        population_experiments: dict[str, str],
+        run_name: str,
+        grid_spacing_micron: float,
+        time_step_min: float,
+    ) -> dict[str, object]:
+        path = self.workspace.execute_population_study(
+            perturbation_name=perturbation_name,
+            population_experiments=population_experiments,
+            run_name=run_name,
+            runner=self.runner,
+            revision=self.revision,
+            grid_spacing_micron=grid_spacing_micron,
+            time_step_min=time_step_min,
+        )
+        return {"name": path.name}
+
+    def compare_measurement_prediction(
+        self,
+        *,
+        measurement_name: str,
+        population_run_name: str,
+        condition_id: str,
+        population: str,
+        targets: list[dict[str, str]],
+    ) -> dict[str, object]:
+        if not isinstance(targets, list) or not targets:
+            raise ValueError("targets must be a non-empty list")
+        parsed_targets: list[MeasurementPredictionTarget] = []
+        for value in targets:
+            if not isinstance(value, dict):
+                raise ValueError("each measurement target must be an object")
+            identifier = value.get("observation_identifier")
+            observable = value.get("observable")
+            if not isinstance(identifier, str) or not isinstance(observable, str):
+                raise ValueError(
+                    "measurement target requires observation_identifier and observable"
+                )
+            try:
+                selected = PredictionObservable(observable)
+            except ValueError as exc:
+                raise ValueError(
+                    f"unsupported prediction observable: {observable}"
+                ) from exc
+            parsed_targets.append(
+                MeasurementPredictionTarget(
+                    observation_identifier=identifier,
+                    observable=selected,
+                )
+            )
+
+        run = self.workspace.read_population_run(population_run_name)
+        if population == "total":
+            result = _aggregate_result(run)
+        else:
+            matches = [
+                item.result
+                for item in run.populations
+                if item.phenotype_id == population
+            ]
+            if len(matches) != 1:
+                raise ValueError(
+                    f"population run has no unique phenotype {population!r}"
+                )
+            result = matches[0]
+
+        compared = compare_measurements_to_prediction(
+            self.workspace.read_measurement(measurement_name),
+            condition_id,
+            result,
+            tuple(parsed_targets),
+        )
+        return {
+            "measurement": measurement_name,
+            "population_run": population_run_name,
+            "condition_id": condition_id,
+            "population": population,
+            "matches": [
+                {
+                    "sample_id": item.sample_id,
+                    "time_min": item.time_min,
+                    "observation_identifier": item.observation_identifier,
+                    "observable": item.observable.value,
+                    "measured_value": item.measured_value,
+                    "measured_unit": item.measured_unit,
+                    "predicted_value": item.predicted_value,
+                    "predicted_unit": item.predicted_unit,
+                    "exact_time_match": item.exact_time_match,
+                    "unit_compatible": item.unit_compatible,
+                    "residual_prediction_minus_measurement": (
+                        item.residual_prediction_minus_measurement
+                    ),
+                    "reason": item.reason,
+                }
+                for item in compared
+            ],
+        }
 
     def create_baseline(self, name: str) -> dict[str, object]:
         path = self.workspace.create_baseline_experiment(name)
