@@ -136,6 +136,7 @@ def _decode_observation(value: Any) -> AssayObservation:
 
 def _encode_timepoint(value: MeasurementTimepoint) -> dict[str, Any]:
     return {
+        "sample_id": value.sample_id,
         "condition_id": value.condition_id,
         "time_min": value.time_min,
         "biological_replicate_id": value.biological_replicate_id,
@@ -150,6 +151,7 @@ def _decode_timepoint(value: Any) -> MeasurementTimepoint:
     if not isinstance(value, dict):
         raise ValueError("measurement timepoint must be an object")
     return MeasurementTimepoint(
+        sample_id=value["sample_id"],
         condition_id=value["condition_id"],
         time_min=value["time_min"],
         biological_replicate_id=value.get("biological_replicate_id"),
@@ -163,7 +165,10 @@ def _decode_timepoint(value: Any) -> MeasurementTimepoint:
 def _encode_dataset(dataset: LongitudinalEVDataset) -> dict[str, Any]:
     return {
         "dataset_id": dataset.dataset_id,
-        "preanalytics": _encode_preanalytics(dataset.preanalytics),
+        "samples": [
+            _encode_preanalytics(item)
+            for item in dataset.samples
+        ],
         "timepoints": [
             _encode_timepoint(item)
             for item in dataset.timepoints
@@ -178,7 +183,10 @@ def _decode_dataset(value: Any) -> LongitudinalEVDataset:
         raise ValueError("measurement dataset must be an object")
     return LongitudinalEVDataset(
         dataset_id=value["dataset_id"],
-        preanalytics=_decode_preanalytics(value["preanalytics"]),
+        samples=tuple(
+            _decode_preanalytics(item)
+            for item in value["samples"]
+        ),
         timepoints=tuple(
             _decode_timepoint(item)
             for item in value["timepoints"]
