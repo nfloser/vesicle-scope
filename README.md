@@ -29,6 +29,7 @@ See:
 - [Local measured-data audit](docs/measured-data.md)
 - [blood-derived longitudinal EV measurement workflow](docs/research/blood-ev-longitudinal-workflow.md)
 - [hormone/stimulus perturbation and EV phenotype model](docs/research/hormone-ev-perturbation-model.md)
+- [phenotype-specific EV population transport](docs/research/phenotype-population-transport.md)
 - [Smoldyn particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md)
 - [interactive synthetic experiment editor](docs/synthetic-experiment-editor.md)
 - [first engine decision](docs/decisions/0001-first-engine.md)
