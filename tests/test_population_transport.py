@@ -35,6 +35,10 @@ from vesiclescope.engines import (
     TransportSample,
 )
 from vesiclescope.perturbation_execution import apply_model_effects
+from vesiclescope.population_experiment_files import (
+    deserialize_population_experiment_document,
+    serialize_population_experiment_document,
+)
 from vesiclescope.population_run_bundles import (
     PopulationSimulationRunBundle,
     deserialize_population_run_bundle,
@@ -117,6 +121,13 @@ class PopulationContractTests(unittest.TestCase):
                 ),
             )
 
+
+
+    def test_population_experiment_document_round_trips(self):
+        experiment = population_experiment()
+        encoded = serialize_population_experiment_document(experiment)
+        restored = deserialize_population_experiment_document(encoded)
+        self.assertEqual(restored, experiment)
 
 class PerturbationExecutionTests(unittest.TestCase):
     def test_explicit_release_multiplier_creates_audited_effective_parameter(self):
