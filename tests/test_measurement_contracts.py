@@ -155,14 +155,61 @@ class MeasurementContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             LongitudinalEVDataset(
                 dataset_id="stress-study",
-                preanalytics=protocol,
+                samples=(protocol,),
                 timepoints=(
                     MeasurementTimepoint(
+                        sample_id="sample-001",
                         condition_id="control",
                         time_min=0.0,
                         observations=(obs,),
                     ),
                     MeasurementTimepoint(
+                        sample_id="sample-001",
+                        condition_id="control",
+                        time_min=0.0,
+                        observations=(obs,),
+                    ),
+                ),
+            )
+
+
+    def test_timepoint_may_precede_reference_and_must_reference_known_sample(self) -> None:
+        obs = AssayObservation(
+            identifier="nta.particles",
+            scientific_name="particle concentration",
+            kind=MeasurementKind.PARTICLE_CONCENTRATION,
+            value=1.0,
+            unit="particle/mL",
+            method="NTA",
+            detection_semantics="Scatter-mode particle count.",
+        )
+        protocol = BloodEVPreanalytics(
+            sample_id="sample-001",
+            specimen=SpecimenKind.PLASMA,
+            anticoagulant="EDTA",
+            collection_to_processing_min=20.0,
+        )
+        dataset = LongitudinalEVDataset(
+            dataset_id="pre-stimulus",
+            samples=(protocol,),
+            timepoints=(
+                MeasurementTimepoint(
+                    sample_id="sample-001",
+                    condition_id="control",
+                    time_min=-5.0,
+                    observations=(obs,),
+                ),
+            ),
+        )
+        self.assertEqual(dataset.timepoints[0].time_min, -5.0)
+
+        with self.assertRaisesRegex(ValueError, "unknown sample"):
+            LongitudinalEVDataset(
+                dataset_id="bad-reference",
+                samples=(protocol,),
+                timepoints=(
+                    MeasurementTimepoint(
+                        sample_id="missing",
                         condition_id="control",
                         time_min=0.0,
                         observations=(obs,),
@@ -212,14 +259,16 @@ class MeasurementDocumentTests(unittest.TestCase):
         )
         return LongitudinalEVDataset(
             dataset_id="synthetic.longitudinal-ev",
-            preanalytics=protocol,
+            samples=(protocol,),
             timepoints=(
                 MeasurementTimepoint(
+                    sample_id="sample-001",
                     condition_id="control",
                     time_min=0.0,
                     observations=observations,
                 ),
                 MeasurementTimepoint(
+                    sample_id="sample-001",
                     condition_id="stress",
                     time_min=15.0,
                     observations=observations,
