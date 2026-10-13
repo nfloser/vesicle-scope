@@ -1,16 +1,16 @@
 # VesicleScope
 
-VesicleScope is an evidence-grounded computational research platform for studying extracellular-vesicle (EV) transport and cell-to-cell communication.
+VesicleScope models extracellular-vesicle (EV) transport and cell-to-cell communication for research. Biological assumptions and parameters require documented evidence.
 
-VesicleScope was developed deliberately around a narrow research question rather than as an unconstrained large simulator:
+The current research question is:
 
 > How do recipient-cell density, donor-recipient distance, EV release, extracellular transport and recipient uptake interact to determine the spatial communication range predicted by a tissue-scale EV transport model?
 
-Before a biological mechanism or parameter enters the software it must have explicit provenance, context and limitations. The current product keeps that research gate in the same contracts used by its CLI and local browser workspace.
+Every biological mechanism and parameter needs documented provenance, context and limitations before it enters the model. The CLI and local browser workspace use the same contracts for those requirements.
 
 ## Status
 
-**VesicleScope 0.3.0 is the current research-product release boundary.** The continuum BioFVM path is numerically verified against analytical/synthetic benchmarks and includes finite donor/recipient geometry, reproducible runs, provenance-aware experiment files, a provenance-safe synthetic editor, explicit experiment batches with deterministic batch OMEX export, conservative stored-run ensemble summaries, rich offline run comparison, a CLI and a local interactive workspace.
+**Current research release: VesicleScope 0.3.0.** The continuum BioFVM path has numerical verification against analytical and synthetic benchmarks. It supports finite donor/recipient geometry, reproducible runs, experiment files with provenance, a synthetic editor with provenance checks, deterministic batch OMEX export, conservative stored-run ensemble summaries and offline run comparison. A CLI and local interactive workspace expose these workflows.
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
