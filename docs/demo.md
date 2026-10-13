@@ -1,7 +1,6 @@
 # VesicleScope demonstration
 
-This walkthrough demonstrates a working research product using synthetic inputs.
-It does not demonstrate validation against biological measurements.
+This walkthrough uses synthetic inputs to run the research software. The results demonstrate the workflow, not validation against biological measurements.
 
 ## Install
 
@@ -86,9 +85,9 @@ assume that faster diffusion universally increases uptake. Individual field maps
 use their own colour scale, so use their extrema and the difference map rather
 than colour alone.
 
-This is a conditional model sensitivity study. The current UI reports total
-recipient uptake, not an automatic per-cell arrival-time or communication-range
-estimate. Research use additionally requires resolution/timestep checks and
+The results depend on the chosen model and parameters. The UI reports total
+recipient uptake; it does not automatically estimate per-cell arrival times or
+communication range. Research use additionally requires resolution/timestep checks and
 context-matched evidence for parameters and observables. Synthetic values are
 not biological defaults and these runs cannot establish treatment efficacy.
 
