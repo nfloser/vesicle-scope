@@ -1,6 +1,6 @@
 # EV perturbation workspace API
 
-Status: local workspace contract for issues #100/#106  
+Status: local workspace contract for issues #100/#106
 Reviewed: 2026-10-07
 
 ## Purpose
