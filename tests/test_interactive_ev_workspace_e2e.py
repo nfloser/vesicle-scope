@@ -220,7 +220,7 @@ class InteractiveEVWorkspaceEndToEndTests(unittest.TestCase):
                             "control-ev": "baseline.json",
                         },
                         "run_name": "cortisol.population-run.json",
-                        "grid_spacing_micron": 20.0,
+                        "grid_spacing_micron": 10.0,
                         "time_step_min": 0.1,
                     },
                 )
