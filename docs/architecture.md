@@ -340,3 +340,22 @@ simulation times and computes a residual only when units already match. It does
 not interpolate, convert units or calibrate parameters.
 
 See [executable phenotype-specific perturbation transport](research/perturbation-transport-execution.md).
+
+
+## Research-workspace scientific artifacts
+
+The loopback research workspace now keeps longitudinal measurements,
+perturbation studies and completed phenotype-specific population runs in
+separate filesystem-confined artifact stores alongside the existing transport
+experiments and single-population runs.
+
+Application and HTTP layers expose normalized summaries for pre-analytics,
+assay semantics, exposures, marker/cargo annotations, evidence context,
+execution audits, per-population transport and aggregate behavior. They do not
+reimplement perturbation mapping or measurement alignment: population execution
+delegates to the scientific workflow layer, aggregate fields delegate to the
+verified composition helpers and measured-versus-predicted alignment delegates
+to the exact-time analysis adapter.
+
+This keeps browser JavaScript presentation-only for the hormone/EV workspace
+work in #100/#107. See [EV perturbation workspace API](research-workspace-api.md).
