@@ -68,7 +68,8 @@ interpolates, resamples or silently substitutes a nearby snapshot.
 The two-run view exposes one integer-index slider and Play/Pause control per
 run. Optional synchronized navigation uses an explicit causal rule: after one
 side moves, the other selects its latest stored time not later than the active
-time. The two actual times remain visible, and a difference field remains
+time. If no such snapshot exists, that side remains unchanged. The two actual
+times remain visible, and a difference field remains
 unavailable unless those stored times are equal. A run containing only one
 field is labelled as end-field-only and its temporal controls are disabled.
 
