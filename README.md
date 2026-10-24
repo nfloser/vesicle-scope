@@ -10,7 +10,7 @@ Every biological mechanism and parameter needs documented provenance, context an
 
 ## Status
 
-**Current research release: VesicleScope 0.3.0.** The continuum BioFVM path has numerical verification against analytical and synthetic benchmarks. It supports finite donor/recipient geometry, reproducible runs, experiment files with provenance, a synthetic editor with provenance checks, deterministic batch OMEX export, conservative stored-run ensemble summaries and offline run comparison. A CLI and local interactive workspace expose these workflows.
+**Current research release: VesicleScope 0.3.0.** The continuum BioFVM path has numerical verification against analytical and synthetic benchmarks. It supports finite donor/recipient geometry, reproducible runs, experiment files with provenance, a synthetic editor with provenance checks, explicit experiment batches with deterministic batch OMEX export, conservative stored-run ensemble summaries and offline run comparison. A CLI and local interactive workspace expose these workflows.
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
