@@ -64,3 +64,17 @@ exactly in their respective run bundles and the concentration units, grid,
 spacing, slice thickness, physical domain and actual times match. Missing or
 unequal times produce an explicit incompatibility reason. The endpoint never
 interpolates, resamples or silently substitutes a nearby snapshot.
+
+The two-run view exposes one integer-index slider and Play/Pause control per
+run. Optional synchronized navigation uses an explicit causal rule: after one
+side moves, the other selects its latest stored time not later than the active
+time. The two actual times remain visible, and a difference field remains
+unavailable unless those stored times are equal. A run containing only one
+field is labelled as end-field-only and its temporal controls are disabled.
+
+Compatible runs use a stable shared concentration scale calculated across all
+stored fields in both runs, so colours do not shift during playback. The view
+also lists experiment and numerical parameters, marks changed values, separates
+extracellular and internalized quantity charts, and reports selected-time
+absolute and percentage differences. Percentage differences are explicitly
+undefined when the left-hand denominator is zero.

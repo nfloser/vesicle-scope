@@ -50,6 +50,27 @@ class ResearchWorkspaceUITests(unittest.TestCase):
         self.assertIn('aria-live="polite"', self.html)
         self.assertIn("@media(max-width:720px)", self.html)
 
+    def test_two_run_comparison_exposes_honest_temporal_controls(self) -> None:
+        for expected in (
+            'id="compareLeftMap"',
+            'id="compareRightMap"',
+            'id="compareLeftTime"',
+            'id="compareRightTime"',
+            'id="compareLeftPlay"',
+            'id="compareRightPlay"',
+            'id="compareSync"',
+            'id="comparisonExtracellularCanvas"',
+            'id="comparisonInternalizedCanvas"',
+            'id="comparisonChangedParameters"',
+            "function synchronizeComparisonTime",
+            "function toggleComparisonPlayback",
+            "function quantityDifferenceLabel",
+            "undefined (left is zero)",
+            "latest stored time not after",
+            "End-field-only run",
+        ):
+            self.assertIn(expected, self.html)
+
 
 if __name__ == "__main__":
     unittest.main()
