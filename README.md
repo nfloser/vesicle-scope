@@ -6,7 +6,7 @@ The current research question is:
 
 > How do recipient-cell density, donor-recipient distance, EV release, extracellular transport and recipient uptake interact to determine the spatial communication range predicted by a tissue-scale EV transport model?
 
-Every biological mechanism and parameter needs documented provenance, context and limitations before it enters the model. The CLI and local browser workspace use the same contracts for those requirements.
+Every biological mechanism and parameter needs documented provenance, context and limitations before it enters the model. The CLI and loopback-only browser workspace share validated experiment and run-bundle contracts; the interface does not introduce a separate scientific execution path.
 
 ## Status
 
