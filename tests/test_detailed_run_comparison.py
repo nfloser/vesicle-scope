@@ -1,7 +1,10 @@
 from dataclasses import replace
 import unittest
 
-from vesiclescope.analysis import compare_run_bundles_detailed
+from vesiclescope.analysis import (
+    compare_run_bundles_detailed,
+    compare_spatial_snapshots,
+)
 from vesiclescope.engines import (
     BioFVMEngineMetadata,
     BioFVMGrid2D,
@@ -184,6 +187,57 @@ class DetailedRunComparisonTests(unittest.TestCase):
                 bundle(quantity_unit="particle_equivalent"),
                 bundle(quantity_unit="other_quantity"),
             )
+
+    def test_compares_only_exact_stored_snapshot_times(self) -> None:
+        template = bundle()
+        count = template.result.grid.voxel_count
+        voxel_volume = (
+            template.result.grid.grid_spacing_micron**2
+            * template.result.grid.slice_thickness_micron
+        )
+        left = bundle(
+            extracellular=(count * voxel_volume, count * voxel_volume * 3.0),
+        )
+        left = replace(
+            left,
+            result=replace(
+                left.result,
+                field_snapshots=(
+                    SpatialFieldSnapshot2D(0.0, (1.0,) * count),
+                    SpatialFieldSnapshot2D(20.0, (3.0,) * count),
+                ),
+            ),
+        )
+        right = bundle(
+            extracellular=(count * voxel_volume * 4.0, count * voxel_volume * 8.0),
+        )
+        right = replace(
+            right,
+            result=replace(
+                right.result,
+                field_snapshots=(
+                    SpatialFieldSnapshot2D(0.0, (4.0,) * count),
+                    SpatialFieldSnapshot2D(20.0, (8.0,) * count),
+                ),
+            ),
+        )
+
+        summary = compare_spatial_snapshots(left, 0.0, right, 0.0)
+
+        self.assertTrue(summary.compatible)
+        self.assertEqual(summary.time_min, 0.0)
+        self.assertEqual(summary.values, (3.0,) * count)
+
+    def test_rejects_unstored_or_unequal_snapshot_times_without_interpolation(self) -> None:
+        left = bundle()
+        missing = compare_spatial_snapshots(left, 10.0, left, 10.0)
+        unequal = compare_spatial_snapshots(left, 20.0, left, 15.0)
+
+        self.assertFalse(missing.compatible)
+        self.assertIn("not stored", missing.reason)
+        self.assertEqual(missing.values, ())
+        self.assertFalse(unequal.compatible)
+        self.assertIn("not stored", unequal.reason)
 
 
 if __name__ == "__main__":

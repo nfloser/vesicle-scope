@@ -7,6 +7,7 @@ from .run_comparison import (
     StoredQuantitySample,
     compare_run_bundles,
     compare_run_bundles_detailed,
+    compare_spatial_snapshots,
 )
 from .uncertainty import (
     EmpiricalQuantitySummary,
@@ -50,6 +51,7 @@ __all__ = [
     "StoredQuantitySample",
     "compare_run_bundles",
     "compare_run_bundles_detailed",
+    "compare_spatial_snapshots",
     "EmpiricalQuantitySummary",
     "RunEnsembleSummary",
     "summarize_run_ensemble",

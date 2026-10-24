@@ -51,3 +51,16 @@ This first visible slice does not yet execute a new population study or overlay
 measurement residuals. Those remain part of issue #107 and must continue to use
 the existing server endpoints rather than implementing scientific logic in
 JavaScript.
+
+## Stored-run temporal comparison contract
+
+The run-inspection API returns the complete persisted `fields` sequence in
+addition to the legacy-compatible `final_field`. Each field retains its recorded
+`time_min`; clients must treat a one-element sequence as an end-field-only run.
+
+The comparison endpoint accepts `left_time_min` and `right_time_min` only as a
+pair. A spatial difference is returned only when both requested times exist
+exactly in their respective run bundles and the concentration units, grid,
+spacing, slice thickness, physical domain and actual times match. Missing or
+unequal times produce an explicit incompatibility reason. The endpoint never
+interpolates, resamples or silently substitutes a nearby snapshot.
