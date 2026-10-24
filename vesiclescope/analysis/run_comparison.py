@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
+from vesiclescope.engines import SpatialFieldSnapshot2D
 from vesiclescope.run_bundles import SimulationRunBundle
 
 
@@ -131,11 +132,11 @@ def _series(bundle: SimulationRunBundle) -> tuple[StoredQuantitySample, ...]:
 def _spatial_incompatibility(
     left: SimulationRunBundle,
     right: SimulationRunBundle,
+    left_snapshot: SpatialFieldSnapshot2D,
+    right_snapshot: SpatialFieldSnapshot2D,
 ) -> str | None:
     if left.result.concentration_unit != right.result.concentration_unit:
         return "concentration unit mismatch"
-    if not left.result.field_snapshots or not right.result.field_snapshots:
-        return "final spatial field is missing"
     if left.result.grid.nx != right.result.grid.nx or left.result.grid.ny != right.result.grid.ny:
         return "grid dimensions differ"
     if not math.isclose(
@@ -165,20 +166,22 @@ def _spatial_incompatibility(
     ):
         return "physical domain dimensions differ"
     if not math.isclose(
-        left.result.field_snapshots[-1].time_min,
-        right.result.field_snapshots[-1].time_min,
+        left_snapshot.time_min,
+        right_snapshot.time_min,
         rel_tol=0.0,
         abs_tol=1e-9,
     ):
-        return "final spatial snapshot times differ"
+        return "spatial snapshot times differ"
     return None
 
 
 def _spatial_difference(
     left: SimulationRunBundle,
     right: SimulationRunBundle,
+    left_snapshot: SpatialFieldSnapshot2D,
+    right_snapshot: SpatialFieldSnapshot2D,
 ) -> SpatialDifferenceSummary:
-    reason = _spatial_incompatibility(left, right)
+    reason = _spatial_incompatibility(left, right, left_snapshot, right_snapshot)
     if reason is not None:
         return SpatialDifferenceSummary(
             compatible=False,
@@ -193,8 +196,6 @@ def _spatial_difference(
             mean_absolute_difference=None,
         )
 
-    left_snapshot = left.result.field_snapshots[-1]
-    right_snapshot = right.result.field_snapshots[-1]
     if len(left_snapshot.values) != len(right_snapshot.values):
         return SpatialDifferenceSummary(
             compatible=False,
@@ -227,6 +228,57 @@ def _spatial_difference(
     )
 
 
+def _exact_snapshot(
+    bundle: SimulationRunBundle,
+    time_min: float,
+) -> SpatialFieldSnapshot2D | None:
+    matches = tuple(
+        snapshot
+        for snapshot in bundle.result.field_snapshots
+        if math.isclose(snapshot.time_min, time_min, rel_tol=0.0, abs_tol=1e-9)
+    )
+    return matches[0] if len(matches) == 1 else None
+
+
+def compare_spatial_snapshots(
+    left: SimulationRunBundle,
+    left_time_min: float,
+    right: SimulationRunBundle,
+    right_time_min: float,
+) -> SpatialDifferenceSummary:
+    """Subtract exact stored fields without temporal interpolation or resampling."""
+
+    left_snapshot = _exact_snapshot(left, left_time_min)
+    if left_snapshot is None:
+        return SpatialDifferenceSummary(
+            compatible=False,
+            reason=f"left spatial snapshot at {left_time_min} min is not stored exactly",
+            nx=None,
+            ny=None,
+            concentration_unit=None,
+            time_min=None,
+            values=(),
+            minimum_difference=None,
+            maximum_difference=None,
+            mean_absolute_difference=None,
+        )
+    right_snapshot = _exact_snapshot(right, right_time_min)
+    if right_snapshot is None:
+        return SpatialDifferenceSummary(
+            compatible=False,
+            reason=f"right spatial snapshot at {right_time_min} min is not stored exactly",
+            nx=None,
+            ny=None,
+            concentration_unit=None,
+            time_min=None,
+            values=(),
+            minimum_difference=None,
+            maximum_difference=None,
+            mean_absolute_difference=None,
+        )
+    return _spatial_difference(left, right, left_snapshot, right_snapshot)
+
+
 def compare_run_bundles_detailed(
     left: SimulationRunBundle,
     right: SimulationRunBundle,
@@ -234,6 +286,26 @@ def compare_run_bundles_detailed(
     """Compare stored runs without interpolation, resampling or biological ranking."""
 
     endpoint = compare_run_bundles(left, right)
+    if left.result.field_snapshots and right.result.field_snapshots:
+        spatial = _spatial_difference(
+            left,
+            right,
+            left.result.field_snapshots[-1],
+            right.result.field_snapshots[-1],
+        )
+    else:
+        spatial = SpatialDifferenceSummary(
+            compatible=False,
+            reason="final spatial field is missing",
+            nx=None,
+            ny=None,
+            concentration_unit=None,
+            time_min=None,
+            values=(),
+            minimum_difference=None,
+            maximum_difference=None,
+            mean_absolute_difference=None,
+        )
     return DetailedRunComparison(
         endpoint=endpoint,
         left_revision=left.vesiclescope_revision,
@@ -246,5 +318,5 @@ def compare_run_bundles_detailed(
         right_biofvm_version=right.result.engine.biofvm_version,
         left_series=_series(left),
         right_series=_series(right),
-        spatial=_spatial_difference(left, right),
+        spatial=spatial,
     )

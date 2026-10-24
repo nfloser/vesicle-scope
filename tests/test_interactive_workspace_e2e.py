@@ -104,6 +104,14 @@ class InteractiveWorkspaceEndToEndTests(unittest.TestCase):
                 )
                 self.assertIn("final_field", inspected)
                 self.assertEqual(
+                    len(inspected["fields"]),
+                    len(inspected["samples"]),
+                )
+                self.assertEqual(
+                    [item["time_min"] for item in inspected["fields"]],
+                    [item["time_min"] for item in inspected["samples"]],
+                )
+                self.assertEqual(
                     len(inspected["final_field"]["values"]),
                     inspected["grid"]["nx"] * inspected["grid"]["ny"],
                 )
@@ -321,6 +329,16 @@ class InteractiveWorkspaceEndToEndTests(unittest.TestCase):
                 )
                 self.assertEqual(comparison["left_revision"], REVISION.lower())
                 self.assertEqual(comparison["right_revision"], REVISION.lower())
+
+                left_time = comparison["left_series"][0]["time_min"]
+                right_time = comparison["right_series"][0]["time_min"]
+                status, exact = request_json(
+                    f"{base}/api/compare?left=baseline.run.json&right=variant.run.json"
+                    f"&left_time_min={left_time}&right_time_min={right_time}"
+                )
+                self.assertEqual(status, 200)
+                self.assertTrue(exact["spatial"]["compatible"])
+                self.assertEqual(exact["spatial"]["time_min"], left_time)
             finally:
                 server.shutdown()
                 server.server_close()

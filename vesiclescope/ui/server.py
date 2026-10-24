@@ -6,6 +6,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 import json
+import math
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, quote, urlsplit
@@ -60,6 +61,24 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
             if values is None or len(values) != 1 or not values[0]:
                 raise ValueError(f"missing query parameter: {name}")
             return values[0]
+
+        def _query_optional_float(
+            self,
+            query: dict[str, list[str]],
+            name: str,
+        ) -> float | None:
+            values = query.get(name)
+            if values is None:
+                return None
+            if len(values) != 1 or not values[0]:
+                raise ValueError(f"invalid query parameter: {name}")
+            try:
+                value = float(values[0])
+            except ValueError as exc:
+                raise ValueError(f"query parameter {name} must be numeric") from exc
+            if not math.isfinite(value):
+                raise ValueError(f"query parameter {name} must be finite")
+            return value
 
         def _validate_host(self) -> None:
             raw_host = self.headers.get("Host")
@@ -153,7 +172,19 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 if parsed.path == "/api/compare":
                     left = self._query_one(query, "left")
                     right = self._query_one(query, "right")
-                    self._send_json(HTTPStatus.OK, app.compare(left, right))
+                    self._send_json(
+                        HTTPStatus.OK,
+                        app.compare(
+                            left,
+                            right,
+                            left_time_min=self._query_optional_float(
+                                query, "left_time_min"
+                            ),
+                            right_time_min=self._query_optional_float(
+                                query, "right_time_min"
+                            ),
+                        ),
+                    )
                     return
                 if parsed.path == "/download/experiment":
                     self._send_artifact("experiment", self._query_one(query, "name"))
