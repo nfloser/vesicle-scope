@@ -86,6 +86,7 @@ class ResearchWorkspaceUITests(unittest.TestCase):
 
     def test_research_workspace_is_keyboard_and_mobile_ready(self) -> None:
         self.assertIn(":focus-visible", self.html)
+        self.assertIn('rel="icon" href="data:,"', self.html)
         self.assertIn('role="tablist"', self.html)
         self.assertIn('aria-live="polite"', self.html)
         self.assertIn("@media(max-width:720px)", self.html)
