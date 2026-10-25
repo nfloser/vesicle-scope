@@ -147,6 +147,10 @@ async function exercise(browser, viewport, prefix) {
     browserErrors.length === 0,
     `${prefix}: browser errors: ${browserErrors.join(" | ")}`,
   );
+  // Element screenshots otherwise capture the desktop sticky header over the
+  // section after Playwright scrolls the target into view. Keep the product
+  // behavior intact while making the review artefact show only the target.
+  await page.addStyleTag({ content: "header{position:static!important}" });
   await page.locator("#researchWorkspace").screenshot({
     path: path.join(outputDirectory, `${prefix}-research-workspace.png`),
   });
