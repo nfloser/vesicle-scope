@@ -2,10 +2,45 @@
 
 ## Unreleased
 
+
+## 0.4.0
+
+### Product
+
+- add the evidence-aware measurement, pre-analytics, phenotype marker/cargo and perturbation workspace;
+- execute explicitly mapped phenotype populations through the canonical BioFVM workflow;
+- navigate every persisted spatial snapshot with independent sliders, actual stored times, Play/Pause and an explicit optional synchronization rule;
+- compare two large spatial maps with complete run names, changed parameters and one stable compatible concentration scale;
+- show right-minus-left differences only for exact compatible stored fields and preserve end-field-only legacy runs;
+- separate extracellular and internalized time series and report absolute/relative selected-time differences with explicit zero-denominator behavior;
+- overlay measured and simulated values only at exact stored times after explicit observation mapping;
+- export deterministic scientific SVG comparisons with provenance and numerical identity.
+
+### Reproducibility and quality
+
+- add real Chromium interaction acceptance at desktop and mobile widths with reviewed screenshots;
+- retain deterministic COMBINE/OMEX single and batch exchange from the 0.3.0 development line;
+- verify unit, browser, wheel, scientific-figure, Windows-native and BioFVM workflows before release publication;
+- document the complete Windows GNU/OpenMP prerequisite, including the MSYS2 UCRT64 `libgomp` package.
+
+### Scientific limits
+
+All browser fixtures remain synthetic software-verification inputs. Exact-time overlays are comparisons, not fitting, and no missing field is interpolated. External biological calibration, the unresolved mucus-workbook analysis provenance and alternate particle-engine licensing remain separate gates.
+
+
+## 0.3.0
+
+### Product
+
 - package one VesicleScope experiment plus optional validated run bundles in a deterministic COMBINE/OMEX archive;
+- package explicit ordered multi-experiment projects with matching stored runs and a deterministic batch manifest;
 - inspect OMEX projects without solver execution while reusing experiment/run integrity and scientific contracts;
-- import and export COMBINE/OMEX projects through the local browser workspace without a separate scientific path;
-- explicitly defer SED-ML compatibility until the spatial BioFVM experiment has an honestly portable model/execution representation.
+- import and export COMBINE/OMEX projects through the local browser workspace without a separate scientific path.
+
+### Scientific limits
+
+- explicitly defer SED-ML compatibility until the spatial BioFVM experiment has an honestly portable model/execution representation;
+- retain external biological calibration, alternate-engine licensing and evidence-backed inference as separate gates.
 
 
 ## 0.2.0

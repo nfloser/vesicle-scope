@@ -4,11 +4,11 @@ This walkthrough uses synthetic inputs to run the research software. The results
 
 ## Install
 
-Download the v0.3.0 wheel from the repository's GitHub Releases page. In a fresh
+Download the v0.4.0 wheel from the repository's GitHub Releases page. In a fresh
 Python 3.11+ environment:
 
 ```bash
-python -m pip install vesicle_scope-0.3.0-py3-none-any.whl
+python -m pip install vesicle_scope-0.4.0-py3-none-any.whl
 vesiclescope --version
 vesiclescope engine build --output biofvm_transport_runner
 vesiclescope workspace init workspace
@@ -24,7 +24,7 @@ output name. See [engine setup](engine-setup.md) for the platform prerequisites.
 vesiclescope ui --workspace workspace --runner ./biofvm_transport_runner --revision RELEASE_COMMIT_SHA
 ```
 
-Replace `RELEASE_COMMIT_SHA` with the full commit SHA referenced by the v0.3.0 tag.
+Replace `RELEASE_COMMIT_SHA` with the full commit SHA referenced by the v0.4.0 tag.
 For a modified source build, use its actual commit, not the release tag's SHA.
 On Windows replace the runner filename with `biofvm_transport_runner.exe`.
 Open the loopback URL printed by the command. Stop the server with Ctrl+C.

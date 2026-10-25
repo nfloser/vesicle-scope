@@ -10,7 +10,7 @@ Every biological mechanism and parameter needs documented provenance, context an
 
 ## Status
 
-**Current research release: VesicleScope 0.3.0.** The continuum BioFVM path has numerical verification against analytical and synthetic benchmarks. It supports finite donor/recipient geometry, reproducible runs, experiment files with provenance, a synthetic editor with provenance checks, explicit experiment batches with deterministic batch OMEX export, conservative stored-run ensemble summaries and offline run comparison. A CLI and local interactive workspace expose these workflows.
+**Current research release: VesicleScope 0.4.0.** The continuum BioFVM path has numerical verification against analytical and synthetic benchmarks. It supports finite donor/recipient geometry, reproducible runs, provenance-bearing experiment and measurement files, explicit experiment batches with deterministic OMEX export, conservative stored-run ensemble summaries and exact persisted-time comparison. The CLI and local evidence-aware workspace expose the same scientific contracts.
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
@@ -133,7 +133,7 @@ vesiclescope run diffusion-uptake-factor \
 
 The workflow writes a deterministic summary, one SVG interaction figure and nine durable run bundles. It is a controlled synthetic model-behaviour experiment and **not experimental evidence**.
 
-See [product readiness](docs/product-readiness.md) and [v0.3.0 release notes](docs/releases/v0.3.0.md) for the supported product boundary and remaining scientific limitations.
+See [product readiness](docs/product-readiness.md) and [v0.4.0 release notes](docs/releases/v0.4.0.md) for the supported product boundary and remaining scientific limitations.
 
 
 ## Local interactive workspace
@@ -149,7 +149,7 @@ vesiclescope ui \
   --revision "$(git rev-parse HEAD)"
 ```
 
-The UI binds to `127.0.0.1` by default. It can create/import experiments, derive new provenance-safe variants from synthetic benchmarks, launch runs with explicit numerical settings, inspect stored spatial fields and time series, compare completed runs across their stored quantity series and directly compatible final fields, import/export reproducible single-experiment and ordered batch COMBINE/OMEX projects, and download persisted JSON artifacts. Synthetic editing creates a new experiment and refuses evidence-backed parameters rather than silently reusing their provenance. It does not introduce a separate scientific execution path.
+The UI binds to `127.0.0.1` by default. It can create/import experiments, derive new provenance-safe variants from synthetic benchmarks, launch runs with explicit numerical settings, inspect stored spatial fields and time series, compare runs at their actual persisted spatial times, and import/export reproducible COMBINE/OMEX projects. The research views keep assay provenance, marker/cargo evidence and explicit unknowns visible; phenotype execution requires an explicit mapping to a study-declared transport experiment. Two-run maps use stable compatible scales, independent or synchronized discrete time navigation and an exact-time right-minus-left view. No intermediate field is interpolated or reconstructed from an end field.
 
 ## Model-comparison direction
 
