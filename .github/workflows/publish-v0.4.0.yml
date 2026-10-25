@@ -135,11 +135,16 @@ jobs:
           path: build/dist/vesicle_scope-0.4.0-*.whl
           if-no-files-found: error
 
-      - name: Close completed release issue
+      - name: Report completed release issue
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           RELEASE_URL="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)"
-          gh issue close 112 --repo "$GITHUB_REPOSITORY" \
-            --comment "Published and verified VesicleScope 0.4.0 from release boundary ${GITHUB_SHA}: ${RELEASE_URL}"
+          MESSAGE="Published and verified VesicleScope 0.4.0 from release boundary ${GITHUB_SHA}: ${RELEASE_URL}"
+          if [ "$(gh issue view 112 --repo "$GITHUB_REPOSITORY" --json state --jq .state)" = "OPEN" ]; then
+            gh issue close 112 --repo "$GITHUB_REPOSITORY" --comment "$MESSAGE"
+          else
+            gh issue comment 112 --repo "$GITHUB_REPOSITORY" --body "$MESSAGE"
+          fi
