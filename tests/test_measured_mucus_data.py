@@ -32,8 +32,9 @@ class MeasuredMucusDataTests(unittest.TestCase):
             sheet.append([16.0] * 8)
         self.book.save(self.path)
 
-    def audit(self):
-        self.book.save(self.path)
+    def audit(self, *, save_fixture=True):
+        if save_fixture:
+            self.book.save(self.path)
         digest = hashlib.sha256(self.path.read_bytes()).hexdigest()
         with patch.object(mucus_data, 'REVIEWED_SHA256', digest):
             return mucus_data.audit_mucus_workbook(self.path)
@@ -44,7 +45,11 @@ class MeasuredMucusDataTests(unittest.TestCase):
 
     def test_sample_identity_particle_types_and_geometric_mean(self):
         before = self.path.read_bytes()
-        report = self.audit()
+        # Audit the exact bytes captured above. Saving the OpenPyXL fixture a
+        # second time can change ZIP metadata and would test the fixture writer
+        # rather than whether the read-only audit mutates its input.
+        with patch.object(self.book, 'save', side_effect=AssertionError('unexpected fixture rewrite')):
+            report = self.audit(save_fixture=False)
         self.assertEqual(self.path.read_bytes(), before)
         self.assertEqual(len(report['groups']), 80)
         self.assertEqual(report['independent_sample_count'], 10)
