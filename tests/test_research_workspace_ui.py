@@ -62,12 +62,15 @@ class ResearchWorkspaceUITests(unittest.TestCase):
             'id="comparisonExtracellularCanvas"',
             'id="comparisonInternalizedCanvas"',
             'id="comparisonChangedParameters"',
+            'id="comparisonFigureExport"',
             "function synchronizeComparisonTime",
             "function toggleComparisonPlayback",
             "function quantityDifferenceLabel",
             "undefined (left is zero)",
             "latest stored time not after",
             "End-field-only run",
+            "/download/comparison-figure",
+            "function exportComparisonFigure",
         ):
             self.assertIn(expected, self.html)
 

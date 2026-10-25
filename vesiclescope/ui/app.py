@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import tempfile
 
 from vesiclescope.analysis import (
     MeasurementPredictionTarget,
@@ -15,6 +16,7 @@ from vesiclescope.analysis import (
 )
 from vesiclescope.domain import MeasurementKind
 from vesiclescope.engines import BioFVMRunResult
+from vesiclescope.figures import render_run_comparison_figure
 from vesiclescope.workflows import (
     aggregate_population_fields,
     aggregate_population_samples,
@@ -934,6 +936,31 @@ class WorkspaceApplication:
                 "mean_absolute_difference": spatial.mean_absolute_difference,
             },
         }
+
+    def export_run_comparison_figure(
+        self,
+        left: str,
+        right: str,
+        *,
+        left_time_min: float,
+        right_time_min: float,
+    ) -> tuple[str, bytes]:
+        """Render exact persisted snapshots to a deterministic scientific SVG."""
+
+        left_bundle = self.workspace.read_run(left)
+        right_bundle = self.workspace.read_run(right)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "run-comparison.svg"
+            render_run_comparison_figure(
+                left_bundle,
+                left_time_min,
+                right_bundle,
+                right_time_min,
+                output,
+                left_name=left,
+                right_name=right,
+            )
+            return output.name, output.read_bytes()
 
     def artifact_path(self, kind: str, name: str) -> Path:
         if kind == "experiment":

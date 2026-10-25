@@ -79,3 +79,19 @@ also lists experiment and numerical parameters, marks changed values, separates
 extracellular and internalized quantity charts, and reports selected-time
 absolute and percentage differences. Percentage differences are explicitly
 undefined when the left-hand denominator is zero.
+
+## Scientific figure export
+
+When both selected fields are directly compatible at the same exact stored
+time, the comparison can be exported as deterministic SVG. The server renders
+the figure from the integrity-checked run bundles; it does not capture the
+browser canvas. The two spatial maps use one concentration scale fixed across
+all persisted snapshots from both runs. The right-minus-left panel uses a
+symmetric diverging scale and states its sign convention. Extracellular and
+internalized quantities remain separate plots, while engine versions, exact
+revisions, run names, stored times and scientific status remain embedded as
+inspectable SVG text. Export is unavailable for unequal times, units, grids or
+physical domains; no interpolation or resampling is used to make them fit.
+Rendering requires the optional figure dependencies installed with
+`python -m pip install 'vesicle-scope[figures]'`; the UI reports the server
+error without discarding the selected comparison when they are unavailable.

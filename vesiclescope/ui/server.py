@@ -207,6 +207,24 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 if parsed.path == "/download/archive":
                     self._send_archive(self._query_one(query, "experiment"))
                     return
+                if parsed.path == "/download/comparison-figure":
+                    left = self._query_one(query, "left")
+                    right = self._query_one(query, "right")
+                    left_time = self._query_optional_float(query, "left_time_min")
+                    right_time = self._query_optional_float(query, "right_time_min")
+                    if left_time is None or right_time is None:
+                        raise ValueError(
+                            "left_time_min and right_time_min are required for figure export"
+                        )
+                    self._send_svg_data(
+                        *app.export_run_comparison_figure(
+                            left,
+                            right,
+                            left_time_min=left_time,
+                            right_time_min=right_time,
+                        )
+                    )
+                    return
                 self._send_error_json(HTTPStatus.NOT_FOUND, "not found")
             except (OSError, RuntimeError, TypeError, ValueError) as exc:
                 self._send_error_json(HTTPStatus.BAD_REQUEST, str(exc))
@@ -233,6 +251,18 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
             self.send_response(HTTPStatus.OK)
             self._security_headers()
             self.send_header("Content-Type", "application/zip")
+            self.send_header(
+                "Content-Disposition",
+                f"attachment; filename*=UTF-8''{quote(filename)}",
+            )
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _send_svg_data(self, filename: str, data: bytes) -> None:
+            self.send_response(HTTPStatus.OK)
+            self._security_headers()
+            self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
             self.send_header(
                 "Content-Disposition",
                 f"attachment; filename*=UTF-8''{quote(filename)}",
