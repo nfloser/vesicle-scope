@@ -67,7 +67,15 @@ The reviewed native path requires:
 
 Linux uses the conventional user cache under `~/.cache/vesiclescope`.
 
-On Windows, VesicleScope uses `%LOCALAPPDATA%\\VesicleScope\\Cache` when `LOCALAPPDATA` is available and writes the runner as `biofvm_transport_runner.exe`. The Windows CI path uses the MinGW/GCC toolchain provided by the GitHub-hosted Windows image and exercises a real pinned-engine build.
+On Windows, use the MSYS2 UCRT64 environment and install the complete GNU/OpenMP toolchain before building:
+
+```bash
+pacman -S --needed git make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libgomp
+```
+
+Run VesicleScope from the UCRT64 shell, where `g++ --version` must succeed and the UCRT64 `bin` directory supplies the matching runtime libraries. GCC alone is not a sufficient readiness check: the native link requires `libgomp` (`-lgomp`), which is provided by `mingw-w64-ucrt-x86_64-libgomp`. This exact package resolved the missing-library failure observed with MSYS2 GCC 16.2.
+
+VesicleScope uses `%LOCALAPPDATA%\\VesicleScope\\Cache` when `LOCALAPPDATA` is available and writes the runner as `biofvm_transport_runner.exe`. The Windows CI path uses the GNU-compatible toolchain provided by the GitHub-hosted Windows image and exercises a real pinned-engine build.
 
 Set `VESICLESCOPE_CACHE_DIR` to override the cache root explicitly on either platform.
 

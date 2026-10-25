@@ -36,7 +36,7 @@ The installed CLI can report engine readiness, fetch/verify the exact reviewed P
 
 A local browser-based workspace is now implemented on top of the same experiment documents, run bundles and execution/comparison services as the CLI. It is loopback-only by default, confines artifacts to explicit workspace directories and can create/import experiments, launch runs, inspect stored spatial/time-series outputs, compare runs and download persisted JSON artifacts.
 
-The loopback HTTP product path is exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, and the v0.2 path also derives a new synthetic variant through the same provenance-safe domain boundary, executes it with explicit numerics, persists deterministic run bundles, compares their stored series/compatible fields and downloads validated artifacts. Release CI additionally syntax-checks the packaged inline browser client. Broader browser automation and visual-polish testing remain usability follow-up rather than a hidden scientific execution gap.
+The loopback HTTP product path is exercised end to end in native-engine CI: a fresh workspace creates the reviewed baseline through the HTTP API, derives a new synthetic variant through the same provenance-safe domain boundary, executes it with explicit numerics, persists deterministic run bundles, compares stored series and exact compatible fields, and downloads validated artifacts. Real Chromium acceptance additionally exercises measurement/population selection, exact-time overlays, independent time sliders, synchronization, playback and responsive desktop/mobile layouts. The generated screenshots are retained as review artifacts.
 
 ### Uncertainty and calibration
 
@@ -142,6 +142,49 @@ not completion of all long-term scientific objectives. The external Colombo raw
 measurement/mapping gate, Smoldyn license/equivalence gate, evidence-backed
 inference and unsupported platform work remain explicit. They cannot be closed
 by synthetic tests, release packaging or relabelling output as measured biology.
+
+
+## Final dataset-independent gap audit for v0.4.0
+
+Version 0.4.0 adds the completed evidence-aware research workspace to the
+released Linux/Windows continuum product. Measurement datasets, perturbation
+studies, phenotype-specific population runs and ordinary transport runs remain
+separate integrity-checked artifacts connected only through explicit references
+and mappings.
+
+The release gate is satisfied when the exact candidate commit verifies:
+
+- provenance and assay context remain visible next to longitudinal measurements;
+- marker/cargo evidence and unsupported effects remain explicit rather than
+  becoming implicit solver inputs;
+- phenotype populations execute only after explicit assignment to
+  study-declared transport experiments;
+- every map is a persisted spatial snapshot with its actual stored time;
+- two-run playback and synchronization traverse only discrete stored snapshots;
+- compatible maps share one stable concentration scale across both full stored
+  sequences, while incompatible units retain labelled independent scales;
+- right-minus-left spatial subtraction requires equal stored times, units,
+  grids and physical domains and never interpolates or resamples;
+- end-field-only v1 runs remain readable with unavailable temporal controls
+  visibly disabled;
+- measured/model overlays require explicit observable mapping and exact stored
+  times and do not perform calibration or implicit unit conversion;
+- deterministic SVG export retains run identity, scientific status, units,
+  numerical settings and the right-minus-left sign convention;
+- Chromium interaction and screenshot acceptance passes at 1440 × 1000 and
+  390 × 844 alongside unit, package, figure, Windows-native and BioFVM jobs;
+- the clean wheel contains the UI, native runner source and version 0.4.0.
+
+The release does not claim that synthetic browser fixtures validate EV biology.
+Issue #94 remains the scoped external data/provenance gate before fitting the
+reviewed mucus workbook. Issue #83 remains the scoped license/equivalence gate
+before a Smoldyn adapter. Evidence-backed distributions, formal sensitivity
+indices and parameter inference still require dedicated research designs;
+calibration additionally requires suitable measurements.
+
+Within this declared 0.4.0 boundary, no known critical dataset-independent
+workspace gap remains once exact-commit release CI passes. This is not a claim
+that every long-term VesicleScope scientific objective is complete.
 
 
 ## Public-data and license evidence update (2026-10-06)
