@@ -44,6 +44,23 @@ class ResearchWorkspaceUITests(unittest.TestCase):
         self.assertIn("A shared scale would be scientifically invalid", self.html)
         self.assertNotIn("interpolateSnapshot", self.html)
 
+    def test_population_study_execution_requires_explicit_server_mapping(self) -> None:
+        for expected in (
+            'id="populationExecution"',
+            'id="populationExperimentMappings"',
+            'id="populationRunName"',
+            'id="populationGridSpacing"',
+            'id="populationTimeStep"',
+            'id="executePopulationStudy"',
+            "function renderPopulationExecution",
+            "function executePopulationStudy",
+            "/api/population-run",
+            "Annotation only / do not simulate",
+            "population_experiments",
+        ):
+            self.assertIn(expected, self.html)
+        self.assertNotIn("applyPopulationEffect", self.html)
+
     def test_research_workspace_is_keyboard_and_mobile_ready(self) -> None:
         self.assertIn(":focus-visible", self.html)
         self.assertIn('role="tablist"', self.html)

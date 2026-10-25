@@ -47,10 +47,13 @@ when concentration units, grids and spatial spacing match. Axes are expressed
 in micrometres from the stored grid spacing, and the plotted field keeps the
 stored x/y aspect ratio.
 
-This first visible slice does not yet execute a new population study or overlay
-measurement residuals. Those remain part of issue #107 and must continue to use
-the existing server endpoints rather than implementing scientific logic in
-JavaScript.
+The visible execution form requires an explicit transport-experiment assignment
+for every phenotype that should be simulated. Unassigned phenotypes remain
+annotation-only. Grid spacing, timestep and output filename are explicit; no
+phenotype is mapped automatically. The browser submits this mapping to the
+existing server workflow, where evidence-declared model effects are resolved
+and BioFVM is executed. JavaScript does not transform release, uptake or decay
+parameters. Exact-time measured/model overlays remain part of issue #107.
 
 ## Stored-run temporal comparison contract
 
