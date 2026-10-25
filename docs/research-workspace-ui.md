@@ -50,10 +50,12 @@ stored x/y aspect ratio.
 The visible execution form requires an explicit transport-experiment assignment
 for every phenotype that should be simulated. Unassigned phenotypes remain
 annotation-only. Grid spacing, timestep and output filename are explicit; no
-phenotype is mapped automatically. The browser submits this mapping to the
-existing server workflow, where evidence-declared model effects are resolved
-and BioFVM is executed. JavaScript does not transform release, uptake or decay
-parameters. Exact-time measured/model overlays remain part of issue #107.
+phenotype is mapped automatically. Selection is limited to experiment IDs that
+the study declares in `transport_experiment_ids`; the server validates the same
+constraint again. The browser submits this mapping to the existing server
+workflow, where evidence-declared model effects are resolved and BioFVM is
+executed. JavaScript does not transform release, uptake or decay parameters.
+Exact-time measured/model overlays remain part of issue #107.
 
 ## Stored-run temporal comparison contract
 

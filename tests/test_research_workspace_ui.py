@@ -57,6 +57,8 @@ class ResearchWorkspaceUITests(unittest.TestCase):
             "/api/population-run",
             "Annotation only / do not simulate",
             "population_experiments",
+            "transport_experiment_ids",
+            "Only transport experiment IDs declared by this study are offered",
         ):
             self.assertIn(expected, self.html)
         self.assertNotIn("applyPopulationEffect", self.html)
