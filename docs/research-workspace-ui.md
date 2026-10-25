@@ -107,3 +107,19 @@ physical domains; no interpolation or resampling is used to make them fit.
 Rendering requires the optional figure dependencies installed with
 `python -m pip install 'vesicle-scope[figures]'`; the UI reports the server
 error without discarding the selected comparison when they are unavailable.
+
+## Browser acceptance
+
+CI starts the actual loopback server with integrity-checked synthetic
+measurement, perturbation, population-run and temporal run artifacts. A real
+Chromium session then exercises both a 1440 × 1000 desktop viewport and a
+390 × 844 mobile viewport. The test selects datasets and populations, renders
+an exact-time measurement overlay, changes a population snapshot, compares two
+fully named runs, checks changed-parameter and stable-scale messaging, applies
+the documented synchronization rule, and advances Play/Pause through stored
+snapshots. It also rejects horizontal viewport overflow and browser console or
+page errors.
+
+The four resulting screenshots are uploaded as a CI artifact. All fixtures are
+labelled synthetic software-verification inputs; passing this browser test is
+not experimental validation and does not establish biological accuracy.
