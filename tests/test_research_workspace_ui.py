@@ -24,6 +24,27 @@ class ResearchWorkspaceUITests(unittest.TestCase):
         ):
             self.assertIn(expected, self.html)
 
+    def test_exact_time_measurement_overlay_is_explicit_and_discrete(self) -> None:
+        for expected in (
+            'id="measurementOverlay"',
+            'id="measurementOverlayCondition"',
+            'id="measurementOverlayPopulation"',
+            'id="measurementOverlayTargets"',
+            'id="compareMeasurementModel"',
+            'id="measurementOverlayResults"',
+            "function configureMeasurementOverlay",
+            "function compareMeasurementModel",
+            "function drawMeasurementOverlay",
+            "/api/measurement-comparison",
+            "Do not compare",
+            "mean_concentration",
+            "extracellular_quantity",
+            "internalized_quantity",
+            "No interpolation",
+        ):
+            self.assertIn(expected, self.html)
+        self.assertNotIn("interpolateMeasurement", self.html)
+
     def test_population_comparison_uses_independent_discrete_snapshots(self) -> None:
         for expected in (
             'id="populationRunSelect"',

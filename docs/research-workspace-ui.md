@@ -24,6 +24,14 @@ haemolysis assessment and declared limitations.
 Every measurement card belongs to one recorded time point. Missing times are
 not connected, interpolated or imputed.
 
+The overlay workspace requires an explicit measured condition, stored
+population and observation-to-model-observable mapping. It delegates alignment
+to the server comparison contract. Measured and predicted values are plotted as
+discrete markers only when their units are already identical; they are never
+connected by inferred lines. Missing model times and incompatible units remain
+listed with their reason, and no residual is calculated for them. The overlay
+does not calibrate the model or feed measurements back into a simulation.
+
 ## Phenotypes and evidence
 
 Perturbation studies can be imported and inspected next to their declared
@@ -55,7 +63,6 @@ the study declares in `transport_experiment_ids`; the server validates the same
 constraint again. The browser submits this mapping to the existing server
 workflow, where evidence-declared model effects are resolved and BioFVM is
 executed. JavaScript does not transform release, uptake or decay parameters.
-Exact-time measured/model overlays remain part of issue #107.
 
 ## Stored-run temporal comparison contract
 
