@@ -5,15 +5,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import tempfile
 
 from vesiclescope.analysis import (
     MeasurementPredictionTarget,
     PredictionObservable,
     compare_measurements_to_prediction,
     compare_run_bundles_detailed,
+    compare_spatial_snapshots,
 )
 from vesiclescope.domain import MeasurementKind
 from vesiclescope.engines import BioFVMRunResult
+from vesiclescope.figures import render_run_comparison_figure
 from vesiclescope.workflows import (
     aggregate_population_fields,
     aggregate_population_samples,
@@ -483,6 +486,13 @@ def _run_summary(bundle, *, include_field: bool) -> dict[str, object]:
             "time_min": snapshot.time_min,
             "values": list(snapshot.values),
         }
+        payload["fields"] = [
+            {
+                "time_min": stored.time_min,
+                "values": list(stored.values),
+            }
+            for stored in result.field_snapshots
+        ]
     return payload
 
 
@@ -847,13 +857,32 @@ class WorkspaceApplication:
     def run(self, name: str, *, include_field: bool = True) -> dict[str, object]:
         return _run_summary(self.workspace.read_run(name), include_field=include_field)
 
-    def compare(self, left: str, right: str) -> dict[str, object]:
-        summary = compare_run_bundles_detailed(
-            self.workspace.read_run(left),
-            self.workspace.read_run(right),
-        )
+    def compare(
+        self,
+        left: str,
+        right: str,
+        *,
+        left_time_min: float | None = None,
+        right_time_min: float | None = None,
+    ) -> dict[str, object]:
+        left_bundle = self.workspace.read_run(left)
+        right_bundle = self.workspace.read_run(right)
+        summary = compare_run_bundles_detailed(left_bundle, right_bundle)
         endpoint = summary.endpoint
-        spatial = summary.spatial
+        if (left_time_min is None) != (right_time_min is None):
+            raise ValueError(
+                "left_time_min and right_time_min must be supplied together"
+            )
+        spatial = (
+            summary.spatial
+            if left_time_min is None
+            else compare_spatial_snapshots(
+                left_bundle,
+                left_time_min,
+                right_bundle,
+                right_time_min,
+            )
+        )
         return {
             "left_experiment_id": endpoint.left_experiment_id,
             "right_experiment_id": endpoint.right_experiment_id,
@@ -907,6 +936,31 @@ class WorkspaceApplication:
                 "mean_absolute_difference": spatial.mean_absolute_difference,
             },
         }
+
+    def export_run_comparison_figure(
+        self,
+        left: str,
+        right: str,
+        *,
+        left_time_min: float,
+        right_time_min: float,
+    ) -> tuple[str, bytes]:
+        """Render exact persisted snapshots to a deterministic scientific SVG."""
+
+        left_bundle = self.workspace.read_run(left)
+        right_bundle = self.workspace.read_run(right)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "run-comparison.svg"
+            render_run_comparison_figure(
+                left_bundle,
+                left_time_min,
+                right_bundle,
+                right_time_min,
+                output,
+                left_name=left,
+                right_name=right,
+            )
+            return output.name, output.read_bytes()
 
     def artifact_path(self, kind: str, name: str) -> Path:
         if kind == "experiment":

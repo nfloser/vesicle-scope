@@ -20,6 +20,11 @@ from .stored_run import (
     prepare_stored_run_figure_data,
     render_stored_run_figure,
 )
+from .run_comparison import (
+    RunComparisonFigureData,
+    prepare_run_comparison_figure_data,
+    render_run_comparison_figure,
+)
 
 __all__ = [
     "DiffusionUptakeFigureData",
@@ -34,4 +39,7 @@ __all__ = [
     "StoredRunFigureData",
     "prepare_stored_run_figure_data",
     "render_stored_run_figure",
+    "RunComparisonFigureData",
+    "prepare_run_comparison_figure_data",
+    "render_run_comparison_figure",
 ]

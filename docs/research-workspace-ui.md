@@ -1,0 +1,125 @@
+# EV measurement and phenotype workspace
+
+Status: visible client for the server-side research contracts introduced in #106
+
+The local workspace exposes three linked, but scientifically distinct, views:
+
+1. longitudinal blood/plasma measurements and pre-analytical provenance;
+2. perturbation evidence, phenotype markers, cargo and limitations;
+3. stored phenotype-specific or aggregate simulation fields.
+
+The browser does not classify observations or interpret biological evidence.
+The API supplies measurement display groups, evidence categories, sources,
+effect status and limitations. The UI renders those values without converting
+units or inventing an unchanged response for an unknown effect.
+
+## Measurements
+
+Measurement JSON can be imported through the workspace. The view separates
+`total_or_unmarked`, `marker_defined` and `cargo` observations using the
+server-provided display group. It exposes specimen, anticoagulant,
+collection-to-processing time, centrifugation, residual platelet count,
+haemolysis assessment and declared limitations.
+
+Every measurement card belongs to one recorded time point. Missing times are
+not connected, interpolated or imputed.
+
+The overlay workspace requires an explicit measured condition, stored
+population and observation-to-model-observable mapping. It delegates alignment
+to the server comparison contract. Measured and predicted values are plotted as
+discrete markers only when their units are already identical; they are never
+connected by inferred lines. Missing model times and incompatible units remain
+listed with their reason, and no residual is calculated for them. The overlay
+does not calibrate the model or feed measurements back into a simulation.
+
+## Phenotypes and evidence
+
+Perturbation studies can be imported and inspected next to their declared
+measurement dataset references. Marker and cargo cards retain their evidence
+category, source identifier and limitations. Missing cargo, effects or sources
+are shown as explicitly unknown rather than silently treated as negative or
+unchanged.
+
+## Spatial population comparison
+
+A stored population-run bundle may be inspected as either its derived total or
+one declared phenotype. The two maps have independent integer-index sliders.
+Each index selects one persisted field snapshot and reports its actual
+`time_min`; the client never reconstructs an intermediate field.
+
+When concentration units match, the visible pair uses one concentration scale
+calculated from the two selected snapshots. If they differ, each map is
+labelled with an independent scale; presenting a shared scale in that case
+would be scientifically invalid. A direct comparison is marked compatible only
+when concentration units, grids and spatial spacing match. Axes are expressed
+in micrometres from the stored grid spacing, and the plotted field keeps the
+stored x/y aspect ratio.
+
+The visible execution form requires an explicit transport-experiment assignment
+for every phenotype that should be simulated. Unassigned phenotypes remain
+annotation-only. Grid spacing, timestep and output filename are explicit; no
+phenotype is mapped automatically. Selection is limited to experiment IDs that
+the study declares in `transport_experiment_ids`; the server validates the same
+constraint again. The browser submits this mapping to the existing server
+workflow, where evidence-declared model effects are resolved and BioFVM is
+executed. JavaScript does not transform release, uptake or decay parameters.
+
+## Stored-run temporal comparison contract
+
+The run-inspection API returns the complete persisted `fields` sequence in
+addition to the legacy-compatible `final_field`. Each field retains its recorded
+`time_min`; clients must treat a one-element sequence as an end-field-only run.
+
+The comparison endpoint accepts `left_time_min` and `right_time_min` only as a
+pair. A spatial difference is returned only when both requested times exist
+exactly in their respective run bundles and the concentration units, grid,
+spacing, slice thickness, physical domain and actual times match. Missing or
+unequal times produce an explicit incompatibility reason. The endpoint never
+interpolates, resamples or silently substitutes a nearby snapshot.
+
+The two-run view exposes one integer-index slider and Play/Pause control per
+run. Optional synchronized navigation uses an explicit causal rule: after one
+side moves, the other selects its latest stored time not later than the active
+time. If no such snapshot exists, that side remains unchanged. The two actual
+times remain visible, and a difference field remains
+unavailable unless those stored times are equal. A run containing only one
+field is labelled as end-field-only and its temporal controls are disabled.
+
+Compatible runs use a stable shared concentration scale calculated across all
+stored fields in both runs, so colours do not shift during playback. The view
+also lists experiment and numerical parameters, marks changed values, separates
+extracellular and internalized quantity charts, and reports selected-time
+absolute and percentage differences. Percentage differences are explicitly
+undefined when the left-hand denominator is zero.
+
+## Scientific figure export
+
+When both selected fields are directly compatible at the same exact stored
+time, the comparison can be exported as deterministic SVG. The server renders
+the figure from the integrity-checked run bundles; it does not capture the
+browser canvas. The two spatial maps use one concentration scale fixed across
+all persisted snapshots from both runs. The right-minus-left panel uses a
+symmetric diverging scale and states its sign convention. Extracellular and
+internalized quantities remain separate plots, while engine versions, exact
+revisions, run names, stored times and scientific status remain embedded as
+inspectable SVG text. Export is unavailable for unequal times, units, grids or
+physical domains; no interpolation or resampling is used to make them fit.
+Rendering requires the optional figure dependencies installed with
+`python -m pip install 'vesicle-scope[figures]'`; the UI reports the server
+error without discarding the selected comparison when they are unavailable.
+
+## Browser acceptance
+
+CI starts the actual loopback server with integrity-checked synthetic
+measurement, perturbation, population-run and temporal run artifacts. A real
+Chromium session then exercises both a 1440 × 1000 desktop viewport and a
+390 × 844 mobile viewport. The test selects datasets and populations, renders
+an exact-time measurement overlay, changes a population snapshot, compares two
+fully named runs, checks changed-parameter and stable-scale messaging, applies
+the documented synchronization rule, and advances Play/Pause through stored
+snapshots. It also rejects horizontal viewport overflow and browser console or
+page errors.
+
+The four resulting screenshots are uploaded as a CI artifact. All fixtures are
+labelled synthetic software-verification inputs; passing this browser test is
+not experimental validation and does not establish biological accuracy.

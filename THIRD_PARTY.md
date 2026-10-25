@@ -98,3 +98,20 @@ The [public EV data review](docs/research/public-ev-data-review.md) records Drya
 **License:** MIT; not vendored.
 
 No spreadsheet dependency is imported by the numerical core. The audit verifies the original byte digest before passing those exact bytes to the reader, disables external-link retention and never evaluates formulas. This is not a general untrusted workbook uploader; arbitrary files are rejected before parsing. Source measurement rights remain separately documented.
+
+
+## Playwright Core
+
+**Use:** test-only control of the GitHub-hosted Chromium browser for research-workspace interaction and screenshot acceptance
+
+**Distribution:** installed transiently in CI; not a VesicleScope runtime dependency and not vendored or redistributed
+
+**Pinned version:** 1.62.1
+
+**Upstream:** https://github.com/microsoft/playwright
+
+**License:** Apache License 2.0
+
+The browser binary is supplied by the GitHub-hosted runner. VesicleScope does
+not download, package or redistribute Chromium. The browser test uses only
+synthetic, provenance-labelled artifacts and does not contact external sites.
