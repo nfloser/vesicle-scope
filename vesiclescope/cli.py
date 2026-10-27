@@ -27,6 +27,11 @@ def _parser() -> argparse.ArgumentParser:
     data_commands = data.add_subparsers(dest="data_command", required=True)
     mucus = data_commands.add_parser("audit-mucus", help="Audit the exact reviewed DRUM one-second MSD workbook.")
     mucus.add_argument("path", type=Path)
+    dryad = data_commands.add_parser(
+        "verify-dryad-v3",
+        help="Verify an extracted Dryad v3 snapshot without parsing measurements.",
+    )
+    dryad.add_argument("path", type=Path)
 
     run = subparsers.add_parser("run", help="Run a reviewed built-in example.")
     run.add_argument("example", choices=("diffusion-uptake-factor",))
@@ -432,10 +437,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "data":
-        from vesiclescope.validation.mucus_data import audit_mucus_workbook
+        if args.data_command == "audit-mucus":
+            from vesiclescope.validation.mucus_data import audit_mucus_workbook
+
+            verify = audit_mucus_workbook
+        else:
+            from vesiclescope.validation.dryad_data import verify_dryad_v3_directory
+
+            verify = verify_dryad_v3_directory
 
         try:
-            report = audit_mucus_workbook(args.path)
+            report = verify(args.path)
         except (OSError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
             return 2
