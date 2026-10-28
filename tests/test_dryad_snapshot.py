@@ -7,6 +7,8 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+import warnings
+import zipfile
 
 from vesiclescope.cli import main
 from vesiclescope.validation import dryad_data
@@ -16,7 +18,10 @@ class DryadSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.path = Path(self.temp.name)
+        self.root = Path(self.temp.name)
+        self.path = self.root / 'snapshot'
+        self.path.mkdir()
+        self.zip_path = self.root / 'snapshot.zip'
         self.files = {
             'measurements.csv': b'sample,value\n1,2\n',
             'README.md': b'# Synthetic fixture\n',
@@ -32,9 +37,9 @@ class DryadSnapshotTests(unittest.TestCase):
             for name, content in self.files.items()
         )
 
-    def verify(self):
+    def verify(self, path=None):
         with patch.object(dryad_data, 'DRYAD_V3_FILES', self.expected):
-            return dryad_data.verify_dryad_v3_directory(self.path)
+            return dryad_data.verify_dryad_v3_source(path or self.path)
 
     def test_exact_snapshot_is_verified_without_modification(self):
         before = {name: (self.path / name).read_bytes() for name in self.files}
@@ -60,6 +65,41 @@ class DryadSnapshotTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'missing.*measurements.csv.*unexpected.*unexpected.csv'):
             self.verify()
 
+    def test_exact_zip_is_verified_without_extraction(self):
+        with zipfile.ZipFile(self.zip_path, 'w') as archive:
+            for name, content in self.files.items():
+                archive.writestr(name, content)
+
+        report = self.verify(self.zip_path)
+
+        self.assertEqual(report['container'], 'zip')
+        self.assertEqual(report['verified_file_count'], 2)
+        self.assertEqual({entry.name for entry in self.root.iterdir()}, {'snapshot', 'snapshot.zip'})
+
+    def test_zip_must_be_flat_and_unique(self):
+        with zipfile.ZipFile(self.zip_path, 'w') as archive:
+            archive.writestr('../measurements.csv', self.files['measurements.csv'])
+            archive.writestr('README.md', self.files['README.md'])
+        with self.assertRaisesRegex(ValueError, 'top-level'):
+            self.verify(self.zip_path)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UserWarning)
+            with zipfile.ZipFile(self.zip_path, 'w') as archive:
+                archive.writestr('measurements.csv', self.files['measurements.csv'])
+                archive.writestr('measurements.csv', self.files['measurements.csv'])
+                archive.writestr('README.md', self.files['README.md'])
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            self.verify(self.zip_path)
+
+    def test_corrupt_zip_payload_has_an_actionable_error(self):
+        with zipfile.ZipFile(self.zip_path, 'w') as archive:
+            for name, content in self.files.items():
+                archive.writestr(name, content)
+        with patch.object(zipfile.ZipFile, 'read', side_effect=zipfile.BadZipFile('bad CRC')):
+            with self.assertRaisesRegex(ValueError, 'payload could not be read safely'):
+                self.verify(self.zip_path)
+
     def test_size_and_digest_must_match_repository_metadata(self):
         (self.path / 'measurements.csv').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError, 'measurements.csv: size'):
@@ -71,8 +111,13 @@ class DryadSnapshotTests(unittest.TestCase):
             self.verify()
 
     def test_non_directory_and_non_regular_entries_are_rejected(self):
-        with self.assertRaisesRegex(ValueError, 'must be a directory'):
-            dryad_data.verify_dryad_v3_directory(self.path / 'missing')
+        with self.assertRaisesRegex(ValueError, 'directory or ZIP'):
+            dryad_data.verify_dryad_v3_source(self.path / 'missing')
+
+        invalid_zip = self.root / 'invalid.zip'
+        invalid_zip.write_text('not a ZIP archive', encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'valid ZIP'):
+            dryad_data.verify_dryad_v3_source(invalid_zip)
 
         (self.path / 'README.md').unlink()
         (self.path / 'README.md').mkdir()
