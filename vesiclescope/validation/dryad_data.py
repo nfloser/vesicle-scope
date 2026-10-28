@@ -78,7 +78,10 @@ def _read_zip(path: Path) -> dict[str, bytes]:
         for entry in entries:
             if entry.file_size != expected_sizes[entry.filename]:
                 raise ValueError(f'{entry.filename}: size does not match Dryad v3 metadata')
-        return {entry.filename: archive.read(entry) for entry in entries}
+        try:
+            return {entry.filename: archive.read(entry) for entry in entries}
+        except (zipfile.BadZipFile, RuntimeError, NotImplementedError) as exc:
+            raise ValueError('Dryad ZIP payload could not be read safely') from exc
 
 
 def verify_dryad_v3_source(path: Path) -> dict[str, object]:

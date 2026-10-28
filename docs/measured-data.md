@@ -26,8 +26,8 @@ The optional openpyxl reader stays outside the dependency-free scientific core. 
 ## Verify a separately obtained Dryad v3 snapshot
 
 Dryad version 3 is a distinct CC0 snapshot. Verify either a flat ZIP containing
-its 13 advertised files or the extracted directory. Both paths check inventory, byte
-sizes and repository-reported SHA-256 values offline:
+its 13 advertised files or the extracted directory. Both paths check inventory,
+byte sizes and repository-reported SHA-256 values offline:
 
 ```bash
 vesiclescope data verify-dryad-v3 /path/to/dryad-v3-files.zip > dryad-v3-verification.json

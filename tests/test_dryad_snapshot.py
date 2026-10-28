@@ -92,6 +92,14 @@ class DryadSnapshotTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'duplicate'):
             self.verify(self.zip_path)
 
+    def test_corrupt_zip_payload_has_an_actionable_error(self):
+        with zipfile.ZipFile(self.zip_path, 'w') as archive:
+            for name, content in self.files.items():
+                archive.writestr(name, content)
+        with patch.object(zipfile.ZipFile, 'read', side_effect=zipfile.BadZipFile('bad CRC')):
+            with self.assertRaisesRegex(ValueError, 'payload could not be read safely'):
+                self.verify(self.zip_path)
+
     def test_size_and_digest_must_match_repository_metadata(self):
         (self.path / 'measurements.csv').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError, 'measurements.csv: size'):
