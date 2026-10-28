@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from pathlib import PurePosixPath
+import stat
+import zipfile
 
 
 DRYAD_V3_FILES = (
@@ -26,19 +29,8 @@ DRYAD_V3_FILES = (
 )
 
 
-def verify_dryad_v3_directory(path: Path) -> dict[str, object]:
-    """Verify an extracted snapshot against Dryad's version 3 metadata."""
-    directory = Path(path)
-    if not directory.is_dir():
-        raise ValueError('Dryad snapshot path must be a directory')
-
-    entries = list(directory.iterdir())
-    non_files = sorted(entry.name for entry in entries if entry.is_symlink() or not entry.is_file())
-    if non_files:
-        raise ValueError(f'Dryad snapshot must contain regular files only: {", ".join(non_files)}')
-
+def _validate_inventory(actual_names: set[str]) -> None:
     expected_names = {item['name'] for item in DRYAD_V3_FILES}
-    actual_names = {entry.name for entry in entries}
     missing = sorted(expected_names - actual_names)
     unexpected = sorted(actual_names - expected_names)
     if missing or unexpected:
@@ -49,9 +41,61 @@ def verify_dryad_v3_directory(path: Path) -> dict[str, object]:
             details.append(f'unexpected: {", ".join(unexpected)}')
         raise ValueError(f'Dryad v3 file inventory mismatch ({"; ".join(details)})')
 
+
+def _read_directory(directory: Path) -> dict[str, bytes]:
+    entries = list(directory.iterdir())
+    non_files = sorted(entry.name for entry in entries if entry.is_symlink() or not entry.is_file())
+    if non_files:
+        raise ValueError(f'Dryad snapshot must contain regular files only: {", ".join(non_files)}')
+    _validate_inventory({entry.name for entry in entries})
+    expected_sizes = {item['name']: item['size_bytes'] for item in DRYAD_V3_FILES}
+    for entry in entries:
+        if entry.stat().st_size != expected_sizes[entry.name]:
+            raise ValueError(f'{entry.name}: size does not match Dryad v3 metadata')
+    return {entry.name: entry.read_bytes() for entry in entries}
+
+
+def _read_zip(path: Path) -> dict[str, bytes]:
+    try:
+        archive = zipfile.ZipFile(path)
+    except zipfile.BadZipFile as exc:
+        raise ValueError('Dryad snapshot file must be a valid ZIP archive') from exc
+    with archive:
+        entries = archive.infolist()
+        if any(entry.is_dir() for entry in entries):
+            raise ValueError('Dryad ZIP must contain regular top-level files only')
+        if any(len(PurePosixPath(entry.filename).parts) != 1 for entry in entries):
+            raise ValueError('Dryad ZIP must contain regular top-level files only')
+        names = [entry.filename for entry in entries]
+        if len(names) != len(set(names)):
+            raise ValueError('Dryad ZIP must not contain duplicate filenames')
+        _validate_inventory(set(names))
+        if any(entry.flag_bits & 0x1 for entry in entries):
+            raise ValueError('Dryad ZIP must not contain encrypted files')
+        if any(stat.S_IFMT(entry.external_attr >> 16) == stat.S_IFLNK for entry in entries):
+            raise ValueError('Dryad ZIP must contain regular top-level files only')
+        expected_sizes = {item['name']: item['size_bytes'] for item in DRYAD_V3_FILES}
+        for entry in entries:
+            if entry.file_size != expected_sizes[entry.filename]:
+                raise ValueError(f'{entry.filename}: size does not match Dryad v3 metadata')
+        return {entry.filename: archive.read(entry) for entry in entries}
+
+
+def verify_dryad_v3_source(path: Path) -> dict[str, object]:
+    """Verify an extracted directory or ZIP against Dryad v3 metadata."""
+    source = Path(path)
+    if source.is_dir():
+        raw_files = _read_directory(source)
+        container = 'directory'
+    elif source.is_file():
+        raw_files = _read_zip(source)
+        container = 'zip'
+    else:
+        raise ValueError('Dryad snapshot path must be a directory or ZIP archive')
+
     verified = []
     for expected in DRYAD_V3_FILES:
-        raw = (directory / expected['name']).read_bytes()
+        raw = raw_files[expected['name']]
         if len(raw) != expected['size_bytes']:
             raise ValueError(
                 f'{expected["name"]}: size does not match Dryad v3 metadata '
@@ -77,6 +121,7 @@ def verify_dryad_v3_directory(path: Path) -> dict[str, object]:
         },
         'verified_file_count': len(verified),
         'verified_size_bytes': sum(item['size_bytes'] for item in verified),
+        'container': container,
         'verification_scope': 'file inventory, byte size and SHA-256 identity only',
         'ready_for_parameter_fitting': False,
         'limitations': [
@@ -86,3 +131,10 @@ def verify_dryad_v3_directory(path: Path) -> dict[str, object]:
         ],
         'files': verified,
     }
+
+
+def verify_dryad_v3_directory(path: Path) -> dict[str, object]:
+    """Backward-compatible directory verification entry point."""
+    if not Path(path).is_dir():
+        raise ValueError('Dryad snapshot path must be a directory')
+    return verify_dryad_v3_source(path)

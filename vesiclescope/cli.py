@@ -29,7 +29,7 @@ def _parser() -> argparse.ArgumentParser:
     mucus.add_argument("path", type=Path)
     dryad = data_commands.add_parser(
         "verify-dryad-v3",
-        help="Verify an extracted Dryad v3 snapshot without parsing measurements.",
+        help="Verify a Dryad v3 directory or ZIP without parsing measurements.",
     )
     dryad.add_argument("path", type=Path)
 
@@ -442,9 +442,9 @@ def main(argv: list[str] | None = None) -> int:
 
             verify = audit_mucus_workbook
         else:
-            from vesiclescope.validation.dryad_data import verify_dryad_v3_directory
+            from vesiclescope.validation.dryad_data import verify_dryad_v3_source
 
-            verify = verify_dryad_v3_directory
+            verify = verify_dryad_v3_source
 
         try:
             report = verify(args.path)
