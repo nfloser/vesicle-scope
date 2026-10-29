@@ -142,6 +142,35 @@ class DryadSnapshotTests(unittest.TestCase):
             'vesiclescope.dryad-source-verification',
         )
 
+    def test_committed_source_record_matches_verified_inventory(self):
+        manifest_path = (
+            Path(__file__).parents[1]
+            / 'docs'
+            / 'research'
+            / 'public-ev-data-manifest.json'
+        )
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        dryad = manifest['dryad']
+
+        self.assertEqual(dryad['version_id'], 412881)
+        self.assertEqual(
+            dryad['acquisition']['archive_sha256'],
+            '0a90a162ad2d20d918c5a72ad0848193552b367809c83bf62cc4d13fa837d553',
+        )
+        self.assertEqual(dryad['acquisition']['archive_size_bytes'], 366748)
+        self.assertFalse(dryad['ready_for_parameter_fitting'])
+
+        recorded = {
+            item['name']: (item['size_bytes'], item['repository_sha256'])
+            for item in dryad['files']
+            if item['locally_verified']
+        }
+        expected = {
+            item['name']: (item['size_bytes'], item['sha256'])
+            for item in dryad_data.DRYAD_V3_FILES
+        }
+        self.assertEqual(recorded, expected)
+
 
 if __name__ == '__main__':
     unittest.main()
