@@ -42,3 +42,11 @@ does not parse measurements, compare the Dryad and DRUM snapshots, infer
 exclusions, convert one-second MSD into a diffusion coefficient or mark the data
 ready for fitting. Raw data remain outside this repository and CI uses generated
 byte fixtures only.
+
+The official version 3 package was exercised offline on 2026-10-29. All 13
+advertised file sizes and SHA-256 values matched; the package itself was 366,748
+bytes with SHA-256
+`0a90a162ad2d20d918c5a72ad0848193552b367809c83bf62cc4d13fa837d553`.
+This establishes source identity only. The Dryad/DRUM snapshot comparison,
+measurement hierarchy and observation model remain unresolved, so the report
+continues to set `ready_for_parameter_fitting` to `false`.

@@ -18,7 +18,7 @@ No pooled significance test, fitted model, confidence interval, transport coeffi
 
 The original hash was verified before parsing and unchanged afterwards. The audit identifies 80 groups and 19,430 particle values with no zeros. Stored sample means are not uniformly reproduced by geometric means across all supplied values. This does not isolate the cause: prior exclusion, aggregation or snapshot differences require additional provenance. The report preserves both summaries and their differences rather than substituting one for the other.
 
-The separate CC0 Dryad v3 inventory remains preferred for future publicly reusable ingestion, but its bytes have not been obtained here. Tumor measurements and fluorescence-to-model mapping remain open. These questions prevent parameter fitting, not this narrower measured-data audit.
+The separate CC0 Dryad v3 package was obtained through its official version endpoint and all 13 source identities were verified on 2026-10-29. Its contents have not yet been reconciled with this distinct DRUM snapshot. Tumor measurements and fluorescence-to-model mapping remain open. These questions prevent parameter fitting, not this narrower measured-data audit.
 
 ## Smoldyn disposition
 
