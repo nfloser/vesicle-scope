@@ -153,11 +153,12 @@ class DryadSnapshotTests(unittest.TestCase):
         dryad = manifest['dryad']
 
         self.assertEqual(dryad['version_id'], 412881)
+        self.assertFalse(dryad['acquisition']['archive_sha256_stable'])
         self.assertEqual(
-            dryad['acquisition']['archive_sha256'],
-            '0a90a162ad2d20d918c5a72ad0848193552b367809c83bf62cc4d13fa837d553',
+            dryad['acquisition']['identity_basis'],
+            'file names, byte sizes and file SHA-256 values',
         )
-        self.assertEqual(dryad['acquisition']['archive_size_bytes'], 366748)
+        self.assertNotIn('archive_sha256', dryad['acquisition'])
         self.assertFalse(dryad['ready_for_parameter_fitting'])
 
         recorded = {
