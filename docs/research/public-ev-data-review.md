@@ -11,7 +11,7 @@ Steinman et al., *Vaginal bacteria-derived extracellular vesicles diffuse throug
 | Dryad, https://doi.org/10.5061/dryad.cvdncjth8 | Version 3, API version ID 412881; official version package and all 13 files verified on 2026-10-29 | API designates CC0-1.0. The package was used for an offline identity check and was not committed. Preferred snapshot for future reusable ingestion. |
 | University of Maryland DRUM, https://doi.org/10.13016/kkai-hwng | Two original October 2025 XLSX files downloaded; byte counts and SHA-256 verified | CC BY-NC-ND 3.0 US, https://creativecommons.org/licenses/by-nc-nd/3.0/us/. Attribution, noncommercial restriction and no redistribution of adaptations. Originals supplied separately with provenance; not committed to this public repository. |
 
-The [machine-readable manifest](public-ev-data-manifest.json) records the official download endpoint, package identity and locally verified file hashes. These deposits are distinct snapshots: CC0 on Dryad does not automatically relicense the DRUM bytes. No equality between their contents has been established.
+The [machine-readable manifest](public-ev-data-manifest.json) records the official download endpoint and locally verified file hashes. Repeated downloads use request-time ZIP entry timestamps, so a whole-archive hash is not a stable dataset identity. These deposits are distinct snapshots: CC0 on Dryad does not automatically relicense the DRUM bytes. No equality between their contents has been established.
 
 ## What the downloaded workbooks actually provide
 
@@ -40,9 +40,10 @@ requires the exact 13-file inventory, sizes and SHA-256 values in the reviewed
 manifest. The report states that source verification is not parameter-fitting
 readiness. The official version package was retrieved through the documented
 version endpoint on 2026-10-29 and all 13 advertised file hashes matched. The
-package SHA-256 and byte count are recorded in the manifest; raw bytes remain
-outside the repository. Cross-snapshot comparison and observation-model work
-remain open.
+file-level identity is recorded in the manifest; raw bytes remain outside the
+repository. Repeated package downloads confirmed that whole-ZIP hashes vary
+with generated entry timestamps even though all file hashes remain identical.
+Cross-snapshot comparison and observation-model work remain open.
 
 
 ## Executable follow-up
