@@ -84,8 +84,8 @@ def _read_zip(path: Path) -> dict[str, bytes]:
             raise ValueError('Dryad ZIP payload could not be read safely') from exc
 
 
-def verify_dryad_v3_source(path: Path) -> dict[str, object]:
-    """Verify an extracted directory or ZIP against Dryad v3 metadata."""
+def read_verified_dryad_v3_source(path: Path) -> tuple[dict[str, bytes], str]:
+    """Return exact source bytes only after the full identity check succeeds."""
     source = Path(path)
     if source.is_dir():
         raw_files = _read_directory(source)
@@ -96,7 +96,6 @@ def verify_dryad_v3_source(path: Path) -> dict[str, object]:
     else:
         raise ValueError('Dryad snapshot path must be a directory or ZIP archive')
 
-    verified = []
     for expected in DRYAD_V3_FILES:
         raw = raw_files[expected['name']]
         if len(raw) != expected['size_bytes']:
@@ -107,6 +106,17 @@ def verify_dryad_v3_source(path: Path) -> dict[str, object]:
         digest = hashlib.sha256(raw).hexdigest()
         if digest != expected['sha256']:
             raise ValueError(f'{expected["name"]}: SHA-256 does not match Dryad v3 metadata')
+
+    return raw_files, container
+
+
+def verify_dryad_v3_source(path: Path) -> dict[str, object]:
+    """Verify an extracted directory or ZIP against Dryad v3 metadata."""
+    raw_files, container = read_verified_dryad_v3_source(path)
+    verified = []
+    for expected in DRYAD_V3_FILES:
+        raw = raw_files[expected['name']]
+        digest = hashlib.sha256(raw).hexdigest()
         verified.append({
             'name': expected['name'],
             'size_bytes': len(raw),

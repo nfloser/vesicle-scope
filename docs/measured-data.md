@@ -52,3 +52,30 @@ the verified file-level inventory is authoritative. This establishes source
 identity only. The Dryad/DRUM snapshot comparison, measurement hierarchy and
 observation model remain unresolved, so the report continues to set
 `ready_for_parameter_fitting` to `false`.
+
+## Reconcile the verified one-second MSD snapshots
+
+With both exact sources available locally, compare their ordered, nonempty
+one-second MSD values and stored sample summaries without writing either source:
+
+```bash
+vesiclescope data reconcile-mucus-snapshots \
+  /path/to/2025_10_01\ Data\ Figs2.xlsx \
+  /path/to/dryad-v3-files.zip > mucus-snapshot-reconciliation.json
+```
+
+The command first enforces both existing source-identity gates. It then checks
+the explicit 80-group sample/species/particle mapping, reporting exact values,
+small parser-representation differences, substantive differences and unpaired
+ordered values separately. The relative tolerance (`1e-12`) classifies only
+CSV-decimal versus XLSX-binary representation; it never suppresses a count or
+value from the report and is not a biological or fitting tolerance.
+
+The actual-source acceptance run on 2026-10-31 found identical stored summary
+cells and no substantive mismatch among 19,281 paired particle values. Four
+paired values differed only at floating-point representation scale. DRUM held
+149 additional ordered values in Sample 1 / *L. crispatus* bEV (234 versus 85),
+for 19,430 DRUM and 19,281 Dryad values overall. This establishes a snapshot
+difference, not its cause. It does not show whether values were intentionally
+excluded, accidentally omitted or processed by another rule; fitting remains
+blocked pending that provenance and an explicit observation model.
