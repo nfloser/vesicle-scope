@@ -72,7 +72,7 @@ jobs:
       - name: Install optional measured-data reader and test synthetic workbook audits
         run: |
           python -m pip install --disable-pip-version-check '.[data]'
-          python -m unittest discover -s tests -p test_measured_mucus_data.py -v
+          python -m unittest discover -s tests -p 'test_*mucus*.py' -v
 
 
   browser-acceptance:

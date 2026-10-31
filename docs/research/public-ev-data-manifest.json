@@ -1,6 +1,6 @@
 {
   "review_date": "2026-10-06",
-  "last_updated": "2026-10-30",
+  "last_updated": "2026-10-31",
   "publication_doi": "10.1038/s41522-025-00866-9",
   "dryad": {
     "doi": "10.5061/dryad.cvdncjth8",
@@ -118,6 +118,28 @@
         "download_url": "https://datadryad.org/api/v2/files/4502296/download"
       }
     ]
+  },
+  "reconciliation": {
+    "verified_on": "2026-10-31",
+    "scope": "ordered nonempty one-second MSD particle values and stored sample summaries",
+    "dryad_value_count": 19281,
+    "drum_value_count": 19430,
+    "exact_shared_value_count": 19277,
+    "representation_only_difference_count": 4,
+    "representation_relative_tolerance": 1e-12,
+    "substantive_value_mismatch_count": 0,
+    "unpaired_drum_value_count": 149,
+    "unpaired_dryad_value_count": 0,
+    "summary_cell_mismatch_count": 0,
+    "different_group": {
+      "sample_id": 1,
+      "species": "L. crispatus",
+      "particle_type": "bEV",
+      "dryad_count": 85,
+      "drum_count": 234
+    },
+    "interpretation": "snapshot difference only; upstream exclusion, omission or aggregation cause is not inferred",
+    "ready_for_parameter_fitting": false
   },
   "drum": {
     "doi": "10.13016/kkai-hwng",

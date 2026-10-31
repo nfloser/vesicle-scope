@@ -32,6 +32,12 @@ def _parser() -> argparse.ArgumentParser:
         help="Verify a Dryad v3 directory or ZIP without parsing measurements.",
     )
     dryad.add_argument("path", type=Path)
+    reconcile = data_commands.add_parser(
+        "reconcile-mucus-snapshots",
+        help="Compare verified DRUM and Dryad one-second MSD snapshots offline.",
+    )
+    reconcile.add_argument("workbook", type=Path)
+    reconcile.add_argument("dryad", type=Path)
 
     run = subparsers.add_parser("run", help="Run a reviewed built-in example.")
     run.add_argument("example", choices=("diffusion-uptake-factor",))
@@ -441,13 +447,20 @@ def main(argv: list[str] | None = None) -> int:
             from vesiclescope.validation.mucus_data import audit_mucus_workbook
 
             verify = audit_mucus_workbook
-        else:
+            verify_args = (args.path,)
+        elif args.data_command == "verify-dryad-v3":
             from vesiclescope.validation.dryad_data import verify_dryad_v3_source
 
             verify = verify_dryad_v3_source
+            verify_args = (args.path,)
+        else:
+            from vesiclescope.validation.mucus_reconciliation import reconcile_mucus_snapshots
+
+            verify = reconcile_mucus_snapshots
+            verify_args = (args.workbook, args.dryad)
 
         try:
-            report = verify(args.path)
+            report = verify(*verify_args)
         except (OSError, ValueError) as exc:
             print(f"vesiclescope: {exc}", file=sys.stderr)
             return 2

@@ -1,6 +1,6 @@
 # Public EV transport data review
 
-Issue #91; reviewed 2026-10-06 and source identity updated 2026-10-29. Dataset rights, publication rights and scientific suitability are separate decisions. No third-party raw data is vendored here.
+Issue #91; reviewed 2026-10-06, source identity updated 2026-10-29 and snapshot reconciliation updated 2026-10-31. Dataset rights, publication rights and scientific suitability are separate decisions. No third-party raw data is vendored here.
 
 ## Verified primary sources
 
@@ -11,7 +11,7 @@ Steinman et al., *Vaginal bacteria-derived extracellular vesicles diffuse throug
 | Dryad, https://doi.org/10.5061/dryad.cvdncjth8 | Version 3, API version ID 412881; official version package and all 13 files verified on 2026-10-29 | API designates CC0-1.0. The package was used for an offline identity check and was not committed. Preferred snapshot for future reusable ingestion. |
 | University of Maryland DRUM, https://doi.org/10.13016/kkai-hwng | Two original October 2025 XLSX files downloaded; byte counts and SHA-256 verified | CC BY-NC-ND 3.0 US, https://creativecommons.org/licenses/by-nc-nd/3.0/us/. Attribution, noncommercial restriction and no redistribution of adaptations. Originals supplied separately with provenance; not committed to this public repository. |
 
-The [machine-readable manifest](public-ev-data-manifest.json) records the official download endpoint and locally verified file hashes. Repeated downloads use request-time ZIP entry timestamps, so a whole-archive hash is not a stable dataset identity. These deposits are distinct snapshots: CC0 on Dryad does not automatically relicense the DRUM bytes. No equality between their contents has been established.
+The [machine-readable manifest](public-ev-data-manifest.json) records the official download endpoint and locally verified file hashes. Repeated downloads use request-time ZIP entry timestamps, so a whole-archive hash is not a stable dataset identity. These deposits are distinct snapshots: CC0 on Dryad does not automatically relicense the DRUM bytes. Their stored summaries agree, but DRUM contains 149 additional ordered Sample 1 / *L. crispatus* bEV values. No reason for that snapshot difference is inferred.
 
 ## What the downloaded workbooks actually provide
 
@@ -31,7 +31,7 @@ Sariano et al. 2023 (DOI 10.1002/jev2.12323) and Lenzini et al. 2020 (PMCID PMC7
 
 ## Next executable step
 
-Compare the verified Dryad files with the distinct DRUM snapshot, then audit units and replicate/exclusion structure and define a mucus-specific observation model before fitting. No core CI job requires network access. A tumor validation still needs the matching raw measurements and fluorescence-to-model observation mapping.
+Resolve the documented 149-value snapshot difference against original exclusion or aggregation provenance, then define the measurement hierarchy and a mucus-specific observation model before fitting. No core CI job requires network access. A tumor validation still needs the matching raw measurements and fluorescence-to-model observation mapping.
 
 The offline `vesiclescope data verify-dryad-v3` boundary now makes the first
 identity check executable for a separately obtained version 3 ZIP or extracted
@@ -43,7 +43,9 @@ version endpoint on 2026-10-29 and all 13 advertised file hashes matched. The
 file-level identity is recorded in the manifest; raw bytes remain outside the
 repository. Repeated package downloads confirmed that whole-ZIP hashes vary
 with generated entry timestamps even though all file hashes remain identical.
-Cross-snapshot comparison and observation-model work remain open.
+The executable cross-snapshot comparison now establishes the precise value-level
+difference without changing fitting readiness. Exclusion provenance and the
+observation model remain open.
 
 
 ## Executable follow-up
