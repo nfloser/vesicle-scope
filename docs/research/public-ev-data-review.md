@@ -1,6 +1,6 @@
 # Public EV transport data review
 
-Issue #91; reviewed 2026-10-06, source identity updated 2026-10-29 and snapshot reconciliation updated 2026-10-31. Dataset rights, publication rights and scientific suitability are separate decisions. No third-party raw data is vendored here.
+Issue #91; reviewed 2026-10-06, source identity updated 2026-10-29 and snapshot reconciliation updated 2026-11-01. Dataset rights, publication rights and scientific suitability are separate decisions. No third-party raw data is vendored here.
 
 ## Verified primary sources
 
@@ -11,7 +11,7 @@ Steinman et al., *Vaginal bacteria-derived extracellular vesicles diffuse throug
 | Dryad, https://doi.org/10.5061/dryad.cvdncjth8 | Version 3, API version ID 412881; official version package and all 13 files verified on 2026-10-29 | API designates CC0-1.0. The package was used for an offline identity check and was not committed. Preferred snapshot for future reusable ingestion. |
 | University of Maryland DRUM, https://doi.org/10.13016/kkai-hwng | Two original October 2025 XLSX files downloaded; byte counts and SHA-256 verified | CC BY-NC-ND 3.0 US, https://creativecommons.org/licenses/by-nc-nd/3.0/us/. Attribution, noncommercial restriction and no redistribution of adaptations. Originals supplied separately with provenance; not committed to this public repository. |
 
-The [machine-readable manifest](public-ev-data-manifest.json) records the official download endpoint and locally verified file hashes. Repeated downloads use request-time ZIP entry timestamps, so a whole-archive hash is not a stable dataset identity. These deposits are distinct snapshots: CC0 on Dryad does not automatically relicense the DRUM bytes. Their stored summaries agree, but DRUM contains 149 additional ordered Sample 1 / *L. crispatus* bEV values. No reason for that snapshot difference is inferred.
+The [machine-readable manifest](public-ev-data-manifest.json) records the official download endpoint and locally verified file hashes. Repeated downloads use request-time ZIP entry timestamps, so a whole-archive hash is not a stable dataset identity. These deposits are distinct snapshots: CC0 on Dryad does not automatically relicense the DRUM bytes. Their stored summaries agree, but DRUM contains 149 additional ordered Sample 1 / *L. crispatus* bEV values beginning at ordinal 86 after an exact 85-value prefix shared with Dryad. No reason for that snapshot difference is inferred.
 
 ## What the downloaded workbooks actually provide
 

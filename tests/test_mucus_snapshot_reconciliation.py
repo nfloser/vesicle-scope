@@ -103,6 +103,17 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual((mismatch['sample_id'], mismatch['species'], mismatch['particle_type']),
                          (1, 'L. crispatus', 'bEV'))
         self.assertEqual(mismatch['unpaired_drum_value_count'], 1)
+        self.assertEqual(mismatch['ordered_sequence_relation'], 'dryad_is_exact_prefix_of_drum')
+        self.assertEqual(mismatch['first_unpaired_ordinal'], 2)
+        representation_group = next(
+            group for group in report['group_differences']
+            if group['representation_only_difference_count']
+        )
+        self.assertEqual(
+            representation_group['ordered_sequence_relation'],
+            'representation_equivalent_equal',
+        )
+        self.assertIsNone(representation_group['first_unpaired_ordinal'])
 
     def test_substantive_value_and_summary_mismatches_are_not_hidden(self):
         with zipfile.ZipFile(self.dryad_path, 'r') as archive:
@@ -127,6 +138,11 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
 
         self.assertEqual(report['substantive_value_mismatch_count'], 1)
         self.assertEqual(report['summary_cell_mismatch_count'], 1)
+        substantive_group = next(
+            group for group in report['group_differences']
+            if group['substantive_value_mismatch_count']
+        )
+        self.assertEqual(substantive_group['ordered_sequence_relation'], 'not_equal_or_prefix')
 
     def test_cli_is_deterministic(self):
         outputs = []
@@ -160,6 +176,12 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(reconciliation['drum_value_count'], 19430)
         self.assertEqual(reconciliation['unpaired_drum_value_count'], 149)
         self.assertEqual(reconciliation['substantive_value_mismatch_count'], 0)
+        self.assertEqual(reconciliation['position_verified_on'], '2026-11-01')
+        self.assertEqual(
+            reconciliation['different_group']['ordered_sequence_relation'],
+            'dryad_is_exact_prefix_of_drum',
+        )
+        self.assertEqual(reconciliation['different_group']['first_unpaired_ordinal'], 86)
         self.assertFalse(reconciliation['ready_for_parameter_fitting'])
 
 
