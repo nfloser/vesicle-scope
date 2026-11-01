@@ -16,6 +16,22 @@ SHORT_SPECIES = ('LC', 'LI', 'GV', 'MM')
 REPRESENTATION_REL_TOLERANCE = 1e-12
 
 
+def _ordered_sequence_relation(
+    dryad_count: int,
+    drum_count: int,
+    representation_difference_count: int,
+    substantive_mismatch_count: int,
+) -> str:
+    if substantive_mismatch_count:
+        return 'not_equal_or_prefix'
+    qualifier = 'representation_equivalent' if representation_difference_count else 'exact'
+    if dryad_count == drum_count:
+        return f'{qualifier}_equal'
+    if dryad_count < drum_count:
+        return f'dryad_is_{qualifier}_prefix_of_drum'
+    return f'drum_is_{qualifier}_prefix_of_dryad'
+
+
 def _csv_rows(raw: bytes, name: str) -> list[list[str]]:
     try:
         text = raw.decode('utf-8-sig')
@@ -156,6 +172,12 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 group_substantive += 1
         group_unpaired_drum = max(0, len(drum_values) - len(dryad_values))
         group_unpaired_dryad = max(0, len(dryad_values) - len(drum_values))
+        sequence_relation = _ordered_sequence_relation(
+            len(dryad_values),
+            len(drum_values),
+            representation,
+            group_substantive,
+        )
         exact += group_exact
         representation_only += representation
         substantive += group_substantive
@@ -174,6 +196,12 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 'substantive_value_mismatch_count': group_substantive,
                 'unpaired_drum_value_count': group_unpaired_drum,
                 'unpaired_dryad_value_count': group_unpaired_dryad,
+                'ordered_sequence_relation': sequence_relation,
+                'first_unpaired_ordinal': (
+                    min(len(dryad_values), len(drum_values)) + 1
+                    if len(dryad_values) != len(drum_values)
+                    else None
+                ),
             })
 
     summary_mismatches = sum(

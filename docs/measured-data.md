@@ -79,3 +79,10 @@ for 19,430 DRUM and 19,281 Dryad values overall. This establishes a snapshot
 difference, not its cause. It does not show whether values were intentionally
 excluded, accidentally omitted or processed by another rule; fitting remains
 blocked pending that provenance and an explicit observation model.
+
+The follow-up positional audit on 2026-11-01 established a narrower fact: the
+85 Dryad values in that group are exactly the first 85 ordered nonempty DRUM
+values. The 149 unpaired DRUM values begin at ordinal 86; they are not an
+interleaved or reordered subset. The report records this prefix relationship
+explicitly. Sequence position still does not establish why the later values
+are absent from Dryad or whether they should enter an observation model.
