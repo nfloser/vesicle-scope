@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+from decimal import Decimal, InvalidOperation
 from io import BytesIO, StringIO
 import math
 from pathlib import Path
@@ -78,7 +79,7 @@ def _dryad_measurements(raw: bytes) -> list[list[float]]:
     return columns
 
 
-def _dryad_summaries(raw: bytes) -> list[list[float]]:
+def _dryad_summaries(raw: bytes) -> tuple[list[list[float]], list[list[int]]]:
     rows = _csv_rows(raw, SUMMARY_FILE)
     expected = [
         'Sample Number', 'LC bEVs', 'LI bEVs', 'GV bEVs', 'MM bEVs',
@@ -87,12 +88,31 @@ def _dryad_summaries(raw: bytes) -> list[list[float]]:
     if not rows or rows[0] != expected or len(rows) != 11 or any(len(row) != 10 for row in rows):
         raise ValueError(f'{SUMMARY_FILE}: unexpected row or column mapping')
     summaries = []
+    decimal_places = []
     for sample, row in enumerate(rows[1:], start=1):
         values = [_csv_number(value, f'{SUMMARY_FILE} sample {sample}') for value in row]
         if values[0] != sample:
             raise ValueError(f'{SUMMARY_FILE}: sample identity does not match row order')
         summaries.append(values[1:9] + [values[0], values[9]])
-    return summaries
+        try:
+            decimal_places.append([
+                max(0, -Decimal(value).as_tuple().exponent)
+                for value in row[1:9]
+            ])
+        except InvalidOperation as exc:
+            raise ValueError(f'{SUMMARY_FILE} sample {sample}: invalid decimal representation') from exc
+    return summaries, decimal_places
+
+
+def _geometric_mean(values: list[float]) -> float:
+    if any(value == 0 for value in values):
+        return 0.0
+    return math.exp(math.fsum(math.log(value) for value in values) / len(values))
+
+
+def _matches_reported_rounding(mean: float, reported: float, decimal_places: int) -> bool:
+    half_unit = 0.5 * (10.0 ** -decimal_places)
+    return abs(mean - reported) <= math.nextafter(half_unit, math.inf)
 
 
 def _drum_snapshot(path: Path) -> tuple[list[list[float]], list[list[float]], str, int, str]:
@@ -145,7 +165,7 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
     """Compare verified snapshots without converting or fitting measurements."""
     raw_files, dryad_container = read_verified_dryad_v3_source(dryad_path)
     dryad_columns = _dryad_measurements(raw_files[MEASUREMENT_FILE])
-    dryad_summaries = _dryad_summaries(raw_files[SUMMARY_FILE])
+    dryad_summaries, dryad_summary_places = _dryad_summaries(raw_files[SUMMARY_FILE])
     drum_columns, drum_summaries, drum_digest, drum_size, reader_version = _drum_snapshot(workbook_path)
 
     group_differences = []
@@ -209,6 +229,32 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         for dryad_row, drum_row in zip(dryad_summaries, drum_summaries)
         for dryad_value, drum_value in zip(dryad_row, drum_row)
     )
+    aggregation_results = []
+    dryad_rounding_matches = 0
+    drum_rounding_matches = 0
+    comparable_summaries = summary_mismatches == 0
+    aggregation_pairs = zip(dryad_columns, drum_columns) if comparable_summaries else ()
+    for index, (dryad_values, drum_values) in enumerate(aggregation_pairs):
+        sample_index = index // 8
+        column = index % 8
+        reported = dryad_summaries[sample_index][column]
+        places = dryad_summary_places[sample_index][column]
+        dryad_match = _matches_reported_rounding(
+            _geometric_mean(dryad_values), reported, places
+        )
+        drum_match = _matches_reported_rounding(
+            _geometric_mean(drum_values), reported, places
+        )
+        dryad_rounding_matches += dryad_match
+        drum_rounding_matches += drum_match
+        aggregation_results.append({
+            'sample_id': sample_index + 1,
+            'species': mucus_data.SPECIES[column % 4],
+            'particle_type': 'bEV' if column < 4 else 'whole_bacterium',
+            'reported_decimal_places': places,
+            'dryad_geometric_mean_matches_reported_rounding': dryad_match,
+            'drum_geometric_mean_matches_reported_rounding': drum_match,
+        })
     dryad_count = sum(map(len, dryad_columns))
     drum_count = sum(map(len, drum_columns))
     raw_identical = not (
@@ -244,6 +290,32 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         'unpaired_drum_value_count': unpaired_drum,
         'unpaired_dryad_value_count': unpaired_dryad,
         'summary_cell_mismatch_count': summary_mismatches,
+        'summary_aggregation': {
+            'performed': comparable_summaries,
+            'group_count': len(aggregation_results),
+            'precondition': 'all stored Dryad and DRUM summary cells are numerically equal',
+            'method': 'geometric mean of all supplied nonnegative values; zero if any value is zero',
+            'rounding_rule': (
+                'absolute difference from the stored summary is at most half one unit '
+                'at its recorded decimal place'
+            ),
+            'dryad_rounding_match_count': (
+                dryad_rounding_matches if comparable_summaries else None
+            ),
+            'drum_rounding_match_count': (
+                drum_rounding_matches if comparable_summaries else None
+            ),
+            'snapshot_specific_result_count': (
+                sum(
+                    result['dryad_geometric_mean_matches_reported_rounding']
+                    != result['drum_geometric_mean_matches_reported_rounding']
+                    for result in aggregation_results
+                )
+                if comparable_summaries
+                else None
+            ),
+            'group_results': aggregation_results,
+        },
         'raw_snapshots_identical': raw_identical,
         'ready_for_parameter_fitting': False,
         'limitations': [
