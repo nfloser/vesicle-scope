@@ -1,6 +1,6 @@
 {
   "review_date": "2026-10-06",
-  "last_updated": "2026-11-01",
+  "last_updated": "2026-11-02",
   "publication_doi": "10.1038/s41522-025-00866-9",
   "dryad": {
     "doi": "10.5061/dryad.cvdncjth8",
@@ -122,6 +122,7 @@
   "reconciliation": {
     "verified_on": "2026-10-31",
     "position_verified_on": "2026-11-01",
+    "aggregation_verified_on": "2026-11-02",
     "scope": "ordered nonempty one-second MSD particle values and stored sample summaries",
     "dryad_value_count": 19281,
     "drum_value_count": 19430,
@@ -132,6 +133,11 @@
     "unpaired_drum_value_count": 149,
     "unpaired_dryad_value_count": 0,
     "summary_cell_mismatch_count": 0,
+    "dryad_summary_rounding_match_count": 59,
+    "drum_summary_rounding_match_count": 58,
+    "snapshot_specific_summary_result_count": 1,
+    "summary_group_count": 80,
+    "summary_rounding_rule": "absolute difference from the stored summary is at most half one unit at its recorded decimal place",
     "different_group": {
       "sample_id": 1,
       "species": "L. crispatus",

@@ -86,3 +86,13 @@ values. The 149 unpaired DRUM values begin at ordinal 86; they are not an
 interleaved or reordered subset. The report records this prefix relationship
 explicitly. Sequence position still does not establish why the later values
 are absent from Dryad or whether they should enter an observation model.
+
+The aggregation audit added on 2026-11-02 recomputes the already documented
+geometric mean independently for each snapshot and tests only whether it falls
+within half one unit at the stored summary's recorded decimal place. This is an
+explicit rounding check, not a fitted tolerance. It reproduces 59 of 80 stored
+summaries from Dryad and 58 of 80 from DRUM. The sole snapshot-specific result
+is Sample 1 / *L. crispatus* bEV: its stored summary is rounding-consistent with
+the 85-value Dryad prefix, but not with all 234 DRUM values. Twenty-one groups
+still do not reproduce from Dryad, so this narrows one discrepancy without
+recovering the upstream exclusion or aggregation procedure.

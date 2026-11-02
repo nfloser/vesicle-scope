@@ -37,6 +37,9 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
             sheet.append(list(mucus_data.PARTICLE_HEADERS))
             sheet.append([1.0] * 8)
             sheet.append([16.0] * 8)
+        # The stored Sample 1 / LC bEV summary matches the shorter Dryad
+        # sequence (GM 1) but not the two-value DRUM sequence (GM 4).
+        summary['A2'] = 1
         # Exercise transparent parser-representation classification.
         book['Sample 7']['D2'] = 0.00035705999999999997
         book.save(self.workbook_path)
@@ -63,7 +66,10 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         info.writerow(['Sample Number', 'LC bEVs', 'LI bEVs', 'GV bEVs', 'MM bEVs',
                        'LC WB', 'LI WB', 'GV WB', 'MM WB', 'pH'])
         for sample in range(1, 11):
-            info.writerow([sample] + [4] * 8 + [4.2 if sample <= 5 else 4.3])
+            stored = [4] * 8
+            if sample == 1:
+                stored[0] = 1
+            info.writerow([sample] + stored + [4.2 if sample <= 5 else 4.3])
 
         self.files = {
             'bEV_diffusion_host_response_CVM_1sMSD.csv': measurements,
@@ -99,6 +105,18 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(report['summary_cell_mismatch_count'], 0)
         self.assertFalse(report['raw_snapshots_identical'])
         self.assertFalse(report['ready_for_parameter_fitting'])
+        aggregation = report['summary_aggregation']
+        self.assertTrue(aggregation['performed'])
+        self.assertEqual(aggregation['group_count'], 80)
+        difference = next(
+            group for group in aggregation['group_results']
+            if group['sample_id'] == 1
+            and group['species'] == 'L. crispatus'
+            and group['particle_type'] == 'bEV'
+        )
+        self.assertTrue(difference['dryad_geometric_mean_matches_reported_rounding'])
+        self.assertFalse(difference['drum_geometric_mean_matches_reported_rounding'])
+        self.assertEqual(difference['reported_decimal_places'], 0)
         mismatch = report['group_differences'][0]
         self.assertEqual((mismatch['sample_id'], mismatch['species'], mismatch['particle_type']),
                          (1, 'L. crispatus', 'bEV'))
@@ -138,6 +156,9 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
 
         self.assertEqual(report['substantive_value_mismatch_count'], 1)
         self.assertEqual(report['summary_cell_mismatch_count'], 1)
+        self.assertFalse(report['summary_aggregation']['performed'])
+        self.assertIsNone(report['summary_aggregation']['dryad_rounding_match_count'])
+        self.assertEqual(report['summary_aggregation']['group_results'], [])
         substantive_group = next(
             group for group in report['group_differences']
             if group['substantive_value_mismatch_count']
@@ -177,6 +198,10 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(reconciliation['unpaired_drum_value_count'], 149)
         self.assertEqual(reconciliation['substantive_value_mismatch_count'], 0)
         self.assertEqual(reconciliation['position_verified_on'], '2026-11-01')
+        self.assertEqual(reconciliation['aggregation_verified_on'], '2026-11-02')
+        self.assertEqual(reconciliation['dryad_summary_rounding_match_count'], 59)
+        self.assertEqual(reconciliation['drum_summary_rounding_match_count'], 58)
+        self.assertEqual(reconciliation['snapshot_specific_summary_result_count'], 1)
         self.assertEqual(
             reconciliation['different_group']['ordered_sequence_relation'],
             'dryad_is_exact_prefix_of_drum',
