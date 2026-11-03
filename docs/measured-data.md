@@ -96,3 +96,12 @@ is Sample 1 / *L. crispatus* bEV: its stored summary is rounding-consistent with
 the 85-value Dryad prefix, but not with all 234 DRUM values. Twenty-one groups
 still do not reproduce from Dryad, so this narrows one discrepancy without
 recovering the upstream exclusion or aggregation procedure.
+
+The primary-source language was checked separately on 2026-11-03. Figure 2 and
+the article call the statistic a geometric mean, while the Dryad README calls
+the stored values an “average”. As a negative control, the reconciliation now
+also tests the ordinary arithmetic mean of every supplied value under the same
+recorded-decimal rounding rule. It matches 0 of 80 stored summaries in both
+verified snapshots. Thus “average” cannot be read as the unfiltered arithmetic
+mean of all deposited values; this result still does not recover the authors'
+upstream exclusion or aggregation procedure.

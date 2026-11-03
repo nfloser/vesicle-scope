@@ -110,6 +110,10 @@ def _geometric_mean(values: list[float]) -> float:
     return math.exp(math.fsum(math.log(value) for value in values) / len(values))
 
 
+def _arithmetic_mean(values: list[float]) -> float:
+    return math.fsum(values) / len(values)
+
+
 def _matches_reported_rounding(mean: float, reported: float, decimal_places: int) -> bool:
     half_unit = 0.5 * (10.0 ** -decimal_places)
     return abs(mean - reported) <= math.nextafter(half_unit, math.inf)
@@ -232,6 +236,8 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
     aggregation_results = []
     dryad_rounding_matches = 0
     drum_rounding_matches = 0
+    dryad_arithmetic_matches = 0
+    drum_arithmetic_matches = 0
     comparable_summaries = summary_mismatches == 0
     aggregation_pairs = zip(dryad_columns, drum_columns) if comparable_summaries else ()
     for index, (dryad_values, drum_values) in enumerate(aggregation_pairs):
@@ -245,8 +251,16 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         drum_match = _matches_reported_rounding(
             _geometric_mean(drum_values), reported, places
         )
+        dryad_arithmetic_match = _matches_reported_rounding(
+            _arithmetic_mean(dryad_values), reported, places
+        )
+        drum_arithmetic_match = _matches_reported_rounding(
+            _arithmetic_mean(drum_values), reported, places
+        )
         dryad_rounding_matches += dryad_match
         drum_rounding_matches += drum_match
+        dryad_arithmetic_matches += dryad_arithmetic_match
+        drum_arithmetic_matches += drum_arithmetic_match
         aggregation_results.append({
             'sample_id': sample_index + 1,
             'species': mucus_data.SPECIES[column % 4],
@@ -254,6 +268,8 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
             'reported_decimal_places': places,
             'dryad_geometric_mean_matches_reported_rounding': dryad_match,
             'drum_geometric_mean_matches_reported_rounding': drum_match,
+            'dryad_arithmetic_mean_matches_reported_rounding': dryad_arithmetic_match,
+            'drum_arithmetic_mean_matches_reported_rounding': drum_arithmetic_match,
         })
     dryad_count = sum(map(len, dryad_columns))
     drum_count = sum(map(len, drum_columns))
@@ -314,6 +330,19 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 if comparable_summaries
                 else None
             ),
+            'arithmetic_mean_negative_control': {
+                'method': 'arithmetic mean of all supplied values',
+                'purpose': (
+                    "test whether the Dryad README term 'average' can be interpreted "
+                    'as the arithmetic mean of every supplied value'
+                ),
+                'dryad_rounding_match_count': (
+                    dryad_arithmetic_matches if comparable_summaries else None
+                ),
+                'drum_rounding_match_count': (
+                    drum_arithmetic_matches if comparable_summaries else None
+                ),
+            },
             'group_results': aggregation_results,
         },
         'raw_snapshots_identical': raw_identical,
