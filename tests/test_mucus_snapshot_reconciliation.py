@@ -116,7 +116,12 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         )
         self.assertTrue(difference['dryad_geometric_mean_matches_reported_rounding'])
         self.assertFalse(difference['drum_geometric_mean_matches_reported_rounding'])
+        self.assertTrue(difference['dryad_arithmetic_mean_matches_reported_rounding'])
+        self.assertFalse(difference['drum_arithmetic_mean_matches_reported_rounding'])
         self.assertEqual(difference['reported_decimal_places'], 0)
+        arithmetic = aggregation['arithmetic_mean_negative_control']
+        self.assertEqual(arithmetic['dryad_rounding_match_count'], 1)
+        self.assertEqual(arithmetic['drum_rounding_match_count'], 0)
         mismatch = report['group_differences'][0]
         self.assertEqual((mismatch['sample_id'], mismatch['species'], mismatch['particle_type']),
                          (1, 'L. crispatus', 'bEV'))
@@ -158,6 +163,11 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(report['summary_cell_mismatch_count'], 1)
         self.assertFalse(report['summary_aggregation']['performed'])
         self.assertIsNone(report['summary_aggregation']['dryad_rounding_match_count'])
+        self.assertIsNone(
+            report['summary_aggregation']['arithmetic_mean_negative_control'][
+                'dryad_rounding_match_count'
+            ]
+        )
         self.assertEqual(report['summary_aggregation']['group_results'], [])
         substantive_group = next(
             group for group in report['group_differences']
@@ -202,6 +212,9 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(reconciliation['dryad_summary_rounding_match_count'], 59)
         self.assertEqual(reconciliation['drum_summary_rounding_match_count'], 58)
         self.assertEqual(reconciliation['snapshot_specific_summary_result_count'], 1)
+        self.assertEqual(reconciliation['dryad_arithmetic_mean_rounding_match_count'], 0)
+        self.assertEqual(reconciliation['drum_arithmetic_mean_rounding_match_count'], 0)
+        self.assertEqual(reconciliation['aggregation_language_verified_on'], '2026-11-03')
         self.assertEqual(
             reconciliation['different_group']['ordered_sequence_relation'],
             'dryad_is_exact_prefix_of_drum',
