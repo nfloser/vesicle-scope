@@ -40,6 +40,9 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         # The stored Sample 1 / LC bEV summary matches the shorter Dryad
         # sequence (GM 1) but not the two-value DRUM sequence (GM 4).
         summary['A2'] = 1
+        # A one-last-place-unit residual exercises magnitude reporting without
+        # changing the existing half-unit rounding acceptance rule.
+        summary['A3'] = 3
         # Exercise transparent parser-representation classification.
         book['Sample 7']['D2'] = 0.00035705999999999997
         book.save(self.workbook_path)
@@ -69,6 +72,8 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
             stored = [4] * 8
             if sample == 1:
                 stored[0] = 1
+            elif sample == 2:
+                stored[0] = 3
             info.writerow([sample] + stored + [4.2 if sample <= 5 else 4.3])
 
         self.files = {
@@ -116,12 +121,24 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         )
         self.assertTrue(difference['dryad_geometric_mean_matches_reported_rounding'])
         self.assertFalse(difference['drum_geometric_mean_matches_reported_rounding'])
+        self.assertEqual(difference['dryad_geometric_mean_residual_reported_units'], 0.0)
+        self.assertEqual(difference['drum_geometric_mean_residual_reported_units'], 3.0)
         self.assertTrue(difference['dryad_arithmetic_mean_matches_reported_rounding'])
         self.assertFalse(difference['drum_arithmetic_mean_matches_reported_rounding'])
         self.assertEqual(difference['reported_decimal_places'], 0)
         arithmetic = aggregation['arithmetic_mean_negative_control']
         self.assertEqual(arithmetic['dryad_rounding_match_count'], 1)
         self.assertEqual(arithmetic['drum_rounding_match_count'], 0)
+        residuals = aggregation['geometric_mean_residuals']
+        self.assertEqual(residuals['dryad_mismatch_within_one_reported_unit_count'], 1)
+        self.assertEqual(residuals['drum_mismatch_within_one_reported_unit_count'], 1)
+        near = next(
+            group for group in aggregation['group_results']
+            if group['sample_id'] == 2
+            and group['species'] == 'L. crispatus'
+            and group['particle_type'] == 'bEV'
+        )
+        self.assertEqual(near['dryad_geometric_mean_residual_reported_units'], 1.0)
         mismatch = report['group_differences'][0]
         self.assertEqual((mismatch['sample_id'], mismatch['species'], mismatch['particle_type']),
                          (1, 'L. crispatus', 'bEV'))
@@ -166,6 +183,11 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertIsNone(
             report['summary_aggregation']['arithmetic_mean_negative_control'][
                 'dryad_rounding_match_count'
+            ]
+        )
+        self.assertIsNone(
+            report['summary_aggregation']['geometric_mean_residuals'][
+                'dryad_mismatch_within_one_reported_unit_count'
             ]
         )
         self.assertEqual(report['summary_aggregation']['group_results'], [])
@@ -215,6 +237,9 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(reconciliation['dryad_arithmetic_mean_rounding_match_count'], 0)
         self.assertEqual(reconciliation['drum_arithmetic_mean_rounding_match_count'], 0)
         self.assertEqual(reconciliation['aggregation_language_verified_on'], '2026-11-03')
+        self.assertEqual(reconciliation['residual_magnitude_verified_on'], '2026-11-04')
+        self.assertEqual(reconciliation['dryad_mismatch_within_one_reported_unit_count'], 10)
+        self.assertEqual(reconciliation['drum_mismatch_within_one_reported_unit_count'], 10)
         self.assertEqual(
             reconciliation['different_group']['ordered_sequence_relation'],
             'dryad_is_exact_prefix_of_drum',
