@@ -105,3 +105,10 @@ recorded-decimal rounding rule. It matches 0 of 80 stored summaries in both
 verified snapshots. Thus “average” cannot be read as the unfiltered arithmetic
 mean of all deposited values; this result still does not recover the authors'
 upstream exclusion or aggregation procedure.
+
+The 2026-11-04 residual-magnitude audit reports each geometric-mean difference
+in units of the stored summary's last decimal place. A match still requires an
+absolute residual of at most 0.5 unit. Of the 21 Dryad mismatches, 10 lie above
+0.5 but at or below one unit; the corresponding DRUM audit has 22 mismatches,
+also with 10 in that interval. These near-boundary results remain mismatches:
+the one-unit count is descriptive and is not a relaxed acceptance tolerance.

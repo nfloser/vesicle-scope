@@ -119,6 +119,10 @@ def _matches_reported_rounding(mean: float, reported: float, decimal_places: int
     return abs(mean - reported) <= math.nextafter(half_unit, math.inf)
 
 
+def _residual_in_reported_units(mean: float, reported: float, decimal_places: int) -> float:
+    return (mean - reported) / (10.0 ** -decimal_places)
+
+
 def _drum_snapshot(path: Path) -> tuple[list[list[float]], list[list[float]], str, int, str]:
     raw = Path(path).read_bytes()
     import hashlib
@@ -238,6 +242,8 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
     drum_rounding_matches = 0
     dryad_arithmetic_matches = 0
     drum_arithmetic_matches = 0
+    dryad_near_mismatches = 0
+    drum_near_mismatches = 0
     comparable_summaries = summary_mismatches == 0
     aggregation_pairs = zip(dryad_columns, drum_columns) if comparable_summaries else ()
     for index, (dryad_values, drum_values) in enumerate(aggregation_pairs):
@@ -245,11 +251,15 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         column = index % 8
         reported = dryad_summaries[sample_index][column]
         places = dryad_summary_places[sample_index][column]
-        dryad_match = _matches_reported_rounding(
-            _geometric_mean(dryad_values), reported, places
+        dryad_geometric_mean = _geometric_mean(dryad_values)
+        drum_geometric_mean = _geometric_mean(drum_values)
+        dryad_match = _matches_reported_rounding(dryad_geometric_mean, reported, places)
+        drum_match = _matches_reported_rounding(drum_geometric_mean, reported, places)
+        dryad_residual = _residual_in_reported_units(
+            dryad_geometric_mean, reported, places
         )
-        drum_match = _matches_reported_rounding(
-            _geometric_mean(drum_values), reported, places
+        drum_residual = _residual_in_reported_units(
+            drum_geometric_mean, reported, places
         )
         dryad_arithmetic_match = _matches_reported_rounding(
             _arithmetic_mean(dryad_values), reported, places
@@ -261,6 +271,8 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         drum_rounding_matches += drum_match
         dryad_arithmetic_matches += dryad_arithmetic_match
         drum_arithmetic_matches += drum_arithmetic_match
+        dryad_near_mismatches += not dryad_match and abs(dryad_residual) <= 1.0
+        drum_near_mismatches += not drum_match and abs(drum_residual) <= 1.0
         aggregation_results.append({
             'sample_id': sample_index + 1,
             'species': mucus_data.SPECIES[column % 4],
@@ -268,6 +280,8 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
             'reported_decimal_places': places,
             'dryad_geometric_mean_matches_reported_rounding': dryad_match,
             'drum_geometric_mean_matches_reported_rounding': drum_match,
+            'dryad_geometric_mean_residual_reported_units': dryad_residual,
+            'drum_geometric_mean_residual_reported_units': drum_residual,
             'dryad_arithmetic_mean_matches_reported_rounding': dryad_arithmetic_match,
             'drum_arithmetic_mean_matches_reported_rounding': drum_arithmetic_match,
         })
@@ -341,6 +355,21 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 ),
                 'drum_rounding_match_count': (
                     drum_arithmetic_matches if comparable_summaries else None
+                ),
+            },
+            'geometric_mean_residuals': {
+                'definition': (
+                    '(recomputed geometric mean - stored summary) divided by one unit '
+                    'at the stored summary decimal place'
+                ),
+                'rounding_match_limit_absolute_reported_units': 0.5,
+                'near_mismatch_limit_absolute_reported_units': 1.0,
+                'near_mismatch_is_accepted': False,
+                'dryad_mismatch_within_one_reported_unit_count': (
+                    dryad_near_mismatches if comparable_summaries else None
+                ),
+                'drum_mismatch_within_one_reported_unit_count': (
+                    drum_near_mismatches if comparable_summaries else None
                 ),
             },
             'group_results': aggregation_results,
