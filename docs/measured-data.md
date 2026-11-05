@@ -112,3 +112,10 @@ absolute residual of at most 0.5 unit. Of the 21 Dryad mismatches, 10 lie above
 0.5 but at or below one unit; the corresponding DRUM audit has 22 mismatches,
 also with 10 in that interval. These near-boundary results remain mismatches:
 the one-unit count is descriptive and is not a relaxed acceptance tolerance.
+
+The verified Dryad v3 inventory and README were checked for exclusion records on
+2026-11-05. Five other assay families have explicit
+`*_removed_outliers.csv` companions, but neither CVM file has one and the README
+does not declare CVM-specific outlier handling. The reconciliation report records
+this absence while keeping `cvm_filtering_status` as `unknown`: a missing
+companion file is not evidence that the deposited particle values are unfiltered.

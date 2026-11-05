@@ -123,6 +123,28 @@ def _residual_in_reported_units(mean: float, reported: float, decimal_places: in
     return (mean - reported) / (10.0 ** -decimal_places)
 
 
+def _cvm_exclusion_provenance(raw_files: dict[str, bytes]) -> dict[str, object]:
+    removed_outlier_files = sorted(
+        name for name in raw_files if name.endswith('_removed_outliers.csv')
+    )
+    readme = raw_files['README.md'].decode('utf-8')
+    cvm_outlier_files = [name for name in removed_outlier_files if 'CVM' in name]
+    return {
+        'source': 'verified Dryad v3 inventory and README.md',
+        'removed_outlier_file_count': len(removed_outlier_files),
+        'removed_outlier_files': removed_outlier_files,
+        'readme_lists_all_removed_outlier_files': all(
+            name in readme for name in removed_outlier_files
+        ),
+        'cvm_removed_outlier_file_present': bool(cvm_outlier_files),
+        'cvm_filtering_status': 'unknown',
+        'interpretation': (
+            'No separate CVM removed-outlier file is deposited; absence does not establish '
+            'that the supplied CVM values are unfiltered.'
+        ),
+    }
+
+
 def _drum_snapshot(path: Path) -> tuple[list[list[float]], list[list[float]], str, int, str]:
     raw = Path(path).read_bytes()
     import hashlib
@@ -174,6 +196,7 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
     raw_files, dryad_container = read_verified_dryad_v3_source(dryad_path)
     dryad_columns = _dryad_measurements(raw_files[MEASUREMENT_FILE])
     dryad_summaries, dryad_summary_places = _dryad_summaries(raw_files[SUMMARY_FILE])
+    exclusion_provenance = _cvm_exclusion_provenance(raw_files)
     drum_columns, drum_summaries, drum_digest, drum_size, reader_version = _drum_snapshot(workbook_path)
 
     group_differences = []
@@ -309,6 +332,7 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
             },
         },
         'reader': {'name': 'openpyxl', 'version': reader_version},
+        'cvm_exclusion_provenance': exclusion_provenance,
         'comparison_scope': 'ordered one-second MSD particle values and stored sample summaries',
         'group_count': len(drum_columns),
         'dryad_value_count': dryad_count,

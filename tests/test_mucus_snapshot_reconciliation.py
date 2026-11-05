@@ -79,6 +79,11 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.files = {
             'bEV_diffusion_host_response_CVM_1sMSD.csv': measurements,
             'bEV_diffusion_host_response_CVM_SampleInfo.csv': sample_info.getvalue().encode(),
+            'bEV_diffusion_host_response_bEV_Histogram_removed_outliers.csv': b'GRUBB\n',
+            'README.md': (
+                b'Removed outliers can be found in the following associated CSV files:\n'
+                b'* **bEV_diffusion_host_response_bEV_Histogram_removed_outliers.csv**\n'
+            ),
         }
         with zipfile.ZipFile(self.dryad_path, 'w') as archive:
             for name, content in self.files.items():
@@ -110,6 +115,11 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(report['summary_cell_mismatch_count'], 0)
         self.assertFalse(report['raw_snapshots_identical'])
         self.assertFalse(report['ready_for_parameter_fitting'])
+        exclusion = report['cvm_exclusion_provenance']
+        self.assertFalse(exclusion['cvm_removed_outlier_file_present'])
+        self.assertEqual(exclusion['cvm_filtering_status'], 'unknown')
+        self.assertTrue(exclusion['readme_lists_all_removed_outlier_files'])
+        self.assertEqual(exclusion['removed_outlier_file_count'], 1)
         aggregation = report['summary_aggregation']
         self.assertTrue(aggregation['performed'])
         self.assertEqual(aggregation['group_count'], 80)
@@ -240,6 +250,10 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(reconciliation['residual_magnitude_verified_on'], '2026-11-04')
         self.assertEqual(reconciliation['dryad_mismatch_within_one_reported_unit_count'], 10)
         self.assertEqual(reconciliation['drum_mismatch_within_one_reported_unit_count'], 10)
+        self.assertEqual(reconciliation['exclusion_provenance_verified_on'], '2026-11-05')
+        self.assertFalse(reconciliation['cvm_removed_outlier_file_present'])
+        self.assertEqual(reconciliation['cvm_filtering_status'], 'unknown')
+        self.assertEqual(reconciliation['other_assay_removed_outlier_file_count'], 5)
         self.assertEqual(
             reconciliation['different_group']['ordered_sequence_relation'],
             'dryad_is_exact_prefix_of_drum',
