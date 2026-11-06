@@ -314,6 +314,53 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         representation_only or substantive or unpaired_drum or unpaired_dryad
         or summary_mismatches
     )
+    fitting_blockers = []
+    if substantive or unpaired_drum or unpaired_dryad:
+        fitting_blockers.append({
+            'code': 'unresolved_snapshot_difference',
+            'detail': (
+                'The verified snapshots differ in substantive or unpaired ordered values, '
+                'and the upstream cause is not established.'
+            ),
+        })
+    if (
+        not comparable_summaries
+        or dryad_rounding_matches != len(aggregation_results)
+        or drum_rounding_matches != len(aggregation_results)
+    ):
+        fitting_blockers.append({
+            'code': 'unreproduced_summary_aggregation',
+            'detail': (
+                'The stored summaries are not all reproduced by the documented geometric-mean '
+                'rounding check over supplied values.'
+            ),
+        })
+    if exclusion_provenance['cvm_filtering_status'] == 'unknown':
+        fitting_blockers.append({
+            'code': 'unknown_cvm_filtering',
+            'detail': 'The deposited CVM values have no documented filtering status.',
+        })
+    fitting_blockers.extend([
+        {
+            'code': 'measurement_hierarchy_not_selected',
+            'detail': (
+                'A fitting measurement hierarchy has not been selected; particle values '
+                'within one sample are not independent biological replicates.'
+            ),
+        },
+        {
+            'code': 'observation_model_not_defined',
+            'detail': (
+                'No evidence-backed mapping from the one-second MSD measurements to a '
+                'VesicleScope fitting observable has been defined.'
+            ),
+        },
+    ])
+    parameter_fitting_gate = {
+        'ready_for_parameter_fitting': not fitting_blockers,
+        'blocker_codes': [blocker['code'] for blocker in fitting_blockers],
+        'blockers': fitting_blockers,
+    }
     return {
         'schema': 'vesiclescope.mucus-snapshot-reconciliation',
         'version': 1,
@@ -399,7 +446,8 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
             'group_results': aggregation_results,
         },
         'raw_snapshots_identical': raw_identical,
-        'ready_for_parameter_fitting': False,
+        'parameter_fitting_gate': parameter_fitting_gate,
+        'ready_for_parameter_fitting': parameter_fitting_gate['ready_for_parameter_fitting'],
         'limitations': [
             'Numeric proximity classifies parser representation only; every such difference is reported.',
             'Unpaired ordered values do not establish why values were excluded or omitted upstream.',

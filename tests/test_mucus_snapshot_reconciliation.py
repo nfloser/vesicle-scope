@@ -115,6 +115,26 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(report['summary_cell_mismatch_count'], 0)
         self.assertFalse(report['raw_snapshots_identical'])
         self.assertFalse(report['ready_for_parameter_fitting'])
+        fitting_gate = report['parameter_fitting_gate']
+        self.assertEqual(
+            fitting_gate['ready_for_parameter_fitting'],
+            report['ready_for_parameter_fitting'],
+        )
+        self.assertEqual(
+            fitting_gate['blocker_codes'],
+            [
+                'unresolved_snapshot_difference',
+                'unreproduced_summary_aggregation',
+                'unknown_cvm_filtering',
+                'measurement_hierarchy_not_selected',
+                'observation_model_not_defined',
+            ],
+        )
+        self.assertEqual(
+            [blocker['code'] for blocker in fitting_gate['blockers']],
+            fitting_gate['blocker_codes'],
+        )
+        self.assertTrue(all(blocker['detail'] for blocker in fitting_gate['blockers']))
         exclusion = report['cvm_exclusion_provenance']
         self.assertFalse(exclusion['cvm_removed_outlier_file_present'])
         self.assertEqual(exclusion['cvm_filtering_status'], 'unknown')
@@ -260,6 +280,16 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         )
         self.assertEqual(reconciliation['different_group']['first_unpaired_ordinal'], 86)
         self.assertFalse(reconciliation['ready_for_parameter_fitting'])
+        self.assertEqual(
+            reconciliation['parameter_fitting_blocker_codes'],
+            [
+                'unresolved_snapshot_difference',
+                'unreproduced_summary_aggregation',
+                'unknown_cvm_filtering',
+                'measurement_hierarchy_not_selected',
+                'observation_model_not_defined',
+            ],
+        )
 
 
 if __name__ == '__main__':
