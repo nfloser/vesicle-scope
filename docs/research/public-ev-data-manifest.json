@@ -1,6 +1,6 @@
 {
   "review_date": "2026-10-06",
-  "last_updated": "2026-11-05",
+  "last_updated": "2026-11-06",
   "publication_doi": "10.1038/s41522-025-00866-9",
   "dryad": {
     "doi": "10.5061/dryad.cvdncjth8",
@@ -126,6 +126,7 @@
     "aggregation_language_verified_on": "2026-11-03",
     "residual_magnitude_verified_on": "2026-11-04",
     "exclusion_provenance_verified_on": "2026-11-05",
+    "fitting_gate_documented_on": "2026-11-06",
     "scope": "ordered nonempty one-second MSD particle values and stored sample summaries",
     "dryad_value_count": 19281,
     "drum_value_count": 19430,
@@ -158,6 +159,13 @@
       "first_unpaired_ordinal": 86
     },
     "interpretation": "snapshot difference only; upstream exclusion, omission or aggregation cause is not inferred",
+    "parameter_fitting_blocker_codes": [
+      "unresolved_snapshot_difference",
+      "unreproduced_summary_aggregation",
+      "unknown_cvm_filtering",
+      "measurement_hierarchy_not_selected",
+      "observation_model_not_defined"
+    ],
     "ready_for_parameter_fitting": false
   },
   "drum": {

@@ -119,3 +119,10 @@ The verified Dryad v3 inventory and README were checked for exclusion records on
 does not declare CVM-specific outlier handling. The reconciliation report records
 this absence while keeping `cvm_filtering_status` as `unknown`: a missing
 companion file is not evidence that the deposited particle values are unfiltered.
+
+The reconciliation output also exposes a machine-readable
+`parameter_fitting_gate`. Its ordered blocker codes distinguish the unresolved
+snapshot difference, unreproduced summary aggregation, unknown CVM filtering,
+unselected fitting hierarchy and undefined observation model. The gate does not
+guess how to clear any blocker; it makes the existing scientific boundary
+inspectable by CLI and downstream interfaces instead of leaving it only in prose.
