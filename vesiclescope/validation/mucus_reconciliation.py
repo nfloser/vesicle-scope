@@ -310,6 +310,19 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         })
     dryad_count = sum(map(len, dryad_columns))
     drum_count = sum(map(len, drum_columns))
+    measurement_hierarchy = {
+        'independent_biological_unit': 'human_cervicovaginal_mucus_sample',
+        'independent_biological_unit_count': len(drum_summaries),
+        'nested_observation': 'individual_particle_one_second_msd',
+        'within_sample_factors': ['species', 'particle_type'],
+        'sample_species_particle_group_count': len(drum_columns),
+        'particle_values_are_independent_biological_replicates': False,
+        'summary_statistic_for_fitting': None,
+        'constraint': (
+            'Any future fit must preserve sample grouping and must not treat nested '
+            'particle values as independent biological replicates.'
+        ),
+    }
     raw_identical = not (
         representation_only or substantive or unpaired_drum or unpaired_dryad
         or summary_mismatches
@@ -340,22 +353,15 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
             'code': 'unknown_cvm_filtering',
             'detail': 'The deposited CVM values have no documented filtering status.',
         })
-    fitting_blockers.extend([
-        {
-            'code': 'measurement_hierarchy_not_selected',
-            'detail': (
-                'A fitting measurement hierarchy has not been selected; particle values '
-                'within one sample are not independent biological replicates.'
-            ),
-        },
+    fitting_blockers.append(
         {
             'code': 'observation_model_not_defined',
             'detail': (
                 'No evidence-backed mapping from the one-second MSD measurements to a '
                 'VesicleScope fitting observable has been defined.'
             ),
-        },
-    ])
+        }
+    )
     parameter_fitting_gate = {
         'ready_for_parameter_fitting': not fitting_blockers,
         'blocker_codes': [blocker['code'] for blocker in fitting_blockers],
@@ -380,6 +386,7 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         },
         'reader': {'name': 'openpyxl', 'version': reader_version},
         'cvm_exclusion_provenance': exclusion_provenance,
+        'measurement_hierarchy': measurement_hierarchy,
         'comparison_scope': 'ordered one-second MSD particle values and stored sample summaries',
         'group_count': len(drum_columns),
         'dryad_value_count': dryad_count,

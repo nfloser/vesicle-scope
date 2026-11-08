@@ -116,6 +116,20 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertFalse(report['raw_snapshots_identical'])
         self.assertFalse(report['ready_for_parameter_fitting'])
         fitting_gate = report['parameter_fitting_gate']
+        hierarchy = report['measurement_hierarchy']
+        self.assertEqual(
+            hierarchy['independent_biological_unit'],
+            'human_cervicovaginal_mucus_sample',
+        )
+        self.assertEqual(hierarchy['independent_biological_unit_count'], 10)
+        self.assertEqual(
+            hierarchy['nested_observation'],
+            'individual_particle_one_second_msd',
+        )
+        self.assertEqual(hierarchy['within_sample_factors'], ['species', 'particle_type'])
+        self.assertEqual(hierarchy['sample_species_particle_group_count'], 80)
+        self.assertFalse(hierarchy['particle_values_are_independent_biological_replicates'])
+        self.assertIsNone(hierarchy['summary_statistic_for_fitting'])
         self.assertEqual(
             fitting_gate['ready_for_parameter_fitting'],
             report['ready_for_parameter_fitting'],
@@ -126,7 +140,6 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
                 'unresolved_snapshot_difference',
                 'unreproduced_summary_aggregation',
                 'unknown_cvm_filtering',
-                'measurement_hierarchy_not_selected',
                 'observation_model_not_defined',
             ],
         )
@@ -274,6 +287,20 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertFalse(reconciliation['cvm_removed_outlier_file_present'])
         self.assertEqual(reconciliation['cvm_filtering_status'], 'unknown')
         self.assertEqual(reconciliation['other_assay_removed_outlier_file_count'], 5)
+        self.assertEqual(reconciliation['measurement_hierarchy_verified_on'], '2026-11-08')
+        self.assertEqual(
+            reconciliation['measurement_hierarchy']['independent_biological_unit'],
+            'human_cervicovaginal_mucus_sample',
+        )
+        self.assertEqual(
+            reconciliation['measurement_hierarchy']['independent_biological_unit_count'],
+            10,
+        )
+        self.assertFalse(
+            reconciliation['measurement_hierarchy'][
+                'particle_values_are_independent_biological_replicates'
+            ]
+        )
         self.assertEqual(
             reconciliation['different_group']['ordered_sequence_relation'],
             'dryad_is_exact_prefix_of_drum',
@@ -286,7 +313,6 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
                 'unresolved_snapshot_difference',
                 'unreproduced_summary_aggregation',
                 'unknown_cvm_filtering',
-                'measurement_hierarchy_not_selected',
                 'observation_model_not_defined',
             ],
         )

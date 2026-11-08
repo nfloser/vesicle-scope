@@ -49,8 +49,8 @@ advertised file sizes and SHA-256 values matched. Repeated downloads on
 entry timestamps, while every filename, byte size and file SHA-256 remained
 identical. The archive hash is therefore not used as a stable source identity;
 the verified file-level inventory is authoritative. This establishes source
-identity only. The Dryad/DRUM snapshot comparison, measurement hierarchy and
-observation model remain unresolved, so the report continues to set
+identity only. The Dryad/DRUM snapshot comparison and observation model remain
+unresolved, so the report continues to set
 `ready_for_parameter_fitting` to `false`.
 
 ## Reconcile the verified one-second MSD snapshots
@@ -123,6 +123,12 @@ companion file is not evidence that the deposited particle values are unfiltered
 The reconciliation output also exposes a machine-readable
 `parameter_fitting_gate`. Its ordered blocker codes distinguish the unresolved
 snapshot difference, unreproduced summary aggregation, unknown CVM filtering,
-unselected fitting hierarchy and undefined observation model. The gate does not
-guess how to clear any blocker; it makes the existing scientific boundary
-inspectable by CLI and downstream interfaces instead of leaving it only in prose.
+and undefined observation model. The report's `measurement_hierarchy` selects
+the human CVM sample as the independent biological unit and records individual
+particle one-second MSD values as nested observations across species and
+particle type. It therefore forbids treating particle values as independent
+biological replicates. This selection does not choose a fitting summary or
+likelihood; `summary_statistic_for_fitting` remains null and fitting remains
+blocked. The gate does not guess how to clear any remaining blocker; it makes
+the existing scientific boundary inspectable by CLI and downstream interfaces
+instead of leaving it only in prose.
