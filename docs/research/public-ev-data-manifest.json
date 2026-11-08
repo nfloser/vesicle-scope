@@ -127,6 +127,7 @@
     "residual_magnitude_verified_on": "2026-11-04",
     "exclusion_provenance_verified_on": "2026-11-05",
     "fitting_gate_documented_on": "2026-11-06",
+    "measurement_hierarchy_verified_on": "2026-11-08",
     "scope": "ordered nonempty one-second MSD particle values and stored sample summaries",
     "dryad_value_count": 19281,
     "drum_value_count": 19430,
@@ -147,6 +148,18 @@
     "cvm_removed_outlier_file_present": false,
     "cvm_filtering_status": "unknown",
     "other_assay_removed_outlier_file_count": 5,
+    "measurement_hierarchy": {
+      "independent_biological_unit": "human_cervicovaginal_mucus_sample",
+      "independent_biological_unit_count": 10,
+      "nested_observation": "individual_particle_one_second_msd",
+      "within_sample_factors": [
+        "species",
+        "particle_type"
+      ],
+      "sample_species_particle_group_count": 80,
+      "particle_values_are_independent_biological_replicates": false,
+      "summary_statistic_for_fitting": null
+    },
     "summary_group_count": 80,
     "summary_rounding_rule": "absolute difference from the stored summary is at most half one unit at its recorded decimal place",
     "different_group": {
@@ -163,7 +176,6 @@
       "unresolved_snapshot_difference",
       "unreproduced_summary_aggregation",
       "unknown_cvm_filtering",
-      "measurement_hierarchy_not_selected",
       "observation_model_not_defined"
     ],
     "ready_for_parameter_fitting": false
