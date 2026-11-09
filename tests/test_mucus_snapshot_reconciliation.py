@@ -130,6 +130,16 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(hierarchy['sample_species_particle_group_count'], 80)
         self.assertFalse(hierarchy['particle_values_are_independent_biological_replicates'])
         self.assertIsNone(hierarchy['summary_statistic_for_fitting'])
+        observation = report['observation_model']
+        self.assertEqual(observation['measurement_quantity'], 'mean_squared_displacement')
+        self.assertEqual(observation['lag_time_s'], 1.0)
+        self.assertEqual(observation['measurement_unit'], 'micron^2')
+        self.assertEqual(observation['measurement_space'], 'particle_tracking')
+        self.assertEqual(observation['simulation_space'], 'continuum_concentration_field')
+        self.assertEqual(observation['mapping_status'], 'not_validated')
+        self.assertIsNone(observation['simulation_observable'])
+        self.assertIsNone(observation['parameter_mapping'])
+        self.assertFalse(observation['normal_diffusion_established'])
         self.assertEqual(
             fitting_gate['ready_for_parameter_fitting'],
             report['ready_for_parameter_fitting'],
@@ -140,7 +150,7 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
                 'unresolved_snapshot_difference',
                 'unreproduced_summary_aggregation',
                 'unknown_cvm_filtering',
-                'observation_model_not_defined',
+                'no_validated_msd_to_continuum_mapping',
             ],
         )
         self.assertEqual(
@@ -301,6 +311,14 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
                 'particle_values_are_independent_biological_replicates'
             ]
         )
+        self.assertEqual(reconciliation['observation_boundary_verified_on'], '2026-11-09')
+        self.assertEqual(
+            reconciliation['observation_model']['mapping_status'],
+            'not_validated',
+        )
+        self.assertIsNone(reconciliation['observation_model']['simulation_observable'])
+        self.assertIsNone(reconciliation['observation_model']['parameter_mapping'])
+        self.assertFalse(reconciliation['observation_model']['normal_diffusion_established'])
         self.assertEqual(
             reconciliation['different_group']['ordered_sequence_relation'],
             'dryad_is_exact_prefix_of_drum',
@@ -313,7 +331,7 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
                 'unresolved_snapshot_difference',
                 'unreproduced_summary_aggregation',
                 'unknown_cvm_filtering',
-                'observation_model_not_defined',
+                'no_validated_msd_to_continuum_mapping',
             ],
         )
 

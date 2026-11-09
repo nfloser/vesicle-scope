@@ -123,12 +123,18 @@ companion file is not evidence that the deposited particle values are unfiltered
 The reconciliation output also exposes a machine-readable
 `parameter_fitting_gate`. Its ordered blocker codes distinguish the unresolved
 snapshot difference, unreproduced summary aggregation, unknown CVM filtering,
-and undefined observation model. The report's `measurement_hierarchy` selects
+and absent validated MSD-to-continuum mapping. The report's
+`measurement_hierarchy` selects
 the human CVM sample as the independent biological unit and records individual
 particle one-second MSD values as nested observations across species and
 particle type. It therefore forbids treating particle values as independent
 biological replicates. This selection does not choose a fitting summary or
 likelihood; `summary_statistic_for_fitting` remains null and fitting remains
-blocked. The gate does not guess how to clear any remaining blocker; it makes
+blocked. The `observation_model` boundary records the measured quantity as
+particle-tracking MSD at a one-second lag in µm², while the current BioFVM path
+predicts continuum concentration fields. Both `simulation_observable` and
+`parameter_mapping` remain null: dividing MSD by a Brownian prefactor would add
+an unverified normal-diffusion and dimensionality assumption. The gate does not
+guess how to clear any remaining blocker; it makes
 the existing scientific boundary inspectable by CLI and downstream interfaces
 instead of leaving it only in prose.
