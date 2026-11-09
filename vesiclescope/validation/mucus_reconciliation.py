@@ -323,6 +323,21 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
             'particle values as independent biological replicates.'
         ),
     }
+    observation_model = {
+        'measurement_quantity': 'mean_squared_displacement',
+        'lag_time_s': 1.0,
+        'measurement_unit': 'micron^2',
+        'measurement_space': 'particle_tracking',
+        'simulation_space': 'continuum_concentration_field',
+        'mapping_status': 'not_validated',
+        'simulation_observable': None,
+        'parameter_mapping': None,
+        'normal_diffusion_established': False,
+        'constraint': (
+            'A single-lag particle MSD must not be converted to a BioFVM diffusion '
+            'coefficient without a validated observation mapping and diffusion-regime evidence.'
+        ),
+    }
     raw_identical = not (
         representation_only or substantive or unpaired_drum or unpaired_dryad
         or summary_mismatches
@@ -355,10 +370,11 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         })
     fitting_blockers.append(
         {
-            'code': 'observation_model_not_defined',
+            'code': 'no_validated_msd_to_continuum_mapping',
             'detail': (
-                'No evidence-backed mapping from the one-second MSD measurements to a '
-                'VesicleScope fitting observable has been defined.'
+                'The source reports particle-tracking MSD at one lag while BioFVM predicts '
+                'continuum concentration fields; no validated observable or parameter '
+                'mapping connects them.'
             ),
         }
     )
@@ -387,6 +403,7 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
         'reader': {'name': 'openpyxl', 'version': reader_version},
         'cvm_exclusion_provenance': exclusion_provenance,
         'measurement_hierarchy': measurement_hierarchy,
+        'observation_model': observation_model,
         'comparison_scope': 'ordered one-second MSD particle values and stored sample summaries',
         'group_count': len(drum_columns),
         'dryad_value_count': dryad_count,
