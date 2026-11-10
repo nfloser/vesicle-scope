@@ -1,6 +1,6 @@
 {
   "review_date": "2026-10-06",
-  "last_updated": "2026-11-06",
+  "last_updated": "2026-11-10",
   "publication_doi": "10.1038/s41522-025-00866-9",
   "dryad": {
     "doi": "10.5061/dryad.cvdncjth8",
@@ -9,6 +9,22 @@
     "license": "CC0-1.0",
     "access_status": "Official version package retrieved; all 13 files verified locally on 2026-10-29",
     "ready_for_parameter_fitting": false,
+    "public_version_history": {
+      "verified_on": "2026-11-10",
+      "endpoint": "https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.cvdncjth8/versions?per_page=100",
+      "visible_version_count": 1,
+      "visible_versions": [
+        {
+          "id": 412881,
+          "version_number": 3,
+          "version_changes": "files_changed",
+          "publication_date": "2025-12-09",
+          "last_modification_date": "2025-12-09"
+        }
+      ],
+      "earlier_public_version_visible": false,
+      "interpretation": "Only version 3 is visible through the public API; this does not establish whether earlier nonpublic or internal states existed."
+    },
     "acquisition": {
       "api_version": "2.1.0",
       "version_download_url": "https://datadryad.org/api/v2/versions/412881/download",
