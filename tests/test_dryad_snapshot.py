@@ -160,6 +160,31 @@ class DryadSnapshotTests(unittest.TestCase):
         )
         self.assertNotIn('archive_sha256', dryad['acquisition'])
         self.assertFalse(dryad['ready_for_parameter_fitting'])
+        self.assertEqual(
+            dryad['public_version_history'],
+            {
+                'verified_on': '2026-11-10',
+                'endpoint': (
+                    'https://datadryad.org/api/v2/datasets/'
+                    'doi%3A10.5061%2Fdryad.cvdncjth8/versions?per_page=100'
+                ),
+                'visible_version_count': 1,
+                'visible_versions': [
+                    {
+                        'id': 412881,
+                        'version_number': 3,
+                        'version_changes': 'files_changed',
+                        'publication_date': '2025-12-09',
+                        'last_modification_date': '2025-12-09',
+                    }
+                ],
+                'earlier_public_version_visible': False,
+                'interpretation': (
+                    'Only version 3 is visible through the public API; this does '
+                    'not establish whether earlier nonpublic or internal states existed.'
+                ),
+            },
+        )
 
         recorded = {
             item['name']: (item['size_bytes'], item['repository_sha256'])

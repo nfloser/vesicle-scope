@@ -53,6 +53,13 @@ identity only. The Dryad/DRUM snapshot comparison and observation model remain
 unresolved, so the report continues to set
 `ready_for_parameter_fitting` to `false`.
 
+The official dataset versions endpoint was checked on 2026-11-10. It exposes
+one public record: version 3 (version ID 412881, published 2025-12-09), marked
+as having file changes. No earlier public version is visible through that API,
+so an earlier snapshot cannot be compared there to explain the DRUM/Dryad
+difference. This does not establish whether earlier nonpublic or internal
+states existed.
+
 ## Reconcile the verified one-second MSD snapshots
 
 With both exact sources available locally, compare their ordered, nonempty
