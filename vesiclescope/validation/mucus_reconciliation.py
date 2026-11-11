@@ -350,6 +350,10 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 'The verified snapshots differ in substantive or unpaired ordered values, '
                 'and the upstream cause is not established.'
             ),
+            'required_evidence': (
+                'A source-controlled processing record or author clarification must explain '
+                'every substantive or unpaired value difference between the verified snapshots.'
+            ),
         })
     if (
         not comparable_summaries
@@ -362,11 +366,20 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 'The stored summaries are not all reproduced by the documented geometric-mean '
                 'rounding check over supplied values.'
             ),
+            'required_evidence': (
+                'The original analysis code or an author-documented method must specify '
+                'preprocessing, exclusions and the summary calculation sufficiently to '
+                'reproduce every stored group summary.'
+            ),
         })
     if exclusion_provenance['cvm_filtering_status'] == 'unknown':
         fitting_blockers.append({
             'code': 'unknown_cvm_filtering',
             'detail': 'The deposited CVM values have no documented filtering status.',
+            'required_evidence': (
+                'A source record or author clarification must state whether CVM particle '
+                'values were filtered and, if so, specify the inclusion or exclusion rule.'
+            ),
         })
     fitting_blockers.append(
         {
@@ -375,6 +388,11 @@ def reconcile_mucus_snapshots(workbook_path: Path, dryad_path: Path) -> dict[str
                 'The source reports particle-tracking MSD at one lag while BioFVM predicts '
                 'continuum concentration fields; no validated observable or parameter '
                 'mapping connects them.'
+            ),
+            'required_evidence': (
+                'Context-matched trajectory or multi-lag evidence plus a validated '
+                'observation model must establish the diffusion regime and map the '
+                'measured particle MSD to a BioFVM observable or parameter.'
             ),
         }
     )

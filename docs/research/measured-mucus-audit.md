@@ -22,6 +22,8 @@ The separate CC0 Dryad v3 package was obtained through its official version endp
 
 On 2026-11-10 the official dataset versions endpoint exposed only one public record, version 3 (ID 412881, published 2025-12-09) with file changes. No earlier public snapshot is visible there for comparison, so this route cannot explain the 149 additional DRUM values. It also does not establish whether earlier nonpublic or internal states existed.
 
+On 2026-11-11 each fitting blocker gained a machine-readable evidence requirement. Snapshot and aggregation blockers require source-controlled processing provenance or author clarification; filtering requires an explicit CVM record; mapping requires context-matched trajectory or multi-lag evidence and a validated observation model. These fields specify what is missing without supplying a rule, equation or parameter.
+
 ## Smoldyn disposition
 
 Noncommercial use does not itself make GPL and LGPL equivalent. The official 2.75 LGPL core evidence supports reviewing a separate user-installed native process; it does not resolve redistribution of a specific mixed-component build. No linking, automatic installation, bundled binary, Python binding or new adapter is introduced. Issue #83 remains the dedicated particle integration gate. No maintainer response is claimed.
