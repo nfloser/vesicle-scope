@@ -158,6 +158,33 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
             fitting_gate['blocker_codes'],
         )
         self.assertTrue(all(blocker['detail'] for blocker in fitting_gate['blockers']))
+        self.assertEqual(
+            {
+                blocker['code']: blocker['required_evidence']
+                for blocker in fitting_gate['blockers']
+            },
+            {
+                'unresolved_snapshot_difference': (
+                    'A source-controlled processing record or author clarification must '
+                    'explain every substantive or unpaired value difference between the '
+                    'verified snapshots.'
+                ),
+                'unreproduced_summary_aggregation': (
+                    'The original analysis code or an author-documented method must specify '
+                    'preprocessing, exclusions and the summary calculation sufficiently to '
+                    'reproduce every stored group summary.'
+                ),
+                'unknown_cvm_filtering': (
+                    'A source record or author clarification must state whether CVM particle '
+                    'values were filtered and, if so, specify the inclusion or exclusion rule.'
+                ),
+                'no_validated_msd_to_continuum_mapping': (
+                    'Context-matched trajectory or multi-lag evidence plus a validated '
+                    'observation model must establish the diffusion regime and map the '
+                    'measured particle MSD to a BioFVM observable or parameter.'
+                ),
+            },
+        )
         exclusion = report['cvm_exclusion_provenance']
         self.assertFalse(exclusion['cvm_removed_outlier_file_present'])
         self.assertEqual(exclusion['cvm_filtering_status'], 'unknown')
@@ -333,6 +360,14 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
                 'unknown_cvm_filtering',
                 'no_validated_msd_to_continuum_mapping',
             ],
+        )
+        self.assertEqual(reconciliation['fitting_gate_evidence_verified_on'], '2026-11-11')
+        self.assertEqual(
+            set(reconciliation['parameter_fitting_required_evidence']),
+            set(reconciliation['parameter_fitting_blocker_codes']),
+        )
+        self.assertTrue(
+            all(reconciliation['parameter_fitting_required_evidence'].values())
         )
 
 

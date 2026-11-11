@@ -145,3 +145,10 @@ an unverified normal-diffusion and dimensionality assumption. The gate does not
 guess how to clear any remaining blocker; it makes
 the existing scientific boundary inspectable by CLI and downstream interfaces
 instead of leaving it only in prose.
+
+Each blocker also reports the concrete external evidence needed to clear it:
+processing provenance for snapshot differences, reproducible analysis methods
+for stored summaries, an explicit CVM filtering record, and context-matched
+trajectory or multi-lag evidence plus a validated observation model before any
+MSD-to-BioFVM mapping. These requirements are evidence requests, not inferred
+processing rules or model parameters.
