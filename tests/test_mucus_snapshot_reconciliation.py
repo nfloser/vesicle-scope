@@ -188,6 +188,21 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         exclusion = report['cvm_exclusion_provenance']
         self.assertFalse(exclusion['cvm_removed_outlier_file_present'])
         self.assertEqual(exclusion['cvm_filtering_status'], 'unknown')
+        self.assertEqual(
+            exclusion['primary_methods_outlier_scope'],
+            ['characterization', 'uptake', 'viability'],
+        )
+        self.assertFalse(
+            exclusion['primary_methods_names_multiple_particle_tracking_in_outlier_scope']
+        )
+        self.assertEqual(
+            exclusion['primary_methods_source'],
+            {
+                'doi': '10.1038/s41522-025-00866-9',
+                'section': 'Statistical analysis',
+            },
+        )
+        self.assertIn('does not prove', exclusion['primary_methods_interpretation'])
         self.assertTrue(exclusion['readme_lists_all_removed_outlier_files'])
         self.assertEqual(exclusion['removed_outlier_file_count'], 1)
         aggregation = report['summary_aggregation']
@@ -321,6 +336,19 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
         self.assertEqual(reconciliation['dryad_mismatch_within_one_reported_unit_count'], 10)
         self.assertEqual(reconciliation['drum_mismatch_within_one_reported_unit_count'], 10)
         self.assertEqual(reconciliation['exclusion_provenance_verified_on'], '2026-11-05')
+        self.assertEqual(
+            reconciliation['primary_methods_outlier_scope_verified_on'],
+            '2026-11-12',
+        )
+        self.assertEqual(
+            reconciliation['primary_methods_outlier_scope'],
+            ['characterization', 'uptake', 'viability'],
+        )
+        self.assertFalse(
+            reconciliation[
+                'primary_methods_names_multiple_particle_tracking_in_outlier_scope'
+            ]
+        )
         self.assertFalse(reconciliation['cvm_removed_outlier_file_present'])
         self.assertEqual(reconciliation['cvm_filtering_status'], 'unknown')
         self.assertEqual(reconciliation['other_assay_removed_outlier_file_count'], 5)

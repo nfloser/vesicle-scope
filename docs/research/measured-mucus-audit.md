@@ -24,6 +24,8 @@ On 2026-11-10 the official dataset versions endpoint exposed only one public rec
 
 On 2026-11-11 each fitting blocker gained a machine-readable evidence requirement. Snapshot and aggregation blockers require source-controlled processing provenance or author clarification; filtering requires an explicit CVM record; mapping requires context-matched trajectory or multi-lag evidence and a validated observation model. These fields specify what is missing without supplying a rule, equation or parameter.
 
+On 2026-11-12 the primary article's Statistical analysis section was checked against the filtering blocker. Its Grubbs outlier-removal sentence names characterization, uptake and viability experiments; multiple-particle tracking is described separately and is not named in that scope. This narrows the documented methods boundary but does not prove that CVM particle values were unfiltered, so `cvm_filtering_status` remains `unknown`.
+
 ## Smoldyn disposition
 
 Noncommercial use does not itself make GPL and LGPL equivalent. The official 2.75 LGPL core evidence supports reviewing a separate user-installed native process; it does not resolve redistribution of a specific mixed-component build. No linking, automatic installation, bundled binary, Python binding or new adapter is introduced. Issue #83 remains the dedicated particle integration gate. No maintainer response is claimed.
