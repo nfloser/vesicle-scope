@@ -138,6 +138,21 @@ def _cvm_exclusion_provenance(raw_files: dict[str, bytes]) -> dict[str, object]:
         ),
         'cvm_removed_outlier_file_present': bool(cvm_outlier_files),
         'cvm_filtering_status': 'unknown',
+        'primary_methods_source': {
+            'doi': '10.1038/s41522-025-00866-9',
+            'section': 'Statistical analysis',
+        },
+        'primary_methods_outlier_scope': [
+            'characterization',
+            'uptake',
+            'viability',
+        ],
+        'primary_methods_names_multiple_particle_tracking_in_outlier_scope': False,
+        'primary_methods_interpretation': (
+            'The primary outlier-removal sentence does not name multiple-particle '
+            'tracking; that omission narrows the documented scope but does not prove '
+            'that the supplied CVM values are unfiltered.'
+        ),
         'interpretation': (
             'No separate CVM removed-outlier file is deposited; absence does not establish '
             'that the supplied CVM values are unfiltered.'

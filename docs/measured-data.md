@@ -127,6 +127,13 @@ does not declare CVM-specific outlier handling. The reconciliation report record
 this absence while keeping `cvm_filtering_status` as `unknown`: a missing
 companion file is not evidence that the deposited particle values are unfiltered.
 
+The primary article's Statistical analysis section was checked separately on
+2026-11-12. Its outlier-removal sentence names characterization, uptake and
+viability experiments, while multiple-particle tracking is described separately
+and is not named in that outlier scope. The report records this distinction but
+keeps `cvm_filtering_status` as `unknown`: omission from the sentence does not
+prove that the supplied CVM values are unfiltered or recover an inclusion rule.
+
 The reconciliation output also exposes a machine-readable
 `parameter_fitting_gate`. Its ordered blocker codes distinguish the unresolved
 snapshot difference, unreproduced summary aggregation, unknown CVM filtering,
