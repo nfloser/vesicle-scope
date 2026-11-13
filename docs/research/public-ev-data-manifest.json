@@ -1,6 +1,6 @@
 {
   "review_date": "2026-10-06",
-  "last_updated": "2026-11-12",
+  "last_updated": "2026-11-13",
   "publication_doi": "10.1038/s41522-025-00866-9",
   "dryad": {
     "doi": "10.5061/dryad.cvdncjth8",
@@ -171,6 +171,10 @@
       "uptake",
       "viability"
     ],
+    "primary_methods_source": {
+      "doi": "10.1038/s41522-025-00866-9",
+      "section": "Statistical analysis"
+    },
     "primary_methods_names_multiple_particle_tracking_in_outlier_scope": false,
     "other_assay_removed_outlier_file_count": 5,
     "measurement_hierarchy": {
