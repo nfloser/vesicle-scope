@@ -344,6 +344,13 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
             reconciliation['primary_methods_outlier_scope'],
             ['characterization', 'uptake', 'viability'],
         )
+        self.assertEqual(
+            reconciliation['primary_methods_source'],
+            {
+                'doi': '10.1038/s41522-025-00866-9',
+                'section': 'Statistical analysis',
+            },
+        )
         self.assertFalse(
             reconciliation[
                 'primary_methods_names_multiple_particle_tracking_in_outlier_scope'
