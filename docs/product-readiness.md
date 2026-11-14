@@ -187,9 +187,17 @@ workspace gap remains once exact-commit release CI passes. This is not a claim
 that every long-term VesicleScope scientific objective is complete.
 
 
-## Public-data and license evidence update (2026-10-06)
+## Public-data and license evidence update (through 2026-11-14)
 
-[Primary-data inventory](research/public-ev-data-review.md): two original bacterial EV/mucus workbooks were downloaded and hashed; a separate CC0 Dryad version was inventoried but CSV bytes were not obtained. Scientific validation status is unchanged because the experimental context and observation mapping differ from the tumor target.
+[Primary-data inventory](research/public-ev-data-review.md): two original bacterial
+EV/mucus workbooks were downloaded and hashed. All 13 Dryad v3 files were
+obtained and hash-verified; the read-only reconciliation compares 19,281 ordered
+particle values with 19,430 in the reviewed DRUM workbook. The 149 additional
+DRUM values, unreproduced stored summaries and unknown CVM filtering provenance
+mean parameter fitting remains blocked. Scientific validation status is unchanged
+because this bacterial mucus context and its particle-MSD observable do not
+validate the separate tumour target or map directly to a BioFVM concentration
+field.
 
 [Official Smoldyn 2.75 license evidence](research/smoldyn-2.75-license-review.md) narrows the candidate to a user-supplied native standalone executable. No bundled/runtime dependency is cleared or added.
 

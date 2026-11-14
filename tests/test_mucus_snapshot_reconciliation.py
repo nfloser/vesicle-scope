@@ -405,6 +405,17 @@ class MucusSnapshotReconciliationTests(unittest.TestCase):
             all(reconciliation['parameter_fitting_required_evidence'].values())
         )
 
+    def test_product_readiness_records_verified_dryad_bytes_without_unlocking_fits(self):
+        readiness = (
+            Path(__file__).parents[1] / 'docs' / 'product-readiness.md'
+        ).read_text(encoding='utf-8')
+        normalized = ' '.join(readiness.split())
+
+        self.assertIn('All 13 Dryad v3 files were obtained and hash-verified', normalized)
+        self.assertIn('19,281 ordered particle values', normalized)
+        self.assertIn('parameter fitting remains blocked', normalized)
+        self.assertNotIn('CSV bytes were not obtained', normalized)
+
 
 if __name__ == '__main__':
     unittest.main()
