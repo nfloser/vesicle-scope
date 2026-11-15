@@ -85,6 +85,13 @@ See [the particle-comparison research gate](docs/research/smoldyn-particle-compa
 
 The official source archive was downloaded and hashed separately from the development tree. Its author-owned native core has an express LGPL statement; the official page assigns GPL v3 to Python bindings and identifies additional component exceptions. See [the artifact-specific review](docs/research/smoldyn-2.75-license-review.md). A user-supplied standalone native executable is the narrowed candidate. This does not authorize vendoring, linking, required installation or redistribution, and does not resolve the development-tree metadata conflict.
 
+Official release status was rechecked 2026-11-15 against release 2.76. Its
+tagged root `LICENSE` remains GPL v3 while its tagged CMake and Python package
+metadata retain LGPL declarations. The exact 2.75 standalone artifact therefore
+remains the only hash-verified candidate; 2.76 has not received an archive or
+component inventory in VesicleScope. No Smoldyn dependency or adapter is
+approved. See the artifact-specific review for immutable tagged-file evidence.
+
 ## External measurement deposits
 
 The [public EV data review](docs/research/public-ev-data-review.md) records Dryad CC0 metadata and separately downloaded DRUM CC BY-NC-ND 3.0 US originals. No raw data is vendored; different snapshots and different rights must not be conflated. These bacterial mucus measurements do not validate the tumor target.
