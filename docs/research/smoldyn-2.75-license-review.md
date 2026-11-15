@@ -13,6 +13,27 @@ Issue #91; reviewed 2026-10-06. This narrows issue #83 using primary distributio
 
 The archive was inspected, not installed or executed. No source or binary is copied into VesicleScope.
 
+## Current release recheck (2026-11-15)
+
+The official download page now identifies Smoldyn 2.76, dated 2026-10-21,
+as the current release. The matching upstream tag `v2.76` retains the same
+license-metadata conflict documented for the development tree:
+
+- the root `LICENSE` remains [GPL v3](https://github.com/ssandrews/Smoldyn/blob/v2.76/LICENSE)
+  (blob `f288702d2fa16d3cdf0035b15a9fcbc552cd88e7`);
+- the tagged [`CMakeLists.txt`](https://github.com/ssandrews/Smoldyn/blob/v2.76/CMakeLists.txt)
+  still labels Smoldyn project files LGPL (blob
+  `b965a96d94f69700fc68a089217fbc89dd64a399`);
+- the tagged [Python package metadata](https://github.com/ssandrews/Smoldyn/blob/v2.76/source/python/pyproject.toml.in)
+  declares `LGPL-3.0-or-later` (blob
+  `d28c7ff52d7f75409be07f83f8358edd05a36cff`).
+
+This recheck does not replace the hash-verified 2.75 candidate. VesicleScope
+has not recorded a 2.76 archive hash, component inventory or maintainer/legal
+clarification, so 2.76 is not approved for integration, installation or
+redistribution. The separate-process boundary and all existing blockers remain
+unchanged.
+
 ## Component-specific result
 
 The official page distinguishes LGPL author-owned core, GPL v3 Python bindings, LGPL Next Subvolume code, and public-domain reaction/surface parameter files. The archive's `License.txt` expressly places the author-owned compiled program, source and documentation under LGPL, while enumerating third-party exceptions. It includes LGPL v3 and GPL v3 license texts; the presence of both texts alone does not classify every file.
