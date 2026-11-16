@@ -14,6 +14,18 @@ class SmoldynLicenseEvidenceTests(unittest.TestCase):
 
         self.assertIn('2.76, dated 2026-10-21', normalized_review)
         self.assertIn('tag `v2.76`', normalized_review)
+        self.assertIn(
+            'annotated tag object `97de63bc1a4f0c4e42c672a5139d3414bc3b4a64`',
+            normalized_review,
+        )
+        self.assertIn(
+            'peeled commit `20fbcb965869a79a55a2c4844b35a66d9a2372a3`',
+            normalized_review,
+        )
+        self.assertIn(
+            'all three reviewed blob identities match that peeled commit',
+            normalized_review,
+        )
         self.assertIn('root `LICENSE` remains [GPL v3]', normalized_review)
         self.assertIn(
             'does not replace the hash-verified 2.75 candidate', normalized_review

@@ -17,7 +17,10 @@ The archive was inspected, not installed or executed. No source or binary is cop
 
 The official download page now identifies Smoldyn 2.76, dated 2026-10-21,
 as the current release. The matching upstream tag `v2.76` retains the same
-license-metadata conflict documented for the development tree:
+license-metadata conflict documented for the development tree. Its annotated
+tag object `97de63bc1a4f0c4e42c672a5139d3414bc3b4a64` resolves to peeled commit
+`20fbcb965869a79a55a2c4844b35a66d9a2372a3`; all three reviewed blob
+identities match that peeled commit:
 
 - the root `LICENSE` remains [GPL v3](https://github.com/ssandrews/Smoldyn/blob/v2.76/LICENSE)
   (blob `f288702d2fa16d3cdf0035b15a9fcbc552cd88e7`);
