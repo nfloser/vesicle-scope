@@ -88,9 +88,11 @@ The official source archive was downloaded and hashed separately from the develo
 Official release status was rechecked 2026-11-15 against release 2.76. Its
 tagged root `LICENSE` remains GPL v3 while its tagged CMake and Python package
 metadata retain LGPL declarations. The exact 2.75 standalone artifact therefore
-remains the only hash-verified candidate; 2.76 has not received an archive or
-component inventory in VesicleScope. No Smoldyn dependency or adapter is
-approved. See the artifact-specific review for immutable tagged-file evidence.
+remains the only hash-verified candidate. VesicleScope now records a complete
+tag-tree component inventory for the pinned 2.76 commit, but no official 2.76
+archive hash or archive-level inventory. No Smoldyn dependency or adapter is
+approved. See the artifact-specific review for immutable tagged-file and tree
+evidence.
 
 ## External measurement deposits
 

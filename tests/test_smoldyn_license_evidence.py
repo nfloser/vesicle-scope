@@ -35,6 +35,31 @@ class SmoldynLicenseEvidenceTests(unittest.TestCase):
         )
         self.assertIn('No Smoldyn dependency or adapter is approved', normalized_third_party)
 
+    def test_release_276_tag_tree_inventory_remains_bounded_and_reproducible(self):
+        root = Path(__file__).parents[1]
+        review = (
+            root / 'docs' / 'research' / 'smoldyn-2.75-license-review.md'
+        ).read_text(encoding='utf-8')
+        third_party = (root / 'THIRD_PARTY.md').read_text(encoding='utf-8')
+        normalized_review = ' '.join(review.split())
+        normalized_third_party = ' '.join(third_party.split())
+
+        self.assertIn('complete, non-truncated Git tree', normalized_review)
+        self.assertIn(
+            'root tree `6c71c605a52972a4296b1c696ba8bb25c2bb6fbe`',
+            normalized_review,
+        )
+        self.assertIn('4,727 blobs totalling 249,277,100 bytes', normalized_review)
+        self.assertIn('`source/NextSubVolume` | 1,398 files', normalized_review)
+        self.assertIn('`source/BioNetGen` | 79 files', normalized_review)
+        self.assertIn('`source/pybind11/LICENSE`', normalized_review)
+        self.assertIn('`windows/_freeglut/Copying.txt`', normalized_review)
+        self.assertIn(
+            'does not substitute for an official 2.76 archive hash',
+            normalized_review,
+        )
+        self.assertIn('complete tag-tree component inventory', normalized_third_party)
+
 
 if __name__ == '__main__':
     unittest.main()
