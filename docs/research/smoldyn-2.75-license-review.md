@@ -32,10 +32,54 @@ identities match that peeled commit:
   `d28c7ff52d7f75409be07f83f8358edd05a36cff`).
 
 This recheck does not replace the hash-verified 2.75 candidate. VesicleScope
-has not recorded a 2.76 archive hash, component inventory or maintainer/legal
-clarification, so 2.76 is not approved for integration, installation or
-redistribution. The separate-process boundary and all existing blockers remain
-unchanged.
+has not recorded an official 2.76 archive hash, an archive-level component
+inventory or maintainer/legal clarification, so 2.76 is not approved for
+integration, installation or redistribution. The separate-process boundary and
+all existing blockers remain unchanged.
+
+## Pinned 2.76 tag-tree inventory (2026-11-17)
+
+The [Git commit API](https://api.github.com/repos/ssandrews/Smoldyn/git/commits/20fbcb965869a79a55a2c4844b35a66d9a2372a3)
+maps the peeled commit above to root tree
+`6c71c605a52972a4296b1c696ba8bb25c2bb6fbe`. A recursive Git tree request for
+that [immutable object](https://api.github.com/repos/ssandrews/Smoldyn/git/trees/6c71c605a52972a4296b1c696ba8bb25c2bb6fbe?recursive=1)
+returned a complete, non-truncated Git tree containing
+365 directory objects and 4,727 blobs totalling 249,277,100 bytes. The largest
+source subtrees are:
+
+| Pinned subtree | Files | Bytes |
+| --- | ---: | ---: |
+| `source/NextSubVolume` | 1,398 files | 9,491,127 |
+| `source/pybind11` | 372 files | 3,647,799 |
+| `source/MSVClibs` | 17 files | 2,314,690 |
+| `source/Smoldyn` | 24 files | 1,639,107 |
+| `source/BioNetGen` | 79 files | 1,246,215 |
+| `source/libSteve` | 59 files | 786,632 |
+| `source/python` | 24 files | 279,775 |
+| `source/vcell` | 7 files | 129,542 |
+
+A conservative filename search found six license-like files: `LICENSE`,
+`License.txt`, `source/BioNetGen/LICENSE.txt`,
+`source/libSteve/SFMT/LICENSE.txt`, `source/pybind11/LICENSE` and
+`windows/_freeglut/Copying.txt`. This is an inventory result, not a conclusion
+that every other file shares one license. In particular, upstream
+[`License.txt`](https://github.com/ssandrews/Smoldyn/blob/20fbcb965869a79a55a2c4844b35a66d9a2372a3/License.txt)
+expressly names separately authored NextSubVolume, BioNetGen, filament and
+Python-binding code.
+
+The same tree contains 536 files with common binary or packaged-document
+extensions, totalling 38,689,522 bytes, including payloads below `Mac`,
+`windows`, `source`, `docs` and `examples`. The tagged
+[`CMakeLists.txt`](https://github.com/ssandrews/Smoldyn/blob/20fbcb965869a79a55a2c4844b35a66d9a2372a3/CMakeLists.txt)
+defaults also enable
+NextSubVolume, Python, OpenGL and LibTIFF, while always adding `libSteve` and the
+Smoldyn core targets. A future build decision therefore needs explicit CMake
+flags and a build-output manifest; a repository tag alone does not identify the
+components of an installed executable.
+
+This pinned tag-tree inventory does not substitute for an official 2.76 archive
+hash or prove that the Git tree and download archive are byte-equivalent. It
+does not change the 2.75 candidate or approve any 2.76 use.
 
 ## Component-specific result
 
