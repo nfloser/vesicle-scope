@@ -31,11 +31,11 @@ identities match that peeled commit:
   declares `LGPL-3.0-or-later` (blob
   `d28c7ff52d7f75409be07f83f8358edd05a36cff`).
 
-This recheck does not replace the hash-verified 2.75 candidate. VesicleScope
-has not recorded an official 2.76 archive hash, an archive-level component
-inventory or maintainer/legal clarification, so 2.76 is not approved for
-integration, installation or redistribution. The separate-process boundary and
-all existing blockers remain unchanged.
+This recheck does not replace the hash-verified 2.75 candidate. At the time of
+the recheck, VesicleScope had not recorded an official 2.76 archive hash or
+archive-level comparison. The later artifact comparison below closes that
+identity gap but not the maintainer/legal clarification or component-license
+gaps. The separate-process boundary and all existing blockers remain unchanged.
 
 ## Pinned 2.76 tag-tree inventory (2026-11-17)
 
@@ -77,9 +77,47 @@ Smoldyn core targets. A future build decision therefore needs explicit CMake
 flags and a build-output manifest; a repository tag alone does not identify the
 components of an installed executable.
 
-This pinned tag-tree inventory does not substitute for an official 2.76 archive
-hash or prove that the Git tree and download archive are byte-equivalent. It
-does not change the 2.75 candidate or approve any 2.76 use.
+The earlier pinned inventory alone does not substitute for an official 2.76
+archive hash or prove that the Git tree and download archive are
+byte-equivalent. The artifact comparison below now demonstrates that they are
+not content-equivalent. Neither result changes the 2.75 candidate or approves
+any 2.76 use.
+
+## Official 2.76 source-archive comparison (2026-11-18)
+
+The official download page identifies
+[`smoldyn-2.76.tgz`](https://www.smoldyn.org/smoldyn-2.76.tgz) as the complete
+2.76 distribution with source code and no pre-compiled code. The downloaded
+archive is 39,339,615 bytes with SHA-256
+`10fd440dece77ae7304b019943256e08cc87ccef796db33eaf7461fcfb326fd7`.
+It was inspected without installing or executing Smoldyn, and no archive
+content is copied into VesicleScope.
+
+All archive member paths were checked before inspection: none was absolute,
+contained `..`, or escaped the single `smoldyn-2.76/` prefix. A deterministic
+manifest of every regular file records the normalized relative path, byte size
+and SHA-256, sorted by path. Its SHA-256 is
+`3d5ba87ac75ac60f06455affbbaff6cb34fef0e204392d9db70086c5a97c570a`.
+The equivalent manifest for peeled Git commit
+`20fbcb965869a79a55a2c4844b35a66d9a2372a3` is
+`4b6a1f477a0142280704faa2b5857bf8b4d8e3c7875976e396377b3b24680d12`.
+
+The archive contains 3,965 regular files totalling 74,010,835 bytes; the Git
+tree contains 4,727 regular files totalling 249,277,100 bytes. Comparing the
+normalized path and content hash yields 2,465 path-and-content matches, 1,499
+archive-only files, 2,261 Git-only files and one differing common file
+(`docs/Smoldyn/SmoldynCodeDoc.pdf`). The dominant differences are 1,414
+archive-only generated documentation files and 2,104 Git-only example files.
+The archive also contains four AppleDouble metadata files.
+
+The distribution retains `License.txt`, whose content matches the tagged file,
+but does not contain the tagged root `LICENSE` that states GPL v3. Therefore the
+official source archive is not content-equivalent to the pinned Git tree, and
+the tag cannot serve as a file-level substitute for the distributed artifact.
+This result identifies the release artifact and makes the metadata discrepancy
+more precise; it does not decide which terms apply, inventory every component's
+obligations, approve installation or redistribution, or supersede the separate
+2.75 native-process candidate.
 
 ## Component-specific result
 
