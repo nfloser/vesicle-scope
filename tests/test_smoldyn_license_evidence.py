@@ -60,6 +60,36 @@ class SmoldynLicenseEvidenceTests(unittest.TestCase):
         )
         self.assertIn('complete tag-tree component inventory', normalized_third_party)
 
+    def test_release_276_archive_identity_records_the_non_equivalent_distribution(self):
+        root = Path(__file__).parents[1]
+        review = (
+            root / 'docs' / 'research' / 'smoldyn-2.75-license-review.md'
+        ).read_text(encoding='utf-8')
+        third_party = (root / 'THIRD_PARTY.md').read_text(encoding='utf-8')
+        normalized_review = ' '.join(review.split())
+        normalized_third_party = ' '.join(third_party.split())
+
+        self.assertIn('39,339,615 bytes', normalized_review)
+        self.assertIn(
+            '`10fd440dece77ae7304b019943256e08cc87ccef796db33eaf7461fcfb326fd7`',
+            normalized_review,
+        )
+        self.assertIn(
+            '3,965 regular files totalling 74,010,835 bytes', normalized_review
+        )
+        self.assertIn('2,465 path-and-content matches', normalized_review)
+        self.assertIn('1,499 archive-only files', normalized_review)
+        self.assertIn('2,261 Git-only files', normalized_review)
+        self.assertIn('one differing common file', normalized_review)
+        self.assertIn('does not contain the tagged root `LICENSE`', normalized_review)
+        self.assertIn(
+            'not content-equivalent to the pinned Git tree', normalized_review
+        )
+        self.assertIn('official 2.76 source archive', normalized_third_party)
+        self.assertIn(
+            'not content-equivalent to the pinned tag tree', normalized_third_party
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
