@@ -119,6 +119,36 @@ more precise; it does not decide which terms apply, inventory every component's
 obligations, approve installation or redistribution, or supersede the separate
 2.75 native-process candidate.
 
+## Official 2.76 license-like file inventory (2026-11-19)
+
+A conservative, case-insensitive filename search for `license`, `licence`,
+`copying`, `copyright` or `notice` found four license-like regular files in the
+hash-verified source archive. The AppleDouble `._License.txt` metadata sidecar
+is not a license text and is excluded from this content inventory:
+
+| Archive path | Bytes | SHA-256 | Observed content |
+| --- | ---: | --- | --- |
+| `License.txt` | 40,582 | `71d44b4fdf7443d25ac2748ff89eca8af4838eae3d58e836b291df30e30bdb84` | Smoldyn component notice followed by LGPL v3 and GPL v3 texts |
+| `source/BioNetGen/LICENSE.txt` | 35,147 | `8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903` | GPL v3 license text under the BioNetGen subtree |
+| `source/libSteve/SFMT/LICENSE.txt` | 1,583 | `34a32f97ac258a2d8f9f7c9155504c2e3fb97f1ae4b577e18e08ea07eee1f4ed` | SFMT copyright and permissive redistribution conditions |
+| `source/pybind11/LICENSE` | 1,684 | `83965b843b98f670d3a85bd041ed4b372c8ec50d7b4a5995a83ac697ba675dcb` | pybind11 copyright and permissive redistribution conditions |
+
+The comparison confirms that all four files match the pinned tag by path and
+content. The tag has two additional filename matches that are absent from the
+archive: its GPL v3 root `LICENSE` and `windows/_freeglut/Copying.txt`. This
+confirms the exact license-file packaging difference without treating either
+artifact as a substitute for the other.
+
+The composite `License.txt` names separately authored NextSubVolume,
+BioNetGen, filament and Python-binding code, but the archive contains no
+standalone license file for NextSubVolume or filament code under the filename
+rule above. That absence is not evidence that those components lack separate
+terms. Conversely, finding a license text beneath a component path does not by
+itself establish the scope of that text. Source-file headers, upstream
+authorship records, selected CMake options and the actual build output still
+need review before any distribution decision. No component is approved by this
+inventory.
+
 ## Component-specific result
 
 The official page distinguishes LGPL author-owned core, GPL v3 Python bindings, LGPL Next Subvolume code, and public-domain reaction/surface parameter files. The archive's `License.txt` expressly places the author-owned compiled program, source and documentation under LGPL, while enumerating third-party exceptions. It includes LGPL v3 and GPL v3 license texts; the presence of both texts alone does not classify every file.

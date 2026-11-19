@@ -99,6 +99,13 @@ packaged documentation and examples. No Smoldyn dependency or adapter is
 approved. See the artifact-specific review for the bounded comparison and its
 remaining licensing limits.
 
+The source archive contains four matching license-like files from the tag:
+the composite `License.txt` plus files under the BioNetGen, SFMT and pybind11
+subtrees. It omits the tag-only root `LICENSE` and freeglut copying file, and
+does not provide standalone filename-matched notices for every separately
+authored component named by `License.txt`. This inventory narrows the evidence;
+it does not resolve component scope or redistribution obligations.
+
 ## External measurement deposits
 
 The [public EV data review](docs/research/public-ev-data-review.md) records Dryad CC0 metadata and separately downloaded DRUM CC BY-NC-ND 3.0 US originals. No raw data is vendored; different snapshots and different rights must not be conflated. These bacterial mucus measurements do not validate the tumor target.

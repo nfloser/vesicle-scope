@@ -90,6 +90,41 @@ class SmoldynLicenseEvidenceTests(unittest.TestCase):
             'not content-equivalent to the pinned tag tree', normalized_third_party
         )
 
+    def test_release_276_archive_license_inventory_preserves_component_boundaries(self):
+        root = Path(__file__).parents[1]
+        review = (
+            root / 'docs' / 'research' / 'smoldyn-2.75-license-review.md'
+        ).read_text(encoding='utf-8')
+        third_party = (root / 'THIRD_PARTY.md').read_text(encoding='utf-8')
+        normalized_review = ' '.join(review.split())
+        normalized_third_party = ' '.join(third_party.split())
+
+        self.assertIn('four license-like regular files', normalized_review)
+        self.assertIn(
+            '`source/BioNetGen/LICENSE.txt` | 35,147 | '
+            '`8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903`',
+            normalized_review,
+        )
+        self.assertIn(
+            '`source/libSteve/SFMT/LICENSE.txt` | 1,583 | '
+            '`34a32f97ac258a2d8f9f7c9155504c2e3fb97f1ae4b577e18e08ea07eee1f4ed`',
+            normalized_review,
+        )
+        self.assertIn(
+            '`source/pybind11/LICENSE` | 1,684 | '
+            '`83965b843b98f670d3a85bd041ed4b372c8ec50d7b4a5995a83ac697ba675dcb`',
+            normalized_review,
+        )
+        self.assertIn(
+            'all four files match the pinned tag by path and content',
+            normalized_review,
+        )
+        self.assertIn('`windows/_freeglut/Copying.txt`', normalized_review)
+        self.assertIn(
+            'no standalone license file for NextSubVolume', normalized_review
+        )
+        self.assertIn('four matching license-like files', normalized_third_party)
+
 
 if __name__ == '__main__':
     unittest.main()
