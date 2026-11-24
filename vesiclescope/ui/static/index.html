@@ -262,7 +262,7 @@ $('rightPopulation').onchange=e=>configurePopulationSide('right',e.target.value)
 $('leftTime').oninput=updatePopulationMaps;
 $('rightTime').oninput=updatePopulationMaps;
 refresh().catch(e=>notice(e.message));
-</script><script>
+
 (function(){
 const OUTCOMES=[['ev_release','Release'],['ev_uptake','Uptake'],['ev_clearance','Clearance'],['ev_size','Size'],['marker_abundance','Markers'],['cargo_abundance','Cargo'],['other','Other']];
 const CATEGORY_LABEL={measured_target_context:'measured · target context',measured_related_context:'measured · related context',literature_estimate:'literature estimate',inferred:'inferred',fitted:'fitted',assumed:'assumed'};
