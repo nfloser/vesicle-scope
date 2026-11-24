@@ -1,0 +1,795 @@
+{
+  "schema": "vesiclescope.evidence-records",
+  "version": 1,
+  "checked_on": "2026-11-24",
+  "records": [
+    {
+      "id": "plasma-ev-secretion-rate-human",
+      "kind": "quantity",
+      "quantity": "systemic_ev_secretion_rate",
+      "value": {
+        "central": 1500000000000.0,
+        "sd": 400000000000.0
+      },
+      "unit": "EV/min",
+      "evidence": "inferred",
+      "source": "auber-2022",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "measurement_method": "estimate from published plasma EV abundances and a mouse-derived plasma mean residence time"
+      },
+      "statement": "Total plasma EV secretion rate needed to maintain the steady-state plasma EV level in healthy humans.",
+      "limitations": [
+        "Derived from literature values, not measured directly.",
+        "Uses a residence time inferred from mouse studies."
+      ],
+      "tags": [
+        "secretion",
+        "blood",
+        "steady-state"
+      ]
+    },
+    {
+      "id": "monocyte-ev-secretion-rate",
+      "kind": "quantity",
+      "quantity": "cell_ev_secretion_rate",
+      "value": {
+        "central": 45.0,
+        "sd": 21.0
+      },
+      "unit": "EV/cell/min",
+      "evidence": "inferred",
+      "source": "auber-2022",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood",
+        "cell_type": "monocyte",
+        "measurement_method": "estimate from cell-specific plasma EV abundance"
+      },
+      "statement": "Highest estimated cell-specific basal EV secretion rate among human blood cells (monocytes).",
+      "limitations": [
+        "Model-based estimate, not an in vivo measurement.",
+        "Basal state only."
+      ],
+      "tags": [
+        "secretion",
+        "blood",
+        "release-rate"
+      ]
+    },
+    {
+      "id": "hepg2-ev-secretion-rate",
+      "kind": "quantity",
+      "quantity": "cell_ev_secretion_rate",
+      "value": {
+        "central": 0.08
+      },
+      "unit": "EV/cell/min",
+      "evidence": "literature_estimate",
+      "source": "auber-2022",
+      "locator": "Introduction, citing Son et al.",
+      "verification": "full-text excerpt (secondary citation)",
+      "context": {
+        "species": "human",
+        "cell_line": "HepG2",
+        "measurement_method": "cell culture secretion measurement reported by the cited study"
+      },
+      "statement": "Cultured HepG2 cells secrete roughly one EV per 15 minutes per cell.",
+      "limitations": [
+        "Secondary citation; the primary study has not yet been reviewed here.",
+        "Culture conditions differ from tissue."
+      ],
+      "tags": [
+        "secretion",
+        "release-rate",
+        "cell-culture"
+      ]
+    },
+    {
+      "id": "ev-to-cell-ratio-blood",
+      "kind": "quantity",
+      "quantity": "plasma_ev_per_parent_cell",
+      "value": {
+        "low": 0.13,
+        "high": 1900.0
+      },
+      "unit": "EV/cell",
+      "evidence": "inferred",
+      "source": "auber-2022",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "measurement_method": "ratio of cell-specific plasma EV counts to parent cell counts"
+      },
+      "statement": "Cell-specific plasma EV-to-parent-cell ratios span four orders of magnitude, from erythrocytes (0.13) to monocytes (about 1.9e3).",
+      "limitations": [
+        "Inferred from heterogeneous literature measurements."
+      ],
+      "tags": [
+        "blood",
+        "heterogeneity"
+      ]
+    },
+    {
+      "id": "exosome-circulation-half-life-b16",
+      "kind": "quantity",
+      "quantity": "circulation_half_life",
+      "value": {
+        "central": 2.0
+      },
+      "unit": "min",
+      "evidence": "measured_related_context",
+      "source": "takahashi-2013",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse",
+        "tissue": "blood circulation",
+        "cell_line": "B16-BL6",
+        "ev_preparation": "ultracentrifuged exosomes labelled with gLuc-lactadherin",
+        "measurement_method": "luciferase activity in blood after intravenous injection",
+        "experimental_conditions": "exogenous intravenous dose"
+      },
+      "statement": "Intravenously injected B16-BL6 exosomes left the blood circulation with a half-life of about 2 minutes.",
+      "limitations": [
+        "Exogenous tumour-cell EVs in mice; endogenous human EVs may differ.",
+        "Approximate value from a pharmacokinetic fit."
+      ],
+      "tags": [
+        "clearance",
+        "blood",
+        "pharmacokinetics"
+      ]
+    },
+    {
+      "id": "plasma-sev-half-life-mouse",
+      "kind": "quantity",
+      "quantity": "circulation_half_life",
+      "value": {
+        "central": 7.0
+      },
+      "unit": "min",
+      "evidence": "measured_related_context",
+      "source": "matsumoto-2020",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse",
+        "tissue": "blood plasma",
+        "ev_preparation": "mouse plasma-derived small EVs labelled with an sEV-specific luciferase tag",
+        "measurement_method": "intravenous pharmacokinetic analysis"
+      },
+      "statement": "Mouse plasma-derived small EVs disappeared from blood with a half-life of about 7 minutes.",
+      "limitations": [
+        "Mouse; human plasma EV half-life is not directly measured here."
+      ],
+      "tags": [
+        "clearance",
+        "blood",
+        "pharmacokinetics"
+      ]
+    },
+    {
+      "id": "plasma-sev-secretion-mouse",
+      "kind": "quantity",
+      "quantity": "systemic_ev_secretion_rate_mass",
+      "value": {
+        "central": 18.0
+      },
+      "unit": "ug/min",
+      "evidence": "inferred",
+      "source": "matsumoto-2020",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse",
+        "tissue": "blood plasma",
+        "measurement_method": "pharmacokinetic model of secretion/clearance balance"
+      },
+      "statement": "Plasma small-EV secretion rate in mice estimated by pharmacokinetic analysis, expressed as protein mass.",
+      "limitations": [
+        "Mass-based (protein), not particle-based.",
+        "Depends on the two-compartment model assumptions."
+      ],
+      "tags": [
+        "secretion",
+        "blood",
+        "pharmacokinetics"
+      ]
+    },
+    {
+      "id": "hela-ev-uptake-fraction-1h",
+      "kind": "quantity",
+      "quantity": "ev_uptake_fraction",
+      "value": {
+        "central": 0.012,
+        "sd": 0.002
+      },
+      "unit": "1",
+      "evidence": "measured_related_context",
+      "source": "bonsergent-2021",
+      "locator": "Results (floatation-purified EVs)",
+      "verification": "full-text excerpt",
+      "context": {
+        "species": "human",
+        "cell_line": "HeLa",
+        "ev_preparation": "100,000 g pellet, floatation-purified NLuc-Hsp70 EVs",
+        "measurement_method": "NanoLuc luciferase activity",
+        "experimental_conditions": "1 h incubation; 4 degC control gave 0.4 +/- 0.2% association"
+      },
+      "statement": "About 1% of added EVs became cell-associated/internalized after 1 h; uptake did not saturate at doses of 100 ug/mL protein or higher.",
+      "limitations": [
+        "Bulk culture fraction: depends on dose, medium volume and transport to the cell layer, so it is not a cell-intrinsic rate constant."
+      ],
+      "tags": [
+        "uptake",
+        "cell-culture"
+      ]
+    },
+    {
+      "id": "hela-ev-content-delivery-fraction",
+      "kind": "quantity",
+      "quantity": "ev_content_delivery_fraction",
+      "value": {
+        "central": 0.27,
+        "sd": 0.07
+      },
+      "unit": "1",
+      "evidence": "measured_related_context",
+      "source": "bonsergent-2021",
+      "locator": "Results (cytosol fractionation)",
+      "verification": "full-text excerpt",
+      "context": {
+        "species": "human",
+        "cell_line": "HeLa",
+        "ev_preparation": "NLuc-Hsp70 EVs",
+        "measurement_method": "detergent-free fractionation and luciferase activity"
+      },
+      "statement": "Of the internalized EV cargo, about 27% reached the cytosol; bafilomycin A1 reduced this release without changing uptake.",
+      "limitations": [
+        "Single cargo reporter and cell line."
+      ],
+      "tags": [
+        "uptake",
+        "content-delivery",
+        "cell-culture"
+      ]
+    },
+    {
+      "id": "hek293t-uptake-threshold-dose",
+      "kind": "quantity",
+      "quantity": "ev_uptake_detection_threshold_dose",
+      "value": {
+        "central": 6000.0
+      },
+      "unit": "EV/cell",
+      "evidence": "measured_related_context",
+      "source": "jurgielewicz-2020",
+      "locator": "abstract (preprint) and Figure 3",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "cell_line": "HEK293T",
+        "measurement_method": "imaging flow cytometry",
+        "experimental_conditions": "4 h co-culture"
+      },
+      "statement": "HEK293T EV uptake was dose- and time-dependent with a minimum detectable dose of about 6,000 EVs per cell at 4 h.",
+      "limitations": [
+        "Detection threshold of the assay, not a biological threshold."
+      ],
+      "tags": [
+        "uptake",
+        "dose-response",
+        "cell-culture"
+      ]
+    },
+    {
+      "id": "interstitial-flow-velocity-range",
+      "kind": "quantity",
+      "quantity": "interstitial_flow_velocity",
+      "value": {
+        "low": 0.15,
+        "high": 0.75
+      },
+      "unit": "um/s",
+      "evidence": "literature_estimate",
+      "source": "sariano-2023",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "tissue": "interstitium (microfluidic ECM model)",
+        "cell_line": "MCF10 series (EV source)",
+        "measurement_method": "controlled flow in a laminin-rich ECM microfluidic device"
+      },
+      "statement": "Physiological interstitial flow range applied in the device; under these flows convection dominated EV transport and integrin-mediated ECM binding shaped concentration gradients.",
+      "limitations": [
+        "Imposed experimental range, not measured in a specific tissue."
+      ],
+      "tags": [
+        "transport",
+        "convection",
+        "ecm"
+      ]
+    },
+    {
+      "id": "plasma-particle-concentration-nta",
+      "kind": "quantity",
+      "quantity": "plasma_particle_concentration",
+      "value": {
+        "low": 140000000000.0,
+        "high": 1200000000000.0
+      },
+      "unit": "particles/mL",
+      "evidence": "measured_related_context",
+      "source": "plasma-nta-variation-2016",
+      "locator": "abstract (reference interval)",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "platelet-free plasma",
+        "measurement_method": "nanoparticle tracking analysis",
+        "experimental_conditions": "20 healthy subjects, fasting and postprandial sampling"
+      },
+      "statement": "Estimated reference interval of submicron particle concentration in platelet-free plasma by NTA.",
+      "limitations": [
+        "NTA counts all submicron particles, including lipoproteins; not EV-specific."
+      ],
+      "tags": [
+        "blood",
+        "concentration",
+        "measurement"
+      ]
+    },
+    {
+      "id": "plasma-ev-concentration-literature-range",
+      "kind": "quantity",
+      "quantity": "plasma_ev_concentration",
+      "value": {
+        "low": 10000000.0,
+        "high": 1000000000000.0
+      },
+      "unit": "EV/mL",
+      "evidence": "literature_estimate",
+      "source": "plasma-ev-lipoprotein-2020",
+      "locator": "Introduction",
+      "verification": "full-text excerpt",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma"
+      },
+      "statement": "Published plasma EV concentration estimates span five orders of magnitude, reflecting isolation losses, contaminating particles and detection limits.",
+      "limitations": [
+        "Range of literature estimates, not a distribution."
+      ],
+      "tags": [
+        "blood",
+        "concentration",
+        "measurement"
+      ]
+    },
+    {
+      "id": "exercise-sev-diameter",
+      "kind": "quantity",
+      "quantity": "ev_diameter",
+      "value": {
+        "low": 100.0,
+        "high": 130.0
+      },
+      "unit": "nm",
+      "evidence": "measured_related_context",
+      "source": "fruhbeis-2015",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "ev_preparation": "small EVs carrying exosome-associated proteins",
+        "measurement_method": "nanoparticle tracking analysis"
+      },
+      "statement": "Small EVs released into plasma during exercise had diameters of about 100-130 nm.",
+      "limitations": [
+        "Exercise-released subpopulation."
+      ],
+      "tags": [
+        "size",
+        "blood"
+      ]
+    },
+    {
+      "id": "colombo-tumour-retention-landmarks",
+      "kind": "quantity",
+      "quantity": "ev_signal_half_retention_distance",
+      "value": {
+        "central": 17.0
+      },
+      "unit": "um",
+      "evidence": "measured_target_context",
+      "source": "colombo-2025",
+      "locator": "Results/Figure 5m (fit-derived summary)",
+      "verification": "full text reviewed in docs/research/colombo-2025-validation-target.md",
+      "context": {
+        "species": "mouse (xenograft)",
+        "tissue": "subcutaneous tumour",
+        "cell_line": "HeLa",
+        "ev_preparation": "endogenous CD9-Halo EVs",
+        "measurement_method": "confocal signal by distance from donor boundary"
+      },
+      "statement": "Half of the above-background EV signal lies within 17 um of the donor boundary (80% within 40 um; <5% beyond 100 um), from an exponential fit.",
+      "limitations": [
+        "Fit-derived summary; raw data on request only."
+      ],
+      "tags": [
+        "transport",
+        "range",
+        "tissue",
+        "validation"
+      ]
+    },
+    {
+      "id": "glucocorticoid-sev-release-neuro2a",
+      "kind": "effect",
+      "stimulus": {
+        "name": "glucocorticoids",
+        "class": "hormone"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "glucocorticoid-nsmase2-2025",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse",
+        "cell_line": "Neuro2a",
+        "measurement_method": "TIRF microscopy of mCh-CD63-pHluorin fusion events"
+      },
+      "statement": "Glucocorticoids stimulated small-EV secretion in a neuronal cell line; the effect required Rab27a and nSMase2 activation downstream of mitochondrial ROS.",
+      "mechanism": [
+        "Rab27a",
+        "nSMase2",
+        "mitochondrial ROS",
+        "mPTP opening"
+      ],
+      "limitations": [
+        "Preprint at time of review.",
+        "Cell-line context; no human dose-response."
+      ],
+      "tags": [
+        "hormone",
+        "glucocorticoid",
+        "cortisol",
+        "release"
+      ]
+    },
+    {
+      "id": "norepinephrine-sev-release-fibroblasts",
+      "kind": "effect",
+      "stimulus": {
+        "name": "norepinephrine",
+        "class": "hormone",
+        "concentration": "10 uM",
+        "duration": "24 h (every 6 h, 4 times)"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "ye-2022",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "rat",
+        "tissue": "aorta",
+        "cell_type": "adventitial fibroblast",
+        "measurement_method": "EV isolation by ultracentrifugation"
+      },
+      "statement": "Norepinephrine increased small-EV number, diameter and ACE content from adventitial fibroblasts; the release was abolished by GW4869.",
+      "mechanism": [
+        "GW4869-sensitive release (nSMase2 inhibitor)",
+        "alpha-adrenergic receptor dependence shown for the downstream proliferation effect"
+      ],
+      "also_changes": [
+        "ev_size",
+        "cargo_abundance"
+      ],
+      "limitations": [
+        "Rat primary cells, hypertension model."
+      ],
+      "tags": [
+        "hormone",
+        "catecholamine",
+        "release",
+        "size",
+        "cargo"
+      ]
+    },
+    {
+      "id": "physical-stress-sev-human",
+      "kind": "effect",
+      "stimulus": {
+        "name": "acute physical stress (cortisol and catecholamines elevated)",
+        "class": "physiological"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": "rapid rise, return to baseline within 40 min",
+      "evidence": "measured_target_context",
+      "source": "moser-2025",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "measurement_method": "imaging flow cytometry (CD9, CD63, CD81, CD44)",
+        "experimental_conditions": "20 healthy young men"
+      },
+      "statement": "Physical stress raised circulating CD9+ and CD63+ small EVs rapidly with return to baseline within 40 min; psychosocial stress raised cortisol but gave heterogeneous, non-directional EV responses.",
+      "markers": [
+        "CD9",
+        "CD63",
+        "CD81",
+        "CD44"
+      ],
+      "limitations": [
+        "Association with hormone changes; no causal attribution to a single hormone."
+      ],
+      "tags": [
+        "hormone",
+        "cortisol",
+        "catecholamine",
+        "blood",
+        "time-course",
+        "markers"
+      ]
+    },
+    {
+      "id": "exercise-sev-release-human",
+      "kind": "effect",
+      "stimulus": {
+        "name": "incremental cycling exercise to exhaustion",
+        "class": "physiological"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": {
+        "fold_change": 2.7,
+        "observable": "plasma small-EV count (NTA)",
+        "timepoint": "immediately post-exercise"
+      },
+      "time_course": "declined again within 90 min at rest",
+      "evidence": "measured_target_context",
+      "source": "fruhbeis-2015",
+      "locator": "abstract; fold change from secondary review table",
+      "verification": "abstract plus secondary review table",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "measurement_method": "nanoparticle tracking analysis",
+        "experimental_conditions": "healthy male subjects"
+      },
+      "statement": "Cycling exercise raised plasma small EVs about 2.7-fold (running about 1.5-fold); levels declined within 90 min.",
+      "limitations": [
+        "Fold changes taken from a secondary review table."
+      ],
+      "tags": [
+        "physiological",
+        "blood",
+        "time-course"
+      ],
+      "secondary_sources": [
+        "exercise-ev-review-2023"
+      ]
+    },
+    {
+      "id": "insulin-infusion-mev-human",
+      "kind": "effect",
+      "stimulus": {
+        "name": "insulin (infusion)",
+        "class": "hormone"
+      },
+      "outcome": "other",
+      "direction": "decrease",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_target_context",
+      "source": "insulin-infusion-mets-2022",
+      "locator": "title/abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "experimental_conditions": "adults with metabolic syndrome"
+      },
+      "statement": "Insulin infusion decreased circulating medium-sized EVs in adults with metabolic syndrome.",
+      "limitations": [
+        "Circulating level reflects release and clearance; recorded as the observed concentration, not attributed to release."
+      ],
+      "tags": [
+        "hormone",
+        "insulin",
+        "blood"
+      ],
+      "observable": "circulating medium-sized EV concentration"
+    },
+    {
+      "id": "insulin-mirna-sorting-adipocytes",
+      "kind": "effect",
+      "stimulus": {
+        "name": "insulin",
+        "class": "hormone"
+      },
+      "outcome": "cargo_abundance",
+      "direction": "mixed",
+      "magnitude": {
+        "upregulated_mirnas": 53,
+        "downregulated_mirnas": 66
+      },
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "lino-2024",
+      "locator": "summary",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse",
+        "cell_line": "3T3-L1 adipocytes",
+        "measurement_method": "small-EV miRNA profiling"
+      },
+      "statement": "Insulin changed the sEV miRNA cargo of adipocytes (53 up, 66 down) largely independent of cellular levels, partly via hnRNPA1 phosphorylation.",
+      "mechanism": [
+        "hnRNPA1 phosphorylation"
+      ],
+      "limitations": [
+        "Cargo effect; no transport rate change implied."
+      ],
+      "tags": [
+        "hormone",
+        "insulin",
+        "cargo"
+      ]
+    },
+    {
+      "id": "plasma-ev-insulin-association",
+      "kind": "effect",
+      "stimulus": {
+        "name": "fasting plasma insulin / insulin resistance (HOMA-IR)",
+        "class": "hormone"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "adipocyte-ev-insulin-2016",
+      "locator": "Figure 3",
+      "verification": "figure legend",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "experimental_conditions": "obese subjects; primary adipocytes stressed with palmitic acid"
+      },
+      "statement": "Circulating EV number correlated with fasting plasma insulin and HOMA-IR; stressed primary adipocytes released more EVs.",
+      "limitations": [
+        "Correlation, not a controlled hormone exposure."
+      ],
+      "tags": [
+        "hormone",
+        "insulin",
+        "association",
+        "blood"
+      ]
+    },
+    {
+      "id": "estradiol-progesterone-ev-endometrium",
+      "kind": "effect",
+      "stimulus": {
+        "name": "estradiol and progesterone",
+        "class": "hormone"
+      },
+      "outcome": "ev_size",
+      "direction": "mixed",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "dissanayake-2023",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "cell_line": "RL95-2 endometrial cells",
+        "measurement_method": "EV isolation by differential centrifugation and SEC; proteomics"
+      },
+      "statement": "EV numbers were independent of hormonal stimulation, but EV size and proteome changed with E2/P4 treatment.",
+      "also_changes": [
+        "cargo_abundance"
+      ],
+      "null_outcomes": [
+        "ev_release"
+      ],
+      "limitations": [
+        "Single cell line model of endometrium."
+      ],
+      "tags": [
+        "hormone",
+        "estradiol",
+        "progesterone",
+        "size",
+        "cargo"
+      ]
+    },
+    {
+      "id": "macrophage-depletion-clearance",
+      "kind": "effect",
+      "stimulus": {
+        "name": "macrophage depletion (clodronate liposomes)",
+        "class": "intervention"
+      },
+      "outcome": "ev_clearance",
+      "direction": "decrease",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "imai-macrophage-clearance",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse",
+        "tissue": "blood circulation",
+        "cell_line": "B16BL6 (EV source)"
+      },
+      "statement": "Clearance of injected exosomes from blood was much slower in macrophage-depleted mice, identifying macrophages as main clearance route.",
+      "limitations": [
+        "Exogenous EVs."
+      ],
+      "tags": [
+        "clearance",
+        "blood",
+        "mechanism"
+      ]
+    },
+    {
+      "id": "matrix-stress-relaxation-ev-mobility",
+      "kind": "effect",
+      "stimulus": {
+        "name": "matrix stress relaxation (viscoelastic vs elastic hydrogel)",
+        "class": "physical"
+      },
+      "outcome": "other",
+      "observable": "EV mobility and release from hydrogel",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "lenzini-2020",
+      "locator": "abstract and Figure 2",
+      "verification": "abstract and figure legend",
+      "context": {
+        "tissue": "engineered hydrogels (alginate, alginate/collagen-I)",
+        "measurement_method": "3D particle tracking and release assays"
+      },
+      "statement": "EVs became confined in elastic hydrogels but moved through stress-relaxing matrices; release of EVs, unlike dextran or synthetic nanoparticles, depended on matrix mechanics, and water permeation (aquaporin-1) was required.",
+      "mechanism": [
+        "matrix stress relaxation",
+        "aquaporin-1 water permeation"
+      ],
+      "limitations": [
+        "Engineered hydrogels; no tissue diffusion coefficient recorded here."
+      ],
+      "tags": [
+        "transport",
+        "ecm",
+        "diffusion"
+      ]
+    }
+  ]
+}

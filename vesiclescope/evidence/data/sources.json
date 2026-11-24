@@ -1,0 +1,227 @@
+{
+  "schema": "vesiclescope.evidence-sources",
+  "version": 1,
+  "sources": [
+    {
+      "id": "auber-2022",
+      "title": "An estimate of extracellular vesicle secretion rates of human blood cells",
+      "authors": "Auber M, Svenningsen P",
+      "journal": "Journal of Extracellular Biology",
+      "year": 2022,
+      "doi": "10.1002/jex2.46",
+      "pmid": "38938292",
+      "pmcid": "PMC11080926",
+      "peer_reviewed": true
+    },
+    {
+      "id": "takahashi-2013",
+      "title": "Visualization and in vivo tracking of the exosomes of murine melanoma B16-BL6 cells in mice after intravenous injection",
+      "authors": "Takahashi Y, Nishikawa M, Shinotsuka H, et al.",
+      "journal": "Journal of Biotechnology",
+      "year": 2013,
+      "doi": "10.1016/j.jbiotec.2013.03.013",
+      "pmid": null,
+      "pmcid": null,
+      "peer_reviewed": true
+    },
+    {
+      "id": "imai-macrophage-clearance",
+      "title": "Macrophage-dependent clearance of systemically administered B16BL6-derived exosomes from the blood circulation in mice",
+      "authors": "see journal record",
+      "journal": null,
+      "year": null,
+      "doi": null,
+      "pmid": null,
+      "pmcid": "PMC4323410",
+      "peer_reviewed": true
+    },
+    {
+      "id": "matsumoto-2020",
+      "title": "Blood concentrations of small extracellular vesicles are determined by a balance between abundant secretion and rapid clearance",
+      "authors": "Matsumoto A, Takahashi Y, Chang HY, et al.",
+      "journal": "Journal of Extracellular Vesicles",
+      "year": 2020,
+      "doi": "10.1080/20013078.2019.1696517",
+      "pmid": "31807238",
+      "pmcid": "PMC6882433",
+      "peer_reviewed": true
+    },
+    {
+      "id": "bonsergent-2021",
+      "title": "Quantitative characterization of extracellular vesicle uptake and content delivery within mammalian cells",
+      "authors": "Bonsergent E, Grisard E, Buchrieser J, et al.",
+      "journal": "Nature Communications",
+      "year": 2021,
+      "doi": "10.1038/s41467-021-22126-y",
+      "pmid": null,
+      "pmcid": null,
+      "peer_reviewed": true
+    },
+    {
+      "id": "jurgielewicz-2020",
+      "title": "Kinetics and Specificity of HEK293T Extracellular Vesicle Uptake using Imaging Flow Cytometry",
+      "authors": "Jurgielewicz BJ, Yao Y, Stice SL",
+      "journal": "Nanoscale Research Letters",
+      "year": 2020,
+      "doi": "10.1186/s11671-020-03399-6",
+      "pmid": "32833066",
+      "pmcid": "PMC7445225",
+      "peer_reviewed": true
+    },
+    {
+      "id": "sariano-2023",
+      "title": "Convection and extracellular matrix binding control interstitial transport of extracellular vesicles",
+      "authors": "Sariano PA, Mizenko RR, Shirure VS, et al.",
+      "journal": "Journal of Extracellular Vesicles",
+      "year": 2023,
+      "doi": "10.1002/jev2.12323",
+      "pmid": "37073802",
+      "pmcid": "PMC10114097",
+      "peer_reviewed": true
+    },
+    {
+      "id": "lenzini-2020",
+      "title": "Matrix mechanics and water permeation regulate extracellular vesicle transport",
+      "authors": "Lenzini S, Bargi R, Chung G, Shin JW",
+      "journal": "Nature Nanotechnology",
+      "year": 2020,
+      "doi": "10.1038/s41565-020-0636-2",
+      "pmid": "32066904",
+      "pmcid": "PMC7075670",
+      "peer_reviewed": true
+    },
+    {
+      "id": "plasma-nta-variation-2016",
+      "title": "Preanalytical, analytical, and biological variation of blood plasma submicron particle levels measured with nanoparticle tracking analysis and tunable resistive pulse sensing",
+      "authors": "see PubMed record",
+      "journal": null,
+      "year": 2016,
+      "doi": null,
+      "pmid": "27195974",
+      "pmcid": null,
+      "peer_reviewed": true
+    },
+    {
+      "id": "plasma-ev-lipoprotein-2020",
+      "title": "Plasma EV isolation and lipoprotein particles (J Extracell Vesicles 2020;9:1791450)",
+      "authors": "see journal record",
+      "journal": "Journal of Extracellular Vesicles",
+      "year": 2020,
+      "doi": "10.1080/20013078.2020.1791450",
+      "pmid": null,
+      "pmcid": "PMC7480457",
+      "peer_reviewed": true
+    },
+    {
+      "id": "fruhbeis-2015",
+      "title": "Physical exercise induces rapid release of small extracellular vesicles into the circulation",
+      "authors": "Frühbeis C, Helmig S, Tug S, Simon P, Krämer-Albers EM",
+      "journal": "Journal of Extracellular Vesicles",
+      "year": 2015,
+      "doi": "10.3402/jev.v4.28239",
+      "pmid": "26142461",
+      "pmcid": "PMC4491306",
+      "peer_reviewed": true
+    },
+    {
+      "id": "exercise-ev-review-2023",
+      "title": "Review table: effects of physical exercise on circulating extracellular vesicles in humans",
+      "authors": "see journal record",
+      "journal": null,
+      "year": 2023,
+      "doi": null,
+      "pmid": null,
+      "pmcid": "PMC10309045",
+      "peer_reviewed": true
+    },
+    {
+      "id": "moser-2025",
+      "title": "Stress type-specific small extracellular vesicle signatures reflect divergent biological responses to acute psychosocial and physical challenges",
+      "authors": "Moser DA, Tertel T, Berg F, et al.",
+      "journal": "Scientific Reports",
+      "year": 2025,
+      "doi": "10.1038/s41598-025-21575-5",
+      "pmid": null,
+      "pmcid": "PMC12511347",
+      "peer_reviewed": true
+    },
+    {
+      "id": "glucocorticoid-nsmase2-2025",
+      "title": "Glucocorticoids regulate small extracellular vesicle (sEV) release via activation of nSMase2",
+      "authors": "see bioRxiv record",
+      "journal": "bioRxiv (preprint)",
+      "year": 2025,
+      "doi": "10.1101/2025.10.07.680983",
+      "pmid": "42059363",
+      "pmcid": null,
+      "peer_reviewed": false
+    },
+    {
+      "id": "ye-2022",
+      "title": "Norepinephrine acting on adventitial fibroblasts stimulates vascular smooth muscle cell proliferation via promoting small extracellular vesicle release",
+      "authors": "Ye C, Zheng F, Xu T, et al.",
+      "journal": "Theranostics",
+      "year": 2022,
+      "doi": "10.7150/thno.70974",
+      "pmid": "35832088",
+      "pmcid": "PMC9254254",
+      "peer_reviewed": true
+    },
+    {
+      "id": "insulin-infusion-mets-2022",
+      "title": "Insulin infusion decreases medium-sized extracellular vesicles in adults with metabolic syndrome",
+      "authors": "see journal record",
+      "journal": null,
+      "year": 2022,
+      "doi": null,
+      "pmid": null,
+      "pmcid": "PMC9529262",
+      "peer_reviewed": true
+    },
+    {
+      "id": "lino-2024",
+      "title": "Multi-step regulation of microRNA expression and secretion into small extracellular vesicles by insulin",
+      "authors": "Lino M, Garcia-Martin R, Muñoz VR, et al.",
+      "journal": "Cell Reports",
+      "year": 2024,
+      "doi": null,
+      "pmid": null,
+      "pmcid": null,
+      "url": "https://doaj.org/article/3d3b224c20784ff483aee852fed06183",
+      "peer_reviewed": true
+    },
+    {
+      "id": "adipocyte-ev-insulin-2016",
+      "title": "Figure 3: EV release increases in stressed human primary adipocytes and in obese plasma, correlating with plasma insulin and HOMA-IR",
+      "authors": "see journal record",
+      "journal": null,
+      "year": 2016,
+      "doi": null,
+      "pmid": null,
+      "pmcid": "PMC5071132",
+      "peer_reviewed": true
+    },
+    {
+      "id": "dissanayake-2023",
+      "title": "The Extracellular Vesicles Proteome of Endometrial Cells Simulating the Receptive Menstrual Phase Differs from That of Endometrial Cells Simulating the Non-Receptive Menstrual Phase",
+      "authors": "Dissanayake K, Godakumara K, Andronowska A, et al.",
+      "journal": "Biomolecules",
+      "year": 2023,
+      "doi": null,
+      "pmid": null,
+      "pmcid": "PMC9953153",
+      "peer_reviewed": true
+    },
+    {
+      "id": "colombo-2025",
+      "title": "Exploring the Spatial Limits of Extracellular Vesicles-Mediated Intercellular Communication",
+      "authors": "Colombo F, Nimkar K, Norton EG, Lovat F, Cocucci E",
+      "journal": "Journal of Extracellular Vesicles",
+      "year": 2025,
+      "doi": "10.1002/jev2.70169",
+      "pmid": "41167986",
+      "pmcid": "PMC12575057",
+      "peer_reviewed": true
+    }
+  ]
+}

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Evidence
+
+- add a curated, source-linked EV evidence registry (20 sources, 25 records: release, clearance, uptake, transport, blood concentration, size, hormone and physiological effects) with validation, query API, `ScientificParameter` conversion, SQLite export and `vesiclescope evidence` commands;
+- add a cross-source synthesis: free diffusion in tumour tissue would require local EV loss 1.4–14x faster than blood clearance, and interstitial convection (Pe up to ~3.7 at free diffusion) is missing from the transport model.
+
 ### Research
 
 - add a time-resolved effect-compartment dose-response layer that turns a declared exposure into a release or uptake rate schedule, with weakest-evidence propagation and full parameter derivation;
