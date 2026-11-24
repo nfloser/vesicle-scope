@@ -790,6 +790,689 @@
         "ecm",
         "diffusion"
       ]
+    },
+    {
+      "id": "hela-mvb-count-per-cell",
+      "kind": "quantity",
+      "quantity": "mvb_count_per_cell",
+      "value": {
+        "central": 200.0
+      },
+      "unit": "MVB/cell",
+      "evidence": "measured_related_context",
+      "source": "verweij-2018",
+      "locator": "Results, Figure 1e",
+      "verification": "full-text excerpt",
+      "context": {
+        "species": "human",
+        "cell_line": "HeLa",
+        "measurement_method": "imaging flow cytometry of CD63-pHluorin-rich compartments, extrapolated from 2.5 um slices"
+      },
+      "statement": "About 70 CD63-pHluorin-rich compartments per 2.5 um optical slice, extrapolated to about 200 per cell, consistent with endogenous late-endosome numbers; most are 400-600 nm in diameter.",
+      "limitations": [
+        "Extrapolated from slices; reporter-expressing cells."
+      ],
+      "tags": [
+        "release",
+        "biogenesis",
+        "cell-culture"
+      ]
+    },
+    {
+      "id": "platelet-mp-half-life-human-annexin",
+      "kind": "quantity",
+      "quantity": "circulation_half_life",
+      "value": {
+        "central": 5.8,
+        "low": 1.8,
+        "high": 18.3
+      },
+      "unit": "h",
+      "evidence": "measured_target_context",
+      "source": "rank-2011",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "cell_type": "platelet (EV source)",
+        "ev_preparation": "platelet microparticles in apheresis platelet concentrates",
+        "measurement_method": "flow cytometry (annexin V)",
+        "experimental_conditions": "transfusion in severely thrombocytopenic patients (n = 11)"
+      },
+      "statement": "Transfused platelet microparticles declined in human plasma with a half-life of 5.8 h (annexin V; 95% CI 1.8-18.3 h); CD61 gave 5.3 h (95% CI 2.0-14.2 h).",
+      "limitations": [
+        "Large platelet-derived microparticles in thrombocytopenic patients; not small EVs.",
+        "Low/high are the 95% CI, central is the point estimate."
+      ],
+      "tags": [
+        "clearance",
+        "blood",
+        "human",
+        "pharmacokinetics"
+      ]
+    },
+    {
+      "id": "platelet-mp-half-life-human-cd61",
+      "kind": "quantity",
+      "quantity": "circulation_half_life",
+      "value": {
+        "central": 5.3,
+        "low": 2.0,
+        "high": 14.2
+      },
+      "unit": "h",
+      "evidence": "measured_target_context",
+      "source": "rank-2011",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "blood plasma",
+        "cell_type": "platelet (EV source)",
+        "ev_preparation": "platelet microparticles in apheresis platelet concentrates",
+        "measurement_method": "flow cytometry (CD61)",
+        "experimental_conditions": "transfusion in severely thrombocytopenic patients (n = 11)"
+      },
+      "statement": "Transfused platelet microparticles (CD61+) declined in human plasma with a half-life of 5.3 h (95% CI 2.0-14.2 h).",
+      "limitations": [
+        "Large platelet-derived microparticles in thrombocytopenic patients; not small EVs.",
+        "Low/high are the 95% CI, central is the point estimate."
+      ],
+      "tags": [
+        "clearance",
+        "blood",
+        "human",
+        "pharmacokinetics"
+      ]
+    },
+    {
+      "id": "interstitial-flow-velocity-tissue",
+      "kind": "quantity",
+      "quantity": "interstitial_flow_velocity",
+      "value": {
+        "central": 0.6
+      },
+      "unit": "um/s",
+      "evidence": "measured_related_context",
+      "source": "chary-jain-interstitial",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "rabbit",
+        "tissue": "normal and neoplastic tissue in a transparent ear chamber",
+        "measurement_method": "fluorescence recovery after photobleaching"
+      },
+      "statement": "Average interstitial fluid velocity of about 0.6 um/s, generally directed into postcapillary venules.",
+      "limitations": [
+        "Ear-chamber tissue in rabbit; tumour-specific flows may differ."
+      ],
+      "tags": [
+        "transport",
+        "convection",
+        "tissue"
+      ]
+    },
+    {
+      "id": "albumin-interstitial-diffusion",
+      "kind": "quantity",
+      "quantity": "macromolecule_interstitial_diffusion",
+      "value": {
+        "central": 5.8e-07,
+        "sd": 1.3e-07
+      },
+      "unit": "cm^2/s",
+      "evidence": "measured_related_context",
+      "source": "chary-jain-interstitial",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "rabbit",
+        "tissue": "normal tissue (ear chamber)",
+        "measurement_method": "fluorescence recovery after photobleaching of bovine serum albumin"
+      },
+      "statement": "Albumin diffused through normal interstitium with D = 5.8 +/- 1.3 x 10^-7 cm^2/s (neoplastic tissue 6.3 +/- 1.9 x 10^-7 cm^2/s).",
+      "limitations": [
+        "Albumin (~7 nm) is far smaller than EVs; a hindrance reference only."
+      ],
+      "tags": [
+        "transport",
+        "diffusion",
+        "tissue"
+      ]
+    },
+    {
+      "id": "brain-ecs-volume-fraction",
+      "kind": "quantity",
+      "quantity": "extracellular_volume_fraction",
+      "value": {
+        "central": 0.2
+      },
+      "unit": "1",
+      "evidence": "measured_related_context",
+      "source": "sykova-nicholson-2008",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "tissue": "brain",
+        "measurement_method": "real-time iontophoresis with tetramethylammonium"
+      },
+      "statement": "The brain extracellular space typically occupies about 20% of tissue volume, with tortuosity about 1.6 for small molecules.",
+      "limitations": [
+        "Small-molecule probes; pathology changes both (e.g. severe ischaemia alpha 0.04, lambda 2.2)."
+      ],
+      "tags": [
+        "transport",
+        "tissue",
+        "brain"
+      ],
+      "companion": {
+        "tortuosity": 1.6
+      }
+    },
+    {
+      "id": "brain-ecs-width",
+      "kind": "quantity",
+      "quantity": "extracellular_space_width",
+      "value": {
+        "low": 38.0,
+        "high": 64.0
+      },
+      "unit": "nm",
+      "evidence": "inferred",
+      "source": "nicholson-2007",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "tissue": "brain",
+        "measurement_method": "inferred from diffusion analysis"
+      },
+      "statement": "Estimated width of the brain extracellular space is 38-64 nm.",
+      "limitations": [
+        "Model-based estimate of an average channel width."
+      ],
+      "tags": [
+        "transport",
+        "tissue",
+        "brain"
+      ]
+    },
+    {
+      "id": "histamine-mvb-fusion-hela",
+      "kind": "effect",
+      "stimulus": {
+        "name": "histamine (H1 receptor agonist)",
+        "class": "hormone",
+        "concentration": "100 uM"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "verweij-2018",
+      "locator": "abstract; Figure 4b",
+      "verification": "abstract and figure legend",
+      "context": {
+        "species": "human",
+        "cell_line": "HeLa",
+        "measurement_method": "TIRF imaging of CD63-pHluorin MVB-plasma membrane fusion"
+      },
+      "statement": "Histamine H1 receptor stimulation induced MVB-plasma membrane fusion (exosome release) in single cells; depletion of SNAP23 or syntaxin-4 reduced fusion frequency.",
+      "limitations": [
+        "Short-term single-cell imaging; reporter-expressing cells."
+      ],
+      "tags": [
+        "hormone",
+        "histamine",
+        "release",
+        "gpcr"
+      ],
+      "mechanism": [
+        "H1 receptor (GPCR)",
+        "SNAP23 Ser110 phosphorylation",
+        "syntaxin-4"
+      ]
+    },
+    {
+      "id": "pregnancy-plasma-exosomes",
+      "kind": "effect",
+      "stimulus": {
+        "name": "pregnancy",
+        "class": "physiological"
+      },
+      "outcome": "other",
+      "direction": "increase",
+      "magnitude": {
+        "fold_change_lower_bound": 50.0,
+        "observable": "plasma exosome concentration, pregnant vs non-pregnant"
+      },
+      "time_course": null,
+      "evidence": "measured_target_context",
+      "source": "salomon-2014",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "maternal plasma",
+        "measurement_method": "CD63 and placental PLAP immunoassays on isolated exosomes",
+        "experimental_conditions": "n = 20 per trimester group plus non-pregnant controls"
+      },
+      "statement": "Plasma exosome concentration was more than 50-fold higher in pregnant than non-pregnant women and rose more than twofold with gestational age.",
+      "limitations": [
+        "Immunoreactive exosome quantification; isolation-dependent."
+      ],
+      "tags": [
+        "hormone",
+        "pregnancy",
+        "blood",
+        "placenta"
+      ],
+      "observable": "circulating exosome concentration"
+    },
+    {
+      "id": "first-trimester-placental-exosomes",
+      "kind": "effect",
+      "stimulus": {
+        "name": "gestational age (weeks 6-12)",
+        "class": "physiological"
+      },
+      "outcome": "other",
+      "direction": "increase",
+      "magnitude": {
+        "start": "70.6 +/- 5.7 pg/mL (6 weeks)",
+        "end": "117.5 +/- 13.4 pg/mL (12 weeks)"
+      },
+      "time_course": "monotone rise over weeks 6-12",
+      "evidence": "measured_target_context",
+      "source": "sarker-2014",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "maternal plasma",
+        "measurement_method": "NTA and exosomal PLAP immunoassay",
+        "experimental_conditions": "10 women sampled weekly from 6 to 12 weeks (n = 70)"
+      },
+      "statement": "Placenta-derived (PLAP+) exosomes in maternal plasma rose progressively from 70.6 +/- 5.7 pg/mL at 6 weeks to 117.5 +/- 13.4 pg/mL at 12 weeks.",
+      "limitations": [
+        "PLAP mass concentration, not particle counts."
+      ],
+      "tags": [
+        "pregnancy",
+        "blood",
+        "placenta",
+        "time-course"
+      ],
+      "observable": "placental exosomal PLAP concentration"
+    },
+    {
+      "id": "hypoxia-exosome-release-breast",
+      "kind": "effect",
+      "stimulus": {
+        "name": "hypoxia (1% and 0.1% O2)",
+        "class": "environmental"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "king-2012",
+      "locator": "abstract; Figure 4",
+      "verification": "abstract and figure legend",
+      "context": {
+        "species": "human",
+        "cell_type": "breast cancer cell lines (three)",
+        "measurement_method": "NTA and CD63 immunoblotting"
+      },
+      "statement": "Moderate and severe hypoxia increased exosome release in three breast cancer lines; HIF-1alpha siRNA prevented the increase and the HIF hydroxylase inhibitor DMOG mimicked it.",
+      "limitations": [
+        "Cancer cell lines; fold changes not recorded here."
+      ],
+      "tags": [
+        "hypoxia",
+        "release",
+        "hif"
+      ],
+      "mechanism": [
+        "HIF-1alpha"
+      ]
+    },
+    {
+      "id": "dht-cd9-ev-prostate",
+      "kind": "effect",
+      "stimulus": {
+        "name": "dihydrotestosterone (androgen)",
+        "class": "hormone"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "soekmadji-2016",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "cell_line": "LNCaP and DUCaP",
+        "measurement_method": "western blot and CD9 EV TR-FIA after sequential ultracentrifugation"
+      },
+      "statement": "DHT specifically increased CD9-positive EV secretion from androgen-responsive prostate cancer cells.",
+      "limitations": [
+        "Prostate cancer cell lines; marker-specific readout."
+      ],
+      "tags": [
+        "hormone",
+        "androgen",
+        "release",
+        "markers"
+      ],
+      "markers": [
+        "CD9"
+      ]
+    },
+    {
+      "id": "androgen-sev-heterogeneity",
+      "kind": "effect",
+      "stimulus": {
+        "name": "dihydrotestosterone / enzalutamide",
+        "class": "hormone"
+      },
+      "outcome": "ev_size",
+      "direction": "mixed",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "martens-uzunova-2021",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "cell_line": "AR-positive prostate cancer cells (LNCaP, C42B)",
+        "measurement_method": "S-EV characterisation and small RNA sequencing"
+      },
+      "statement": "Androgen manipulation altered the heterogeneity and size of CD9-positive small EVs and their small RNA cargo in AR-expressing cells.",
+      "limitations": [
+        "Direction of the size change is not recorded here."
+      ],
+      "tags": [
+        "hormone",
+        "androgen",
+        "size",
+        "cargo",
+        "markers"
+      ],
+      "also_changes": [
+        "cargo_abundance"
+      ],
+      "markers": [
+        "CD9"
+      ]
+    },
+    {
+      "id": "estradiol-ev-release-er-breast",
+      "kind": "effect",
+      "stimulus": {
+        "name": "17beta-estradiol",
+        "class": "hormone"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "drula-2023",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "cell_type": "ER-alpha positive breast cancer cells"
+      },
+      "statement": "Physiological doses of 17beta-estradiol increased EV production dose-dependently in ER+ breast cancer cells and enriched specific miRNAs in EV cargo.",
+      "limitations": [
+        "Dose-response values are not recorded here."
+      ],
+      "tags": [
+        "hormone",
+        "estradiol",
+        "release",
+        "cargo",
+        "dose-response"
+      ],
+      "also_changes": [
+        "cargo_abundance"
+      ]
+    },
+    {
+      "id": "estradiol-ape1-exosome-endothelium",
+      "kind": "effect",
+      "stimulus": {
+        "name": "17beta-estradiol",
+        "class": "hormone"
+      },
+      "outcome": "cargo_abundance",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "lee-2021-ape1",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "mouse (in vivo arm)",
+        "cell_type": "cultured vascular endothelial cells; ovariectomized mice"
+      },
+      "statement": "E2 raised APE1/Ref-1 in CD63-positive exosomes; secretion depended on ER and intracellular calcium and was inhibited by GW4869.",
+      "limitations": [
+        "Single cargo protein."
+      ],
+      "tags": [
+        "hormone",
+        "estradiol",
+        "cargo"
+      ],
+      "mechanism": [
+        "estrogen receptor",
+        "intracellular calcium",
+        "nSMase2 (GW4869-sensitive)"
+      ]
+    },
+    {
+      "id": "leptin-exosome-release-breast",
+      "kind": "effect",
+      "stimulus": {
+        "name": "leptin",
+        "class": "hormone",
+        "concentration": "500 ng/mL",
+        "duration": "48 h"
+      },
+      "outcome": "ev_release",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "giordano-2019",
+      "locator": "abstract; Figure 1",
+      "verification": "abstract and figure legend",
+      "context": {
+        "species": "human",
+        "cell_line": "MCF-7 and MDA-MB-231",
+        "measurement_method": "TEM of MVBs, NTA, acetylcholinesterase activity"
+      },
+      "statement": "Leptin increased MVB numbers and exosome release; the leptin receptor antagonist LDFI abrogated the effect, which involved Tsg101 stabilisation via Hsp90.",
+      "limitations": [
+        "Breast cancer cell lines; supraphysiological concentration."
+      ],
+      "tags": [
+        "hormone",
+        "leptin",
+        "release",
+        "biogenesis"
+      ],
+      "mechanism": [
+        "leptin receptor",
+        "Tsg101",
+        "Hsp90"
+      ]
+    },
+    {
+      "id": "melatonin-placental-ev-cargo",
+      "kind": "effect",
+      "stimulus": {
+        "name": "melatonin",
+        "class": "hormone"
+      },
+      "outcome": "cargo_abundance",
+      "direction": "decrease",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "melatonin-placenta-2021",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "preeclamptic placentae"
+      },
+      "statement": "Melatonin reduced misfolded proteins carried by EVs from preeclamptic placentae and their ability to activate endothelial cells.",
+      "limitations": [
+        "Ex vivo placental explants."
+      ],
+      "tags": [
+        "hormone",
+        "melatonin",
+        "cargo",
+        "placenta"
+      ]
+    },
+    {
+      "id": "diurnal-plasma-ev-flow",
+      "kind": "effect",
+      "stimulus": {
+        "name": "time of day",
+        "class": "circadian"
+      },
+      "outcome": "other",
+      "direction": "mixed",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_target_context",
+      "source": "danielson-2016",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "plasma",
+        "measurement_method": "high-resolution nano flow cytometry"
+      },
+      "statement": "Relative size and concentration of plasma EVs varied across the day in healthy adults.",
+      "limitations": [
+        "Relative proportions; small cohort."
+      ],
+      "tags": [
+        "circadian",
+        "blood",
+        "time-course"
+      ],
+      "observable": "circulating EV size and concentration"
+    },
+    {
+      "id": "diurnal-ev-markers-am-pm",
+      "kind": "effect",
+      "stimulus": {
+        "name": "time of day (morning vs afternoon)",
+        "class": "circadian"
+      },
+      "outcome": "marker_abundance",
+      "direction": "mixed",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_target_context",
+      "source": "best-2021",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "serum",
+        "measurement_method": "NTA and LC-MS of sEV markers",
+        "experimental_conditions": "n = 10 healthy adults, fed and fasted days"
+      },
+      "statement": "CD81 on serum sEVs decreased and the liver marker ASGR1 increased between morning and afternoon samples.",
+      "limitations": [
+        "Two time points only."
+      ],
+      "tags": [
+        "circadian",
+        "markers",
+        "blood"
+      ],
+      "markers": [
+        "CD81",
+        "ASGR1"
+      ]
+    },
+    {
+      "id": "diurnal-large-ev-size",
+      "kind": "effect",
+      "stimulus": {
+        "name": "time of day (10:00 vs 22:00)",
+        "class": "circadian"
+      },
+      "outcome": "ev_size",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_target_context",
+      "source": "bazie-2021",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "species": "human",
+        "tissue": "plasma",
+        "experimental_conditions": "n = 10 HIV-negative and 10 HIV+ART participants"
+      },
+      "statement": "Large plasma EVs were bigger at 10:00 than at 22:00, and EV miRNA content showed day-night variation.",
+      "limitations": [
+        "Direction recorded for the 10:00 sample relative to 22:00."
+      ],
+      "tags": [
+        "circadian",
+        "size",
+        "blood"
+      ]
+    },
+    {
+      "id": "integrin-inhibition-ev-mobility",
+      "kind": "effect",
+      "stimulus": {
+        "name": "inhibition of RGD-binding integrins",
+        "class": "intervention"
+      },
+      "outcome": "other",
+      "direction": "increase",
+      "magnitude": null,
+      "time_course": null,
+      "evidence": "measured_related_context",
+      "source": "tam-2024",
+      "locator": "abstract",
+      "verification": "abstract",
+      "context": {
+        "tissue": "collagen I hydrogels",
+        "cell_type": "breast cancer cell line (EV source)",
+        "measurement_method": "single-particle tracking and confocal reflectance microscopy"
+      },
+      "statement": "EV membrane integrins mediated binding to collagen I; integrin inhibition increased EV mobility in the matrix.",
+      "limitations": [
+        "Hydrogel model; no diffusion coefficient recorded here."
+      ],
+      "tags": [
+        "transport",
+        "ecm",
+        "binding"
+      ],
+      "observable": "EV mobility in collagen I"
     }
   ]
 }

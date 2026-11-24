@@ -854,6 +854,25 @@ class WorkspaceApplication:
         )
         return {"name": path.name}
 
+    def evidence(self) -> dict[str, object]:
+        from vesiclescope.ui.evidence_services import evidence_payload
+
+        return evidence_payload()
+
+    def evidence_synthesis(self) -> dict[str, object]:
+        from vesiclescope.ui.evidence_services import synthesis_payload
+
+        return synthesis_payload()
+
+    def exposure_scenario(self, payload: dict[str, object]) -> dict[str, object]:
+        from vesiclescope.ui.evidence_services import run_exposure_scenario
+
+        name = payload.get("experiment")
+        if not isinstance(name, str):
+            raise ValueError("experiment must be a string")
+        experiment = self.workspace.read_experiment(name)
+        return run_exposure_scenario(experiment=experiment, payload=payload, runner=self.runner)
+
     def run(self, name: str, *, include_field: bool = True) -> dict[str, object]:
         return _run_summary(self.workspace.read_run(name), include_field=include_field)
 

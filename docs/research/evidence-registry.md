@@ -1,7 +1,7 @@
 # EV evidence registry
 
 Issue: #146
-Status: first curated release (20 sources, 25 records, checked 2026-11-24)
+Status: curated release 2 (38 sources, 46 records, checked 2026-11-24)
 
 ## Purpose
 
@@ -56,21 +56,28 @@ Validation rejects:
 | Uptake / delivery | 3 quantities | Bonsergent 2021 (~1% at 1 h; 27% cytosolic delivery), Jurgielewicz 2020 |
 | Transport / tissue | 2 quantities, 1 effect | Colombo 2025, Sariano 2023 (flow 0.15–0.75 µm/s), Lenzini 2020 |
 | Blood concentration / size | 3 quantities | NTA reference interval, literature range, exercise sEV size |
-| Hormones and physiological stimuli | 8 effects | glucocorticoids, norepinephrine, physical/psychosocial stress, exercise, insulin (3), estradiol/progesterone |
+| Hormones and physiological stimuli | 17 effects | glucocorticoids, norepinephrine, histamine, physical/psychosocial stress, exercise, insulin (3), estradiol (3), androgens (2), leptin, melatonin, pregnancy (2) |
+| Other stimuli and conditions | 5 effects | hypoxia (HIF-1α), circadian time of day (3), integrin inhibition |
+| Human blood kinetics | 2 quantities | transfused platelet microparticles, half-life 5.3–5.8 h (Rank 2011) |
+| Tissue geometry and flow | 4 quantities | interstitial flow 0.6 µm/s measured in tissue, albumin interstitial D, brain ECS volume fraction 0.2 and width 38–64 nm |
+| Biogenesis | 1 quantity | about 200 CD63+ MVBs per HeLa cell (Verweij 2018) |
 
-Evidence categories: 14 measured in related context, 4 measured in target
-context, 4 inferred, 3 literature estimates.
+Evidence categories: 27 measured in related context, 11 measured in target
+context, 5 inferred, 3 literature estimates.
 
 ## First cross-source result
 
-`vesiclescope evidence synthesize` combines four independent records:
+`vesiclescope evidence synthesize` combines independent records (release 2 adds human kinetics, in-tissue flow and brain geometry):
 
 ```text
 EV diameter 100-130 nm -> free diffusion 303-394 um^2/min (upper bound).
 Tumour length scale lambda = 16.8-24.7 um.
 At free diffusion this needs local loss k_eff = 0.50-1.40 /min (1/k = 0.7-2.0 min).
-Whole-body blood clearance from half-lives: 0.10-0.35 /min; required local loss is 1.4-14.2x that.
+Mouse small-EV blood clearance: 0.10-0.35 /min; required local loss is 1.4-14.2x that.
+Human platelet-microparticle clearance: 0.0020-0.0022 /min; required local loss is 229-704x that.
 Interstitial flow 9-45 um/min gives Pe = 0.38-3.66 at free diffusion; convection dominates (Pe > 1) once D < 151-1110 um^2/min.
+Measured tissue flow 36 um/min gives Pe = 1.53-2.93 at free diffusion.
+Brain extracellular space width 38-64 nm vs EV diameter 100-130 nm: EVs exceed the typical channel width, so unhindered diffusion is not expected there.
 ```
 
 Interpretation, conditional on the steady-state linear model:
@@ -86,7 +93,10 @@ Interpretation, conditional on the steady-state linear model:
    about 150 µm²/min, convection dominates at all flows in the range. This
    matches the conclusion of Sariano 2023 and makes advection plus ECM binding
    the next transport extension with the strongest evidence behind it.
-3. **Hormone timing is compatible with fast blood turnover.** A rise in
+3. **The in-tissue flow measurement confirms point 2.** At 0.6 µm/s, Pe is 1.5–2.9 even at free diffusion.
+4. **Brain geometry excludes free diffusion of small EVs.** The typical channel width is smaller than the EV diameter.
+5. **Species and EV type matter for clearance.** Human platelet microparticles persist for hours, mouse small EVs for minutes. Any systemic model must keep these apart.
+6. **Hormone timing is compatible with fast blood turnover.** A rise in
    circulating sEVs with return to baseline within 40 min (physical stress) or
    90 min (exercise) is consistent with mouse blood half-lives of 2–7 min. The
    observed decay therefore probably tracks the stimulus rather than EV
@@ -98,7 +108,8 @@ Interpretation, conditional on the steady-state linear model:
   mucus MSD, which is not mappable; see `measured-mucus-audit.md`).
 - No cell-intrinsic uptake rate constant. Culture uptake fractions depend on
   dose and well geometry.
-- No human EV circulation half-life.
+- No human small-EV circulation half-life (only platelet microparticles).
+- No uptake effect of any hormone (the evidence map's uptake column is empty).
 - Hormone effects are directions in cell lines, or associations in humans. No
   dose–response magnitude exists for any hormone, so the dose-response layer
   must keep using ranges or synthetic values.

@@ -146,6 +146,12 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                 if parsed.path == "/api/state":
                     self._send_json(HTTPStatus.OK, app.state())
                     return
+                if parsed.path == "/api/evidence":
+                    self._send_json(HTTPStatus.OK, app.evidence())
+                    return
+                if parsed.path == "/api/evidence/synthesis":
+                    self._send_json(HTTPStatus.OK, app.evidence_synthesis())
+                    return
                 if parsed.path == "/api/experiment":
                     name = self._query_one(query, "name")
                     self._send_json(HTTPStatus.OK, app.experiment(name))
@@ -285,6 +291,9 @@ def _handler_class(app: WorkspaceApplication, index: bytes):
                     )
                     return
                 payload = self._read_json()
+                if parsed.path == "/api/exposure-scenario":
+                    self._send_json(HTTPStatus.OK, app.exposure_scenario(payload))
+                    return
                 if parsed.path == "/api/example":
                     name = payload.get("name", "diffusion-uptake-baseline.json")
                     self._send_json(HTTPStatus.CREATED, app.create_baseline(name))

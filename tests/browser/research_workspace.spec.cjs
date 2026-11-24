@@ -143,6 +143,42 @@ async function exercise(browser, viewport, prefix) {
     ),
     `${prefix}: horizontal viewport overflow detected`,
   );
+  await page.locator('button[data-view="evidence"]').click();
+  await page.waitForSelector("#evList .ev-card");
+  check(
+    (await page.locator("#evMatrix tbody tr").count()) >= 15,
+    `${prefix}: evidence matrix has too few stimulus rows`,
+  );
+  check(
+    (await page.locator("#synthLines li").count()) === 8,
+    `${prefix}: synthesis lines missing`,
+  );
+  const allCards = await page.locator("#evList .ev-card").count();
+  await page.locator("#evSearch").fill("half-life");
+  const filteredCards = await page.locator("#evList .ev-card").count();
+  check(
+    filteredCards > 0 && filteredCards < allCards,
+    `${prefix}: evidence search did not filter records`,
+  );
+  check(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+    `${prefix}: horizontal overflow in evidence view`,
+  );
+  await page.locator("#evSearch").fill("");
+  await page.locator('button[data-view="scenarios"]').click();
+  check(
+    (await page.locator("#scPreset option").count()) > 5,
+    `${prefix}: scenario presets from evidence missing`,
+  );
+  check(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+    ),
+    `${prefix}: horizontal overflow in scenario view`,
+  );
+  await page.locator('button[data-view="workspace"]').click();
   check(
     browserErrors.length === 0,
     `${prefix}: browser errors: ${browserErrors.join(" | ")}`,

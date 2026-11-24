@@ -16,10 +16,11 @@ VesicleScope is **not yet externally biologically validated as a predictive EV m
 
 First external constraint: under steady-state linear transport, the public Colombo et al. 2025 tumour landmarks fix one quantity, the EV transport length scale λ = √(D/k_eff) ≈ 17–25 µm. With free-solution diffusion this would require minute-scale loss, so tumour EV transport must be strongly hindered or captured fast. The same relation shows that a perturbation acting only on EV release cannot change the spatial range, only the threshold reach (logarithmically). See [Colombo length-scale constraint](docs/research/colombo-length-scale-constraint.md).
 
-A curated [EV evidence registry](docs/research/evidence-registry.md) holds source-linked quantities and hormone effects (`vesiclescope evidence list`). Combining its records shows that free diffusion in tumour tissue would need EV capture faster than blood clearance. It also shows that interstitial convection is comparable to or stronger than diffusion over the observed length scale, which the current model does not yet include.
+A curated [EV evidence registry](docs/research/evidence-registry.md) holds 46 source-linked quantities and hormone/stimulus effects from 38 sources (`vesiclescope evidence list`). It is browsable in the UI together with a stimulus × outcome evidence map and a BioFVM-backed hormone scenario editor. Combining its records shows that free diffusion in tumour tissue would need EV capture faster than blood clearance. It also shows that interstitial convection is comparable to or stronger than diffusion over the observed length scale, which the current model does not yet include.
 
 See:
 
+- [vision, scope and feasibility ladder](docs/vision.md)
 - [research landscape](docs/research/landscape.md)
 - [architecture baseline](docs/architecture.md)
 - [product readiness](docs/product-readiness.md)

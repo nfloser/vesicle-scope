@@ -222,6 +222,204 @@
       "pmid": "41167986",
       "pmcid": "PMC12575057",
       "peer_reviewed": true
+    },
+    {
+      "id": "verweij-2018",
+      "title": "Quantifying exosome secretion from single cells reveals a modulatory role for GPCR signaling",
+      "authors": "Verweij FJ, Bebelman MP, Jimenez CR, et al.",
+      "journal": "Journal of Cell Biology",
+      "year": 2018,
+      "doi": "10.1083/jcb.201703206",
+      "pmid": null,
+      "pmcid": null,
+      "peer_reviewed": true
+    },
+    {
+      "id": "rank-2011",
+      "title": "Clearance of platelet microparticles in vivo",
+      "authors": "Rank A, Nieuwland R, Crispin A, et al.",
+      "journal": "Platelets",
+      "year": 2011,
+      "doi": "10.3109/09537104.2010.520373",
+      "pmid": null,
+      "pmcid": null,
+      "peer_reviewed": true
+    },
+    {
+      "id": "tam-2024",
+      "title": "Extracellular Vesicle Mobility in Collagen I Hydrogels Is Influenced by Matrix-Binding Integrins",
+      "authors": "Tam NW, Becker A, Mangiarotti A, Cipitria A, Dimova R",
+      "journal": "ACS Nano",
+      "year": 2024,
+      "doi": "10.1021/acsnano.4c07186",
+      "pmid": null,
+      "pmcid": "PMC11526431",
+      "peer_reviewed": true
+    },
+    {
+      "id": "chary-jain-interstitial",
+      "title": "Direct measurement of interstitial convection and diffusion of albumin in normal and neoplastic tissues by fluorescence photobleaching",
+      "authors": "see journal record",
+      "journal": null,
+      "year": null,
+      "doi": null,
+      "pmid": null,
+      "pmcid": "PMC297627",
+      "peer_reviewed": true
+    },
+    {
+      "id": "sykova-nicholson-2008",
+      "title": "Diffusion in Brain Extracellular Space",
+      "authors": "Syková E, Nicholson C",
+      "journal": "Physiological Reviews",
+      "year": 2008,
+      "doi": null,
+      "pmid": "18923183",
+      "pmcid": "PMC2785730",
+      "peer_reviewed": true
+    },
+    {
+      "id": "nicholson-2007",
+      "title": "Modeling brain extracellular space from diffusion data",
+      "authors": "Nicholson C",
+      "journal": "Diffusion Fundamentals",
+      "year": 2007,
+      "doi": "10.62721/diffusion-fundamentals.6.133",
+      "pmid": null,
+      "pmcid": null,
+      "peer_reviewed": true
+    },
+    {
+      "id": "salomon-2014",
+      "title": "A Gestational Profile of Placental Exosomes in Maternal Plasma and Their Effects on Endothelial Cell Migration",
+      "authors": "Salomon C, Torres MJ, Kobayashi M, et al.",
+      "journal": "PLoS ONE",
+      "year": 2014,
+      "doi": "10.1371/journal.pone.0098667",
+      "pmid": null,
+      "pmcid": "PMC4048215",
+      "peer_reviewed": true
+    },
+    {
+      "id": "sarker-2014",
+      "title": "Placenta-derived exosomes continuously increase in maternal circulation over the first trimester of pregnancy",
+      "authors": "Sarker S, Scholz-Romero K, Perez A, et al.",
+      "journal": "Journal of Translational Medicine",
+      "year": 2014,
+      "doi": "10.1186/1479-5876-12-204",
+      "pmid": null,
+      "pmcid": "PMC4283151",
+      "peer_reviewed": true
+    },
+    {
+      "id": "king-2012",
+      "title": "Hypoxic enhancement of exosome release by breast cancer cells",
+      "authors": "King HW, Michael MZ, Gleadle JM",
+      "journal": "BMC Cancer",
+      "year": 2012,
+      "doi": "10.1186/1471-2407-12-421",
+      "pmid": "22998595",
+      "pmcid": "PMC3488584",
+      "peer_reviewed": true
+    },
+    {
+      "id": "soekmadji-2016",
+      "title": "Modulation of paracrine signaling by CD9 positive small extracellular vesicles mediates cellular growth of androgen deprived prostate cancer",
+      "authors": "Soekmadji C, Riches JD, Russell PJ, et al.",
+      "journal": "Oncotarget",
+      "year": 2016,
+      "doi": "10.18632/oncotarget.11111",
+      "pmid": null,
+      "pmcid": "PMC5581025",
+      "peer_reviewed": true
+    },
+    {
+      "id": "martens-uzunova-2021",
+      "title": "Androgens alter the heterogeneity of small extracellular vesicles and the small RNA cargo in prostate cancer",
+      "authors": "Martens-Uzunova ES, Kusuma GD, Crucitta S, et al.",
+      "journal": "Journal of Extracellular Vesicles",
+      "year": 2021,
+      "doi": "10.1002/jev2.12136",
+      "pmid": null,
+      "pmcid": "PMC8374107",
+      "peer_reviewed": true
+    },
+    {
+      "id": "drula-2023",
+      "title": "17β-estradiol promotes extracellular vesicle release and selective miRNA loading in ERα-positive breast cancer",
+      "authors": "Drula R, Pardini B, Fu X, et al.",
+      "journal": "PNAS",
+      "year": 2023,
+      "doi": "10.1073/pnas.2122053120",
+      "pmid": "37252969",
+      "pmcid": "PMC10266002",
+      "peer_reviewed": true
+    },
+    {
+      "id": "lee-2021-ape1",
+      "title": "17β-Estradiol Increases APE1/Ref-1 Secretion in Vascular Endothelial Cells and Ovariectomized Mice: Involvement of Calcium-Dependent Exosome Pathway",
+      "authors": "Lee YR, Joo HK, Lee EO, et al.",
+      "journal": "Biomedicines",
+      "year": 2021,
+      "doi": "10.3390/biomedicines9081040",
+      "pmid": null,
+      "pmcid": "PMC8394342",
+      "peer_reviewed": true
+    },
+    {
+      "id": "giordano-2019",
+      "title": "Leptin Modulates Exosome Biogenesis in Breast Cancer Cells: An Additional Mechanism in Cell-to-Cell Communication",
+      "authors": "Giordano C, Gelsomino L, Barone I, et al.",
+      "journal": "Journal of Clinical Medicine",
+      "year": 2019,
+      "doi": "10.3390/jcm8071027",
+      "pmid": "31336913",
+      "pmcid": "PMC6678227",
+      "peer_reviewed": true
+    },
+    {
+      "id": "melatonin-placenta-2021",
+      "title": "Melatonin, a Potential Therapeutic Agent for Preeclampsia, Reduces the Extrusion of Toxic Extracellular Vesicles from Preeclamptic Placentae",
+      "authors": "see journal record",
+      "journal": "Cells",
+      "year": 2021,
+      "doi": "10.3390/cells10081904",
+      "pmid": null,
+      "pmcid": "PMC8393242",
+      "peer_reviewed": true
+    },
+    {
+      "id": "danielson-2016",
+      "title": "Diurnal Variations of Circulating Extracellular Vesicles Measured by Nano Flow Cytometry",
+      "authors": "Danielson KM, Estanislau J, Tigges J, et al.",
+      "journal": "PLoS ONE",
+      "year": 2016,
+      "doi": "10.1371/journal.pone.0144678",
+      "pmid": null,
+      "pmcid": "PMC4706300",
+      "peer_reviewed": true
+    },
+    {
+      "id": "best-2021",
+      "title": "Importance of between and within Subject Variability in Extracellular Vesicle Abundance and Cargo when Performing Biomarker Analyses",
+      "authors": "see journal record",
+      "journal": "Cells",
+      "year": 2021,
+      "doi": "10.3390/cells10030485",
+      "pmid": null,
+      "pmcid": "PMC7996254",
+      "peer_reviewed": true
+    },
+    {
+      "id": "bazie-2021",
+      "title": "Diurnal Variation of Plasma Extracellular Vesicle Is Disrupted in People Living with HIV",
+      "authors": "Bazié WW, Goyer B, Boucher J, et al.",
+      "journal": "Pathogens",
+      "year": 2021,
+      "doi": "10.3390/pathogens10050518",
+      "pmid": null,
+      "pmcid": "PMC8145918",
+      "peer_reviewed": true
     }
   ]
 }
