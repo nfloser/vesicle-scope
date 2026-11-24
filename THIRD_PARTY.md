@@ -1,6 +1,6 @@
 # Third-party software record
 
-VesicleScope source is public but does not currently grant an open-source license for its own code. Third-party software retains its own license and citation requirements.
+VesicleScope's own code is licensed under Apache-2.0 (see `LICENSE`). Third-party software and data retain their own license and citation requirements; the Apache-2.0 license of VesicleScope does not relicense them.
 
 ## BioFVM / PhysiCell
 

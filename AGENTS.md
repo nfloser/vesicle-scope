@@ -68,7 +68,7 @@ Examples:
 
 ## Public repository and licensing
 
-The repository is intentionally public. No open-source license is granted by default. Do not add or change a project license without owner approval.
+The repository is public and licensed under Apache-2.0 (see `LICENSE`). Do not change the project license without owner approval.
 
 Third-party dependencies retain their own licenses. Record versions, licenses, citations and redistribution implications before adoption.
 

@@ -2,7 +2,7 @@
 
 VesicleScope is scientific research software. Correctness, provenance, reproducibility and honest scientific claims take priority over feature count.
 
-This repository is public but does **not** currently grant an open-source license. Do not assume that public source availability grants permission to redistribute the project or derivative works. Third-party software and data keep their own license and citation requirements.
+VesicleScope is licensed under the [Apache License 2.0](LICENSE). By submitting a contribution you agree that it is provided under the same license (Apache-2.0, section 5). Third-party software and data keep their own license and citation requirements; do not copy third-party code, data or figures into the repository without verifying redistribution rights and recording them in THIRD_PARTY.md.
 
 ## Before starting work
 

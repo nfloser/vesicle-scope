@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use VesicleScope in research, please cite it as below and also cite the numerical engines listed in THIRD_PARTY.md."
+title: "VesicleScope: evidence-grounded computational research software for extracellular-vesicle transport"
+type: software
+authors:
+  - family-names: "Flöser"
+    given-names: "Nils"
+version: "0.4.0"
+license: Apache-2.0
+repository-code: "https://github.com/nfloser/vesicle-scope"
+keywords:
+  - extracellular vesicles
+  - reaction-diffusion
+  - BioFVM
+  - computational biology
