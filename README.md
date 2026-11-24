@@ -31,6 +31,7 @@ See:
 - [Local measured-data audit](docs/measured-data.md)
 - [blood-derived longitudinal EV measurement workflow](docs/research/blood-ev-longitudinal-workflow.md)
 - [Colombo 2025 length-scale constraint](docs/research/colombo-length-scale-constraint.md)
+- [time-resolved dose-response for exposures](docs/research/dose-response-exposure-model.md)
 - [hormone/stimulus perturbation and EV phenotype model](docs/research/hormone-ev-perturbation-model.md)
 - [EV measurement and phenotype workspace](docs/research-workspace-ui.md)
 - [Smoldyn particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md)
