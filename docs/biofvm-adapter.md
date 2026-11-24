@@ -263,7 +263,7 @@ The result stream is versioned instead of being silently extended:
 - v4 adds indexed recipient metadata and one cumulative uptake value per recipient and sample;
 - v5 adds explicit recipient geometry kind, footprint radius and native component count so finite geometry can be round-tripped.
 
-The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t5`.
+The current runner/parser require `VESICLESCOPE_BIOFVM_RESULT\t6` (6 adds optional piecewise-constant release and uptake rate schedules).
 
 ## What this validates
 
@@ -279,3 +279,21 @@ It does **not** validate:
 - any species, tissue, cell type, cell line or EV preparation.
 
 Those mechanisms require their own research/evidence gate before implementation.
+
+## Piecewise-constant rate schedules
+
+`TransportExperiment` accepts an optional `release_schedule` and `uptake_schedule` (`RateSchedule`). Each schedule is a contiguous list of `[start_min, end_min)` segments starting at 0 and ending exactly at `duration_min`. Each segment carries a dimensionless, non-negative multiplier, an evidence category and a derivation text.
+
+- The release multiplier scales every release-source component rate. The uptake multiplier scales every recipient uptake rate.
+- Every segment boundary must be an integer multiple of the numerical time step. Solver step `k` integrates `[(k-1)·dt, k·dt]` and uses the segment that contains its midpoint, so no step straddles a boundary.
+- When a multiplier changes, the runner updates the agent rates and recomputes BioFVM's cached source/sink constants (`set_internal_uptake_constants`), because BioFVM caches them per time step.
+- Experiments without schedules serialize without schedule keys, so their documents and digests are unchanged.
+
+Verification (`tests/test_rate_schedule_biofvm_integration.py`):
+
+- the released mass equals `rate × ∫ multiplier dt` at every sample;
+- a unit schedule reproduces constant-rate results bit for bit;
+- a zero-uptake segment stops internalization, and extracellular plus internalized mass still equals the released mass;
+- a uniform uptake multiplier of 2 matches a doubled uptake rate.
+
+Runners built before this change print result protocol 5 and are rejected with an instruction to rebuild (`vesiclescope engine build`). This means an old runner cannot silently ignore a schedule.

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 import math
 
-from .parameters import ScientificParameter
+from .parameters import EvidenceCategory, ScientificParameter
 
 
 DIFFUSION_UNIT = "micron^2/min"
@@ -270,6 +270,83 @@ UptakeSink = PointUptakeSink | CircularUptakeSink
 
 
 @dataclass(frozen=True, slots=True)
+class RateScheduleSegment:
+    """A dimensionless multiplier applied to a declared rate on [start, end)."""
+
+    start_min: float
+    end_min: float
+    multiplier: float
+
+    def __post_init__(self) -> None:
+        start = _non_negative_finite(self.start_min, "start_min")
+        end = _positive_finite(self.end_min, "end_min")
+        if end <= start:
+            raise ValueError("rate schedule segment end_min must exceed start_min")
+        object.__setattr__(self, "start_min", start)
+        object.__setattr__(self, "end_min", end)
+        object.__setattr__(
+            self,
+            "multiplier",
+            _non_negative_finite(self.multiplier, "multiplier"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class RateSchedule:
+    """Piecewise-constant time course multiplying every declared rate of a kind.
+
+    The multiplier is dimensionless and applies on top of each source's release
+    rate (release schedule) or each sink's uptake rate (uptake schedule). The
+    evidence category and derivation keep its origin explicit, for example a
+    dose-response mapping of a declared exposure.
+    """
+
+    segments: tuple[RateScheduleSegment, ...]
+    evidence: EvidenceCategory
+    derivation: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.segments, tuple) or not self.segments:
+            raise ValueError("rate schedule segments must be a non-empty tuple")
+        if not all(isinstance(item, RateScheduleSegment) for item in self.segments):
+            raise TypeError("rate schedule segments must be RateScheduleSegment values")
+        if self.segments[0].start_min != 0.0:
+            raise ValueError("rate schedule must start at 0 min")
+        for left, right in zip(self.segments, self.segments[1:]):
+            if not math.isclose(left.end_min, right.start_min, rel_tol=0.0, abs_tol=1e-9):
+                raise ValueError("rate schedule segments must be contiguous")
+        if not isinstance(self.evidence, EvidenceCategory):
+            raise TypeError("rate schedule evidence must be an EvidenceCategory")
+        object.__setattr__(
+            self,
+            "derivation",
+            _required_text(self.derivation, "rate schedule derivation"),
+        )
+
+    @property
+    def end_min(self) -> float:
+        return self.segments[-1].end_min
+
+    def multiplier_at(self, time_min: float) -> float:
+        """Multiplier active at a time inside [0, end)."""
+
+        for segment in self.segments:
+            if segment.start_min <= time_min < segment.end_min:
+                return segment.multiplier
+        raise ValueError("time lies outside the rate schedule")
+
+    def integral(self, start_min: float, end_min: float) -> float:
+        """Integral of the multiplier over [start, end] in min."""
+
+        total = 0.0
+        for segment in self.segments:
+            overlap = min(end_min, segment.end_min) - max(start_min, segment.start_min)
+            if overlap > 0.0:
+                total += overlap * segment.multiplier
+        return total
+
+
+@dataclass(frozen=True, slots=True)
 class TransportExperiment:
     """Synthetic transport inputs shared by validation code and engine adapters.
 
@@ -287,6 +364,8 @@ class TransportExperiment:
     initial_concentration: ScientificParameter
     release_sources: tuple[ReleaseSource, ...] = ()
     uptake_sinks: tuple[UptakeSink, ...] = ()
+    release_schedule: RateSchedule | None = None
+    uptake_schedule: RateSchedule | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -413,3 +492,18 @@ class TransportExperiment:
                         "circular uptake sink footprints must not overlap; "
                         f"{left.identifier!r} overlaps {right.identifier!r}"
                     )
+
+        for label, schedule, targets in (
+            ("release_schedule", self.release_schedule, self.release_sources),
+            ("uptake_schedule", self.uptake_schedule, self.uptake_sinks),
+        ):
+            if schedule is None:
+                continue
+            if not isinstance(schedule, RateSchedule):
+                raise TypeError(f"{label} must be a RateSchedule or None")
+            if not targets:
+                raise ValueError(f"{label} requires at least one declared rate to scale")
+            if not math.isclose(
+                schedule.end_min, duration_min, rel_tol=0.0, abs_tol=1e-9
+            ):
+                raise ValueError(f"{label} must cover exactly [0, duration_min]")

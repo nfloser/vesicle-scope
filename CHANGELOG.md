@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Engine
+
+- add optional piecewise-constant release and uptake rate schedules to the experiment contract, the run-bundle encoding and the native BioFVM runner (result protocol 6; runners built earlier must be rebuilt);
+- verify schedule mass balance, bit-identical unit schedules, zero-uptake segments and schedule/rate equivalence against BioFVM.
+
 ### Research
 
 - infer the transport length scale λ = √(D/k_eff) ≈ 17–25 µm constrained by the public Colombo 2025 landmarks under explicit planar, spherical-section and 2D-slab assumptions (#140);

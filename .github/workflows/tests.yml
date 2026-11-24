@@ -210,6 +210,7 @@ jobs:
           python -m unittest discover -s tests -p test_biofvm_integration.py -v
           python -m unittest discover -s tests -p test_population_biofvm_integration.py -v
           python -m unittest discover -s tests -p test_reach_biofvm_verification.py -v
+          python -m unittest discover -s tests -p test_rate_schedule_biofvm_integration.py -v
 
       - name: Exercise local workspace end to end
         env:

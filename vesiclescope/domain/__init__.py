@@ -40,6 +40,8 @@ from .transport import (
     PointUptakeSink,
     RATE_UNIT,
     RELEASE_RATE_UNIT,
+    RateSchedule,
+    RateScheduleSegment,
     ReleaseSource,
     RectangularDomain2D,
     TransportExperiment,
@@ -47,6 +49,8 @@ from .transport import (
 )
 
 __all__ = [
+    "RateSchedule",
+    "RateScheduleSegment",
     "BiologicalExposure",
     "CargoClass",
     "EffectDirection",
