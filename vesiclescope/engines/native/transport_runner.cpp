@@ -85,6 +85,82 @@ int parse_non_negative_integer(const std::string& text, const std::string& name)
     return value;
 }
 
+bool has_argument(int argc, char* argv[], const std::string& name);
+std::string argument(int argc, char* argv[], const std::string& name);
+
+struct ScheduleSegment
+{
+    double end;
+    double multiplier;
+};
+
+// Optional piecewise-constant multiplier schedule. Segment i covers
+// [end_{i-1}, end_i) with end_{-1} = 0; an empty schedule means multiplier 1.
+std::vector<ScheduleSegment> parse_schedule(
+    int argc,
+    char* argv[],
+    const std::string& prefix
+)
+{
+    std::vector<ScheduleSegment> segments;
+    if (!has_argument(argc, argv, prefix + "-count"))
+    {
+        return segments;
+    }
+    const int count = parse_non_negative_integer(
+        argument(argc, argv, prefix + "-count"),
+        prefix + " count"
+    );
+    if (count == 0)
+    {
+        throw std::invalid_argument(prefix + " count must be greater than zero");
+    }
+    double previous_end = 0.0;
+    for (int index = 0; index < count; ++index)
+    {
+        const std::string segment_prefix = prefix + "-" + std::to_string(index);
+        ScheduleSegment segment;
+        segment.end = parse_number(
+            argument(argc, argv, segment_prefix + "-end-min"),
+            prefix + " segment end"
+        );
+        segment.multiplier = parse_number(
+            argument(argc, argv, segment_prefix + "-multiplier"),
+            prefix + " segment multiplier"
+        );
+        if (segment.end <= previous_end)
+        {
+            throw std::invalid_argument(prefix + " segment ends must increase");
+        }
+        if (segment.multiplier < 0.0)
+        {
+            throw std::invalid_argument(prefix + " multipliers must be non-negative");
+        }
+        previous_end = segment.end;
+        segments.push_back(segment);
+    }
+    return segments;
+}
+
+double schedule_multiplier(
+    const std::vector<ScheduleSegment>& segments,
+    double time
+)
+{
+    if (segments.empty())
+    {
+        return 1.0;
+    }
+    for (const ScheduleSegment& segment : segments)
+    {
+        if (time < segment.end)
+        {
+            return segment.multiplier;
+        }
+    }
+    throw std::invalid_argument("time lies beyond the rate schedule");
+}
+
 struct SourceComponentConfig
 {
     double x;
@@ -408,6 +484,11 @@ int main(int argc, char* argv[])
             }
             uptake_configs.push_back(config);
         }
+
+        const std::vector<ScheduleSegment> release_schedule =
+            parse_schedule(argc, argv, "--release-schedule");
+        const std::vector<ScheduleSegment> uptake_schedule =
+            parse_schedule(argc, argv, "--uptake-schedule");
 
         require_positive(width, "width");
         require_positive(height, "height");
@@ -777,6 +858,35 @@ int main(int argc, char* argv[])
                 "time step must tile duration and sample interval exactly"
             );
         }
+        for (const std::vector<ScheduleSegment>* schedule :
+             {&release_schedule, &uptake_schedule})
+        {
+            if (schedule->empty())
+            {
+                continue;
+            }
+            for (const ScheduleSegment& segment : *schedule)
+            {
+                if (!integer_multiple(segment.end, dt))
+                {
+                    throw std::invalid_argument(
+                        "time step must tile every rate schedule segment boundary"
+                    );
+                }
+            }
+            if (std::abs(schedule->back().end - duration) > 1e-9)
+            {
+                throw std::invalid_argument("rate schedules must end at duration");
+            }
+        }
+        if (!release_schedule.empty() && !has_source)
+        {
+            throw std::invalid_argument("release schedule requires a release source");
+        }
+        if (!uptake_schedule.empty() && uptake_configs.empty())
+        {
+            throw std::invalid_argument("uptake schedule requires uptake recipients");
+        }
 
         BioFVM::Microenvironment microenvironment;
         microenvironment.name = "VesicleScope transport runner";
@@ -903,7 +1013,7 @@ int main(int argc, char* argv[])
         const long sample_steps = std::lround(sample_every / dt);
 
         std::cout
-            << "VESICLESCOPE_BIOFVM_RESULT\t5\n"
+            << "VESICLESCOPE_BIOFVM_RESULT\t6\n"
             << "engine\tBioFVM\n"
             << "physicell_release\t" << VESICLESCOPE_PHYSICELL_RELEASE << '\n'
             << "physicell_commit\t" << VESICLESCOPE_PHYSICELL_COMMIT << '\n'
@@ -931,8 +1041,45 @@ int main(int argc, char* argv[])
 
         print_sample(microenvironment, 0.0, uptake_recipients);
 
+        double active_release_multiplier = 1.0;
+        double active_uptake_multiplier = 1.0;
+
         for (long step = 1; step <= total_steps; ++step)
         {
+            // Step k integrates [(k-1) dt, k dt]; its midpoint selects the
+            // schedule segment because segment boundaries tile dt exactly.
+            const double step_midpoint = (static_cast<double>(step) - 0.5) * dt;
+            const double release_multiplier =
+                schedule_multiplier(release_schedule, step_midpoint);
+            if (release_multiplier != active_release_multiplier)
+            {
+                for (std::size_t index = 0; index < source_agents.size(); ++index)
+                {
+                    (*source_agents[index]->net_export_rates)[0] =
+                        source_config.components[index].rate * release_multiplier;
+                    source_agents[index]->set_internal_uptake_constants(dt);
+                }
+                active_release_multiplier = release_multiplier;
+            }
+            const double uptake_multiplier =
+                schedule_multiplier(uptake_schedule, step_midpoint);
+            if (uptake_multiplier != active_uptake_multiplier)
+            {
+                for (std::size_t recipient_index = 0;
+                     recipient_index < uptake_recipients.size();
+                     ++recipient_index)
+                {
+                    for (BioFVM::Basic_Agent* uptake_agent :
+                         uptake_recipients[recipient_index])
+                    {
+                        (*uptake_agent->uptake_rates)[0] =
+                            uptake_configs[recipient_index].rate * uptake_multiplier;
+                        uptake_agent->set_internal_uptake_constants(dt);
+                    }
+                }
+                active_uptake_multiplier = uptake_multiplier;
+            }
+
             if (!source_agents.empty())
             {
                 const bool track_internalized =

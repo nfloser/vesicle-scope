@@ -110,7 +110,7 @@ def result_output(
     recipient_quantities: tuple[tuple[float, ...], ...] | None = None,
 ) -> str:
     lines = [
-        "VESICLESCOPE_BIOFVM_RESULT\t5",
+        "VESICLESCOPE_BIOFVM_RESULT\t6",
         "engine\tBioFVM",
         f"physicell_release\t{physicell_release}",
         "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763",
@@ -603,7 +603,7 @@ class BioFVMResultTests(unittest.TestCase):
 
     def test_rejects_missing_or_non_monotonic_samples(self) -> None:
         no_samples = (
-            "VESICLESCOPE_BIOFVM_RESULT\t5\n"
+            "VESICLESCOPE_BIOFVM_RESULT\t6\n"
             "engine\tBioFVM\n"
             "physicell_release\t1.14.2\n"
             "physicell_commit\tdbd3499250141b27600e91e501c54c46f68f2763\n"

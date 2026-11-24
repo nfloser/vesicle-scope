@@ -27,6 +27,8 @@ from vesiclescope.domain import (
     ParameterContext,
     PointReleaseSource,
     PointUptakeSink,
+    RateSchedule,
+    RateScheduleSegment,
     RectangularDomain2D,
     ScientificParameter,
     TransportExperiment,
@@ -409,7 +411,7 @@ def _decode_uptake_sink(value: Any):
 
 
 def _encode_experiment(experiment: TransportExperiment) -> dict[str, Any]:
-    return {
+    payload: dict[str, Any] = {
         "experiment_id": experiment.experiment_id,
         "domain": {
             "width_micron": experiment.domain.width_micron,
@@ -433,6 +435,50 @@ def _encode_experiment(experiment: TransportExperiment) -> dict[str, Any]:
             for sink in experiment.uptake_sinks
         ],
     }
+    # Schedules are optional and omitted when absent so that documents and
+    # digests of constant-rate experiments remain byte-identical.
+    if experiment.release_schedule is not None:
+        payload["release_schedule"] = _encode_rate_schedule(experiment.release_schedule)
+    if experiment.uptake_schedule is not None:
+        payload["uptake_schedule"] = _encode_rate_schedule(experiment.uptake_schedule)
+    return payload
+
+
+def _encode_rate_schedule(schedule: RateSchedule) -> dict[str, Any]:
+    return {
+        "evidence": schedule.evidence.value,
+        "derivation": schedule.derivation,
+        "segments": [
+            {
+                "start_min": item.start_min,
+                "end_min": item.end_min,
+                "multiplier": item.multiplier,
+            }
+            for item in schedule.segments
+        ],
+    }
+
+
+def _decode_rate_schedule(value: Any) -> RateSchedule:
+    if not isinstance(value, dict):
+        raise ValueError("rate schedule must be an object")
+    if set(value) != {"evidence", "derivation", "segments"}:
+        raise ValueError("rate schedule has unexpected or missing fields")
+    segments = value["segments"]
+    if not isinstance(segments, list):
+        raise ValueError("rate schedule segments must be a list")
+    return RateSchedule(
+        segments=tuple(
+            RateScheduleSegment(
+                start_min=item["start_min"],
+                end_min=item["end_min"],
+                multiplier=item["multiplier"],
+            )
+            for item in segments
+        ),
+        evidence=EvidenceCategory(value["evidence"]),
+        derivation=value["derivation"],
+    )
 
 
 def _decode_experiment(value: Any) -> TransportExperiment:
@@ -465,6 +511,16 @@ def _decode_experiment(value: Any) -> TransportExperiment:
         uptake_sinks=tuple(
             _decode_uptake_sink(item)
             for item in value["uptake_sinks"]
+        ),
+        release_schedule=(
+            _decode_rate_schedule(value["release_schedule"])
+            if "release_schedule" in value
+            else None
+        ),
+        uptake_schedule=(
+            _decode_rate_schedule(value["uptake_schedule"])
+            if "uptake_schedule" in value
+            else None
         ),
     )
 

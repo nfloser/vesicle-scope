@@ -19,7 +19,7 @@ from vesiclescope.domain import (
 
 _PIN_FILE = Path(__file__).with_name("physicell.env")
 _PIN_KEYS = frozenset({"PHYSICELL_RELEASE", "PHYSICELL_COMMIT", "BIOFVM_VERSION"})
-_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t5"
+_RESULT_HEADER = "VESICLESCOPE_BIOFVM_RESULT\t6"
 _PARTICLE_CONCENTRATION_UNIT = "particle_equivalent/micron^3"
 _FIELD_ORDERING = "x_fastest_then_y"
 
@@ -729,6 +729,17 @@ def _validate_mapping(
         raise ValueError("time step must tile experiment duration exactly")
     if not _is_integer_multiple(experiment.sample_every_min, dt):
         raise ValueError("time step must tile sample interval exactly")
+    for label, schedule in (
+        ("release schedule", experiment.release_schedule),
+        ("uptake schedule", experiment.uptake_schedule),
+    ):
+        if schedule is None:
+            continue
+        for segment in schedule.segments:
+            if not _is_integer_multiple(segment.end_min, dt):
+                raise ValueError(
+                    f"time step must tile every {label} segment boundary exactly"
+                )
 
 
 def build_command(
@@ -838,6 +849,23 @@ def build_command(
                 )
             )
 
+    for flag, schedule in (
+        ("--release-schedule", experiment.release_schedule),
+        ("--uptake-schedule", experiment.uptake_schedule),
+    ):
+        if schedule is None:
+            continue
+        command.extend((f"{flag}-count", str(len(schedule.segments))))
+        for index, segment in enumerate(schedule.segments):
+            command.extend(
+                (
+                    f"{flag}-{index}-end-min",
+                    _format_number(segment.end_min),
+                    f"{flag}-{index}-multiplier",
+                    _format_number(segment.multiplier),
+                )
+            )
+
     return tuple(command)
 
 
@@ -855,7 +883,10 @@ def parse_result(
 
     lines = [line for line in stdout.splitlines() if line.strip()]
     if not lines or lines[0] != _RESULT_HEADER:
-        raise ValueError("BioFVM result header is missing or unsupported")
+        raise ValueError(
+            "BioFVM result header is missing or unsupported; rebuild the runner "
+            "with `vesiclescope engine build` after upgrading VesicleScope"
+        )
 
     metadata: dict[str, str] = {}
     grid: BioFVMGrid2D | None = None
