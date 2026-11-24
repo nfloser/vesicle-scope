@@ -163,3 +163,7 @@ Finite circular donor geometry and the donor-boundary radial-profile observable 
 That closes the geometry prerequisite but does not turn simulated concentration into the publication's thresholded fluorescence observable.
 
 Parameter fitting remains out of scope until the missing measurement data, measurement-model question and analysis-bin discrepancy are resolved. Any future comparison must keep the 5-versus-10-micron bin definitions explicit.
+
+## Length-scale constraint from the public landmarks
+
+Without raw data, the landmarks still constrain the steady-state transport length scale λ = √(D/k_eff). See [colombo-length-scale-constraint.md](colombo-length-scale-constraint.md). This does not lift the blockers above for a parameter fit.
