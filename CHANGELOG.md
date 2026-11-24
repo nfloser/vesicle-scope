@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Evidence release 2, UI and concept
+
+- expand the evidence registry to 38 sources and 46 records: human platelet-microparticle half-life, in-tissue interstitial flow, albumin interstitial diffusion, brain ECS geometry, MVB counts, and effects of histamine, androgens, estradiol, leptin, melatonin, pregnancy, hypoxia, circadian time and integrin inhibition;
+- extend the synthesis with unit-aware half-lives, separate mouse sEV and human PMP clearance, the in-tissue Péclet number and brain ECS exclusion;
+- add UI views: an evidence browser with filters, source links, cross-source synthesis and a stimulus × outcome map, plus a hormone scenario editor that runs baseline vs exposure-driven BioFVM simulations with charts; browser acceptance covers both views on desktop and mobile;
+- add `docs/vision.md` with the feasibility ladder from explanation to replacing selected experiments.
+
 ### Evidence
 
 - add a curated, source-linked EV evidence registry (20 sources, 25 records: release, clearance, uptake, transport, blood concentration, size, hormone and physiological effects) with validation, query API, `ScientificParameter` conversion, SQLite export and `vesiclescope evidence` commands;

@@ -60,7 +60,8 @@ class EvidenceRegistryTests(unittest.TestCase):
         )
         clearance = self.db.effects(outcome=EffectOutcome.EV_CLEARANCE)
         self.assertEqual([r.id for r in clearance], ["macrophage-depletion-clearance"])
-        self.assertEqual(len(self.db.quantities("circulation_half_life")), 2)
+        self.assertEqual(len(self.db.quantities("circulation_half_life")), 4)
+        self.assertGreaterEqual(len(self.db.effects(tag="hormone")), 15)
 
     def test_quantity_value_validation_and_interval(self) -> None:
         self.assertEqual(QuantityValue(central=10.0, sd=2.0).interval(), (6.0, 14.0))
@@ -103,19 +104,36 @@ class EvidenceRegistryTests(unittest.TestCase):
         self.assertEqual(joined, (7.0, "10.1080/20013078.2019.1696517"))
 
 
+class HalfLifeUnitTests(unittest.TestCase):
+    def test_hours_are_converted(self) -> None:
+        from vesiclescope.evidence.synthesis import half_life_minutes
+
+        record = load_evidence().get("platelet-mp-half-life-human-annexin")
+        central, low, high = half_life_minutes(record)
+        self.assertAlmostEqual(central, 348.0)
+        self.assertAlmostEqual(low, 108.0)
+        self.assertAlmostEqual(high, 1098.0)
+
+
 class EvidenceSynthesisTests(unittest.TestCase):
     def test_synthesis_numbers(self) -> None:
         result = synthesize()
         self.assertAlmostEqual(result.free_diffusion_micron2_per_min[1], 394.3, delta=0.5)
         self.assertAlmostEqual(result.length_scale_micron[0], 16.8, delta=0.2)
         self.assertAlmostEqual(
-            result.blood_clearance_rate_per_min[1], math.log(2) / 2.0, places=9
+            result.mouse_sev_clearance_rate_per_min[1], math.log(2) / 2.0, places=9
         )
+        self.assertAlmostEqual(
+            result.human_pmp_clearance_rate_per_min[0], math.log(2) / (5.8 * 60), places=9
+        )
+        hlo, _ = result.required_loss_vs_human_pmp_clearance
+        self.assertGreater(hlo, 100.0)
+        self.assertTrue(result.ev_exceeds_brain_ecs_width)
         lo, hi = result.required_loss_vs_blood_clearance
         self.assertGreater(lo, 1.0)
         self.assertLess(result.peclet_at_free_diffusion[0], 1.0)
         self.assertGreater(result.peclet_at_free_diffusion[1], 1.0)
-        self.assertEqual(len(result.summary_lines()), 5)
+        self.assertEqual(len(result.summary_lines()), 8)
 
 
 if __name__ == "__main__":
