@@ -187,6 +187,25 @@ def _parser() -> argparse.ArgumentParser:
     )
     workspace_init.add_argument("path", type=Path)
 
+    evidence = subparsers.add_parser(
+        "evidence",
+        help="Query the curated, source-linked EV evidence registry.",
+    )
+    evidence_commands = evidence.add_subparsers(dest="evidence_command", required=True)
+    evidence_list = evidence_commands.add_parser("list", help="List records.")
+    evidence_list.add_argument("--quantity")
+    evidence_list.add_argument("--stimulus", help="Filter effects by stimulus name or tag.")
+    evidence_list.add_argument("--tag")
+    evidence_show = evidence_commands.add_parser("show", help="Show one record with its source.")
+    evidence_show.add_argument("record_id")
+    evidence_export = evidence_commands.add_parser(
+        "export-sqlite", help="Write a derived SQLite copy of the registry."
+    )
+    evidence_export.add_argument("--output", type=Path, required=True)
+    evidence_commands.add_parser(
+        "synthesize", help="Cross-source consistency analysis of transport evidence."
+    )
+
     ui = subparsers.add_parser(
         "ui",
         help="Start the loopback-only local VesicleScope workspace UI.",
@@ -430,6 +449,63 @@ def _print_engine_status(status) -> None:
     print(f"runner_exists: {'yes' if status.runner_exists else 'no'}")
 
 
+def _format_record(record) -> str:
+    if record.kind == "quantity":
+        value = record.value
+        if value.low is not None:
+            shown = f"{value.low:g}-{value.high:g}"
+        elif value.sd is not None:
+            shown = f"{value.central:g} +/- {value.sd:g}"
+        else:
+            shown = f"{value.central:g}"
+        detail = f"{record.quantity} = {shown} {record.unit}"
+    else:
+        detail = (
+            f"{record.stimulus['name']} -> {record.outcome.value}: {record.direction.value}"
+        )
+    species = record.context.species or "-"
+    return f"{record.id}\t[{record.evidence.value}; {species}]\t{detail}"
+
+
+def _run_evidence(args: argparse.Namespace) -> int:
+    from vesiclescope.evidence import export_sqlite, load_evidence
+
+    database = load_evidence()
+    if args.evidence_command == "list":
+        if args.stimulus:
+            records = database.effects(stimulus=args.stimulus, tag=args.tag)
+        elif args.quantity:
+            records = database.quantities(args.quantity, tag=args.tag)
+        else:
+            records = tuple(
+                r for r in database.records if args.tag is None or args.tag in r.tags
+            )
+        for record in records:
+            print(_format_record(record))
+        return 0
+    if args.evidence_command == "show":
+        try:
+            record = database.get(args.record_id)
+        except KeyError:
+            print(f"vesiclescope: unknown evidence record {args.record_id!r}", file=sys.stderr)
+            return 2
+        print(_format_record(record))
+        print(f"statement: {record.statement}")
+        print(f"source: {record.source.title} ({record.source.year}) {record.source.identifier}")
+        print(f"locator: {record.locator}; verified from: {record.verification}")
+        for item in record.limitations:
+            print(f"limitation: {item}")
+        return 0
+    if args.evidence_command == "export-sqlite":
+        print(export_sqlite(database, args.output))
+        return 0
+    from vesiclescope.evidence.synthesis import synthesize
+
+    for line in synthesize(database).summary_lines():
+        print(line)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -437,6 +513,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 0
+
+    if args.command == "evidence":
+        return _run_evidence(args)
 
     if args.command == "examples":
         _print_examples()
