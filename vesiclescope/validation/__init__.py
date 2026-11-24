@@ -8,8 +8,18 @@ from .colombo2025 import (
     RawDataAvailability,
     colombo_2025_tumour_distance_target,
 )
+from .colombo_length_scale import (
+    COLOMBO_2025_TAIL_BOUND,
+    ColomboLengthScaleSummary,
+    colombo_2025_landmarks,
+    colombo_2025_length_scale_constraints,
+)
 
 __all__ = [
+    "COLOMBO_2025_TAIL_BOUND",
+    "ColomboLengthScaleSummary",
+    "colombo_2025_landmarks",
+    "colombo_2025_length_scale_constraints",
     "Colombo2025TumourDistanceTarget",
     "ExternalAnalysisPipeline",
     "FitDerivedRetentionLandmark",

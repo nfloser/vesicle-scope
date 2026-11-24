@@ -25,6 +25,19 @@ from .donor_boundary import (
     distance_from_circular_donor_boundary,
     fixed_width_distance_edges,
 )
+from .reach import (
+    LengthScaleInference,
+    PerturbedReach,
+    ReachGeometry,
+    RetentionLandmark,
+    TailBound,
+    cumulative_signal_fraction,
+    implied_loss_rate_per_min,
+    infer_length_scale,
+    perturbed_reach,
+    steady_state_profile_shape,
+    stokes_einstein_diffusion_micron2_per_min,
+)
 from .measurement_comparison import (
     MeasurementPredictionMatch,
     MeasurementPredictionTarget,
@@ -41,6 +54,17 @@ from .recipient_population import (
 )
 
 __all__ = [
+    "LengthScaleInference",
+    "PerturbedReach",
+    "ReachGeometry",
+    "RetentionLandmark",
+    "TailBound",
+    "cumulative_signal_fraction",
+    "implied_loss_rate_per_min",
+    "infer_length_scale",
+    "perturbed_reach",
+    "steady_state_profile_shape",
+    "stokes_einstein_diffusion_micron2_per_min",
     "MeasurementPredictionMatch",
     "MeasurementPredictionTarget",
     "PredictionObservable",

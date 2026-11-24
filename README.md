@@ -14,6 +14,8 @@ Every biological mechanism and parameter needs documented provenance, context an
 
 VesicleScope is **not yet externally biologically validated as a predictive EV model**. Current reviewed numerical examples are synthetic unless explicitly labelled otherwise. Results must continue to distinguish analytical references, synthetic benchmarks, simulations, fitted values and experimental measurements.
 
+First external constraint: under steady-state linear transport, the public Colombo et al. 2025 tumour landmarks fix one quantity, the EV transport length scale λ = √(D/k_eff) ≈ 17–25 µm. With free-solution diffusion this would require minute-scale loss, so tumour EV transport must be strongly hindered or captured fast. The same relation shows that a perturbation acting only on EV release cannot change the spatial range, only the threshold reach (logarithmically). See [Colombo length-scale constraint](docs/research/colombo-length-scale-constraint.md).
+
 See:
 
 - [research landscape](docs/research/landscape.md)
@@ -28,6 +30,7 @@ See:
 - [OMEX-before-SED-ML interoperability decision](docs/research/combine-archive-interoperability.md)
 - [Local measured-data audit](docs/measured-data.md)
 - [blood-derived longitudinal EV measurement workflow](docs/research/blood-ev-longitudinal-workflow.md)
+- [Colombo 2025 length-scale constraint](docs/research/colombo-length-scale-constraint.md)
 - [hormone/stimulus perturbation and EV phenotype model](docs/research/hormone-ev-perturbation-model.md)
 - [EV measurement and phenotype workspace](docs/research-workspace-ui.md)
 - [Smoldyn particle-comparison research gate](docs/research/smoldyn-particle-comparison-gate.md)

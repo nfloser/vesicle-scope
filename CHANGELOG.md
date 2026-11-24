@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Research
+
+- infer the transport length scale λ = √(D/k_eff) ≈ 17–25 µm constrained by the public Colombo 2025 landmarks under explicit planar, spherical-section and 2D-slab assumptions (#140);
+- add closed-form steady-state donor profiles and cumulative signal fractions, verified against the pinned BioFVM runner (max. error 0.013 at 5 µm, 0.006 at 2.5 µm grid);
+- propagate release, loss and diffusion multipliers to length scale and threshold reach as the analytical backbone for hormone effects;
+- add the reproducible three-panel length-scale figure and JSON summary.
+
 ### Licensing
 
 - license VesicleScope's own code and documentation under Apache-2.0; third-party software and data keep their own terms;
