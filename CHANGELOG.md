@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Licensing
+
+- license VesicleScope's own code and documentation under Apache-2.0; third-party software and data keep their own terms;
+- add `CITATION.cff` for software citation.
+
 
 ## 0.4.0
 

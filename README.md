@@ -173,9 +173,11 @@ A simulation result should be read as:
 
 ## Repository policy
 
-This repository is intentionally public, but **no open-source license is currently granted**. Source availability does not by itself grant permission to copy, modify, redistribute or create derivative works.
+VesicleScope is open-source software licensed under the [Apache License 2.0](LICENSE). Copyright 2026 Nils Flöser and VesicleScope contributors.
 
-Third-party dependencies remain subject to their own licenses and citation requirements.
+The license covers VesicleScope's own source code and documentation. Third-party software (for example BioFVM/PhysiCell and Matplotlib), external datasets and published figures keep their own licenses and citation requirements; see [THIRD_PARTY.md](THIRD_PARTY.md). Fetching or referencing a third-party resource does not relicense it.
+
+If you use VesicleScope in research, please cite it using [CITATION.cff](CITATION.cff) and cite the underlying engines listed in THIRD_PARTY.md.
 
 ## Development
 
