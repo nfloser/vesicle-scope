@@ -164,3 +164,7 @@ The eventual compare view can show at the same time:
 
 This is the scientific basis for the requested time sliders, graphs and visual
 EV field without moving biological interpretation into the browser UI.
+
+## Time-resolved execution
+
+Exposure timing is now executable through an effect-compartment dose-response that produces release or uptake rate schedules. See [dose-response-exposure-model.md](dose-response-exposure-model.md).

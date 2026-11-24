@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Research
+
+- add a time-resolved effect-compartment dose-response layer that turns a declared exposure into a release or uptake rate schedule, with weakest-evidence propagation and full parameter derivation;
+- add a verified BioFVM workflow comparing baseline and exposure-driven variants, a synthetic demonstration scenario and figure; uptake effects act immediately on recipients while release effects arrive after transport.
+
 ### Engine
 
 - add optional piecewise-constant release and uptake rate schedules to the experiment contract, the run-bundle encoding and the native BioFVM runner (result protocol 6; runners built earlier must be rebuilt);
